@@ -1,3 +1,112 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero",
+      "description": "A group of diverse African students collaborating and learning in a modern classroom.",
+      "imageUrl": "https://images.unsplash.com/photo-1531482615713-2afd69097998?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxhZnJpY2FuJTIwc3R1ZGVudHN8ZW58MHx8fHwxNzYxOTIxMDQ2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "african students"
+    },
+    {
+      "id": "course-dev-web",
+      "description": "A computer screen showing lines of code for web development.",
+      "imageUrl": "https://images.unsplash.com/photo-1667984436031-ea1d9ff307ec?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxjb2RlJTIwcHJvZ3JhbW1pbmd8ZW58MHx8fHwxNzYxODYyMzI5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "code programming"
+    },
+    {
+      "id": "course-marketing",
+      "description": "A vibrant chart showing marketing growth and analytics.",
+      "imageUrl": "https://images.unsplash.com/photo-1759661966728-4a02e3c6ed91?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxtYXJrZXRpbmclMjBjaGFydHxlbnwwfHx8fDE3NjE4Mzk5Nzd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "marketing chart"
+    },
+    {
+      "id": "course-entrepreneurship",
+      "description": "A person sketching out a business plan in a notebook.",
+      "imageUrl": "https://images.unsplash.com/photo-1557804506-669a67965ba0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxidXNpbmVzcyUyMHBsYW58ZW58MHx8fHwxNzYxODI1OTI1fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "business plan"
+    },
+    {
+      "id": "course-data-science",
+      "description": "Abstract visualization of data networks and connections.",
+      "imageUrl": "https://images.unsplash.com/photo-1495592822108-9e6261896da8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxkYXRhJTIwbmV0d29ya3xlbnwwfHx8fDE3NjE5MjEwNDZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "data network"
+    },
+    {
+      "id": "course-ai-ml",
+      "description": "A futuristic illustration of an artificial intelligence brain.",
+      "imageUrl": "https://images.unsplash.com/photo-1680783954745-3249be59e527?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxhcnRpZmljaWFsJTIwaW50ZWxsaWdlbmNlfGVufDB8fHx8MTc2MTkyMTA0Nnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "artificial intelligence"
+    },
+    {
+      "id": "course-project-management",
+      "description": "A Kanban board with sticky notes for project management.",
+      "imageUrl": "https://images.unsplash.com/photo-1590402494587-44b71d7772f6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxrYW5iYW4lMjBib2FyZHxlbnwwfHx8fDE3NjE4NTQ0NjV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "kanban board"
+    },
+    {
+      "id": "instructor-yann",
+      "description": "Portrait of Yann, an instructor.",
+      "imageUrl": "https://images.unsplash.com/photo-1583195763986-0231686dcd43?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxtYW4lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjE4ODE5NTd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man portrait"
+    },
+    {
+      "id": "instructor-aisha",
+      "description": "Portrait of Aisha, an instructor.",
+      "imageUrl": "https://images.unsplash.com/photo-1614283233556-f35b0c801ef1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHx3b21hbiUyMHBvcnRyYWl0fGVufDB8fHx8MTc2MTkwOTQyNXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman portrait"
+    },
+    {
+      "id": "instructor-david",
+      "description": "Portrait of David, an instructor.",
+      "imageUrl": "https://images.unsplash.com/photo-1594672830234-ba4cfe1202dc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8bWFuJTIwcG9ydHJhaXR8ZW58MHx8fHwxNzYxODgxOTU3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man portrait"
+    },
+    {
+      "id": "testimonial-fatima",
+      "description": "Portrait of Fatima, a student.",
+      "imageUrl": "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHx3b21hbiUyMHBvcnRyYWl0fGVufDB8fHx8MTc2MTkwOTQyNXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman portrait"
+    },
+    {
+      "id": "testimonial-samuel",
+      "description": "Portrait of Samuel, a student.",
+      "imageUrl": "https://images.unsplash.com/photo-1607031542107-f6f46b5d54e9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxtYW4lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjE4ODE5NTd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man portrait"
+    },
+    {
+      "id": "testimonial-chloe",
+      "description": "Portrait of Chloe, a student.",
+      "imageUrl": "https://images.unsplash.com/photo-1557053908-4793c484d06f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHx3b21hbiUyMHBvcnRyYWl0fGVufDB8fHx8MTc2MTkwOTQyNXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman portrait"
+    },
+    {
+      "id": "user-avatar",
+      "description": "Default user avatar.",
+      "imageUrl": "https://images.unsplash.com/photo-1599566147214-ce487862ea4f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxwZXJzb24lMjBhdmF0YXJ8ZW58MHx8fHwxNzYxODg4NTMyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person avatar"
+    },
+    {
+      "id": "about-us",
+      "description": "A diverse team of professionals working together in a bright, modern office.",
+      "imageUrl": "https://images.unsplash.com/photo-1600880292089-90a7e086ee0c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHx0ZWFtJTIwd29ya2luZ3xlbnwwfHx8fDE3NjE4MTg5MDV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "team working"
+    },
+    {
+      "id": "donate-hero",
+      "description": "Hands holding a young plant, symbolizing growth and support.",
+      "imageUrl": "https://images.unsplash.com/photo-1457530378978-8bac673b8062?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxwbGFudCUyMGdyb3d0aHxlbnwwfHx8fDE3NjE4NTA2OTl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "plant growth"
+    },
+    {
+      "id": "certificate-bg",
+      "description": "An elegant, abstract geometric pattern for a certificate background.",
+      "imageUrl": "https://images.unsplash.com/photo-1679592098614-ae83589aa91a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxhYnN0cmFjdCUyMHBhdHRlcm58ZW58MHx8fHwxNzYxOTIxMDQ2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "abstract pattern"
+    },
+    {
+      "id": "video-placeholder",
+      "description": "A placeholder image for a video player.",
+      "imageUrl": "https://images.unsplash.com/photo-1729160731582-edcf5995cc3c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHx2aWRlbyUyMHBsYXl8ZW58MHx8fHwxNzYxOTIxMDQ2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "video play"
+    }
+  ]
 }
