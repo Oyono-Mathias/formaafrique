@@ -26,6 +26,7 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
 
   const courseImage = PlaceHolderImages.find((img) => img.id === course.imageId);
   const instructorImage = PlaceHolderImages.find((img) => img.id === course.instructor.avatarId);
+  const isFree = course.price === 0;
 
   return (
     <div>
@@ -65,6 +66,9 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
                   )}
                 </CardHeader>
                 <CardContent className="p-6 space-y-4">
+                    <div className="text-3xl font-bold text-center">
+                      {isFree ? 'Gratuit' : `${course.price} €`}
+                    </div>
                     <div className="flex justify-between items-center text-sm">
                       <span className="flex items-center gap-2 text-muted-foreground"><Clock size={16} /> Durée</span>
                       <span className="font-semibold">{course.duration}</span>
@@ -77,10 +81,16 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
                       <span className="flex items-center gap-2 text-muted-foreground"><Users size={16} /> Inscrits</span>
                       <span className="font-semibold">{course.enrollmentCount}</span>
                     </div>
-                  <Button size="lg" className="w-full">
-                    <Link href={`/courses/${course.id}/modules/${course.modules[0].id}`}>
-                      Commencer la formation
-                    </Link>
+                  <Button size="lg" className="w-full" asChild>
+                    {isFree ? (
+                      <Link href={`/courses/${course.id}/modules/${course.modules[0].id}`}>
+                        Commencer la formation
+                      </Link>
+                    ) : (
+                      <Link href="/donate">
+                        Faire un don pour débloquer
+                      </Link>
+                    )}
                   </Button>
                 </CardContent>
               </Card>

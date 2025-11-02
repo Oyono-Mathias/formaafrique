@@ -12,6 +12,7 @@ export const courses: Course[] = [
     enrollmentCount: 1254,
     duration: '12 semaines',
     level: 'Intermédiaire',
+    price: 25,
     whatYouWillLearn: [
       'Construire des interfaces utilisateur dynamiques avec React',
       'Créer des API RESTful avec Node.js et Express',
@@ -36,6 +37,7 @@ export const courses: Course[] = [
     enrollmentCount: 876,
     duration: '8 semaines',
     level: 'Débutant',
+    price: 0,
     whatYouWillLearn: [
       'Définir une stratégie de marketing digital',
       'Optimiser votre site pour les moteurs de recherche (SEO)',
@@ -59,6 +61,7 @@ export const courses: Course[] = [
     enrollmentCount: 2103,
     duration: '10 semaines',
     level: 'Débutant',
+    price: 10,
     whatYouWillLearn: [
       'Valider une idée de business sur le marché africain',
       'Rédiger un business plan convaincant',
@@ -82,6 +85,7 @@ export const courses: Course[] = [
     enrollmentCount: 950,
     duration: '9 semaines',
     level: 'Intermédiaire',
+    price: 40,
     whatYouWillLearn: [
       'Les fondamentaux de Python pour la data science',
       'Manipuler des données avec Pandas',
@@ -104,6 +108,7 @@ export const courses: Course[] = [
     enrollmentCount: 1530,
     duration: '14 semaines',
     level: 'Avancé',
+    price: 50,
     whatYouWillLearn: [
       'Les concepts fondamentaux de l\'IA et du ML',
       'Construire des modèles de régression et de classification',
@@ -126,6 +131,7 @@ export const courses: Course[] = [
     enrollmentCount: 780,
     duration: '6 semaines',
     level: 'Intermédiaire',
+    price: 0,
     whatYouWillLearn: [
       'Les principes du manifeste Agile',
       'Le framework Scrum (rôles, événements, artefacts)',

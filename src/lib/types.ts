@@ -17,6 +17,7 @@ export interface Course {
   level: 'Débutant' | 'Intermédiaire' | 'Avancé';
   whatYouWillLearn: string[];
   modules: Module[];
+  price: number; // 0 if free
 }
 
 export interface Module {
