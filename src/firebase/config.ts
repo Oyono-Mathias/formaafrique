@@ -14,12 +14,16 @@ const firebaseConfig: FirebaseOptions = {
 
 // Function to initialize Firebase if not already initialized
 function initializeFirebase() {
-    if (getApps().length === 0 && firebaseConfig.apiKey) {
+    if (!firebaseConfig.apiKey) {
+        console.warn("Firebase config is missing, features using Firebase will be disabled.");
+        return null;
+    }
+
+    if (getApps().length === 0) {
         return initializeApp(firebaseConfig);
-    } else if (firebaseConfig.apiKey) {
+    } else {
         return getApp();
     }
-    return null;
 }
 
 const app = initializeFirebase();
