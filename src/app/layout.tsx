@@ -8,8 +8,10 @@ import { FirebaseProvider } from '@/firebase/client-provider';
 import { UserProvider } from '@/firebase';
 
 export const metadata: Metadata = {
-  title: 'FormaAfrique - Votre avenir commence ici',
-  description: 'Plateforme de formation en ligne pour l\'Afrique.',
+  title: 'FormaAfrique | Formations pour un avenir meilleur',
+  description: 'FormaAfrique - Plateforme de formation africaine gratuite et intelligente.',
+  keywords: 'formation, Afrique, entrepreneuriat, numérique, FormaAfrique, e-learning',
+  authors: [{ name: 'OYONO MATHIAS' }],
   icons: {
     icon: '/favicon.ico',
   },
