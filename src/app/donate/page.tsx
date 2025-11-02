@@ -27,10 +27,10 @@ export default function DonationPage() {
           <div className="max-w-3xl mx-auto">
             <Heart className="mx-auto h-12 w-12 text-white mb-4" />
             <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl font-headline">
-              Soutenez l'éducation en Afrique
+              Soutenez FormaAfrique ❤️
             </h1>
             <p className="mt-6 text-lg leading-8 text-gray-200">
-              Votre don permet de créer des opportunités et de transformer des vies à travers le continent.
+              Votre don permet de créer des opportunités et de transformer des vies à travers le continent en rendant les formations accessibles à tous.
             </p>
           </div>
         </div>
@@ -49,7 +49,7 @@ export default function DonationPage() {
                 </CardHeader>
                 <CardContent>
                   <form className="space-y-6">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                       <Button variant="outline" className="h-12 text-lg">10 €</Button>
                       <Button variant="outline" className="h-12 text-lg">25 €</Button>
                       <Button variant="outline" className="h-12 text-lg">50 €</Button>
@@ -66,7 +66,7 @@ export default function DonationPage() {
                 </CardContent>
                 <CardFooter>
                   <Button size="lg" className="w-full text-lg h-14">
-                    Faire un don avec Flutterwave
+                    Faire un don maintenant
                   </Button>
                 </CardFooter>
               </Card>
