@@ -1,7 +1,7 @@
 // Import the functions you need from the SDKs you need
-import { initializeApp, getApps, getApp, type FirebaseOptions } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { initializeApp, getApps, getApp, type FirebaseOptions, type FirebaseApp } from 'firebase/app';
+import { getAuth, type Auth } from 'firebase/auth';
+import { getFirestore, type Firestore } from 'firebase/firestore';
 
 const firebaseConfig: FirebaseOptions = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -12,23 +12,39 @@ const firebaseConfig: FirebaseOptions = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Function to initialize Firebase if not already initialized
-function initializeFirebase() {
-    if (!firebaseConfig.apiKey) {
-        console.warn("Firebase config is missing, features using Firebase will be disabled.");
-        return null;
-    }
+let app: FirebaseApp | undefined;
+let auth: Auth | undefined;
+let db: Firestore | undefined;
 
-    if (getApps().length === 0) {
-        return initializeApp(firebaseConfig);
+// This function initializes Firebase and handles the case where config is missing.
+function initializeFirebase() {
+    // Check if all required config values are present
+    if (firebaseConfig.apiKey && firebaseConfig.projectId) {
+        if (getApps().length === 0) {
+            try {
+                return initializeApp(firebaseConfig);
+            } catch (e) {
+                console.error("Erreur lors de l'initialisation de Firebase:", e);
+                return undefined;
+            }
+        } else {
+            return getApp();
+        }
     } else {
-        return getApp();
+        // We are printing a warning here because the app is expected to fail in some places
+        // if Firebase is not configured. This is not a critical error.
+        if (typeof window !== 'undefined') {
+            console.warn("ATTENTION : La configuration de Firebase est manquante. Certaines fonctionnalités ne marcheront pas. Veuillez configurer votre fichier .env.local.");
+        }
+        return undefined;
     }
 }
 
-const app = initializeFirebase();
-
-const auth = app ? getAuth(app) : undefined;
-const db = app ? getFirestore(app) : undefined;
+// Initialize Firebase safely
+app = initializeFirebase();
+if (app) {
+    auth = getAuth(app);
+    db = getFirestore(app);
+}
 
 export { app, auth, db };
