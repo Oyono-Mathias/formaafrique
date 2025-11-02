@@ -26,19 +26,19 @@ export default function CoursesPage() {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<Category | 'all'>('all');
 
-  const categories = useMemo(() => [...new Set(courses.map(c => c.category))], []);
+  const categories = useMemo(() => [...new Set(courses.map(c => c.categorie))], []);
   
   const sortedCourses = useMemo(() => {
-    return courses.sort((a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime());
+    return courses.sort((a, b) => new Date(b.date_creation).getTime() - new Date(a.date_creation).getTime());
   }, []);
 
   const filteredCourses = useMemo(() => {
     return sortedCourses
       .filter(course => 
-        search === '' || course.title.toLowerCase().includes(search.toLowerCase())
+        search === '' || course.titre.toLowerCase().includes(search.toLowerCase())
       )
       .filter(course =>
-        category === 'all' || course.category === category
+        category === 'all' || course.categorie === category
       );
   }, [search, category, sortedCourses]);
 
@@ -86,7 +86,7 @@ export default function CoursesPage() {
 
       <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {filteredCourses.map((course) => {
-          const courseImage = PlaceHolderImages.find((img) => img.id === course.imageId);
+          const courseImage = PlaceHolderImages.find((img) => img.id === course.image);
           return (
             <Card key={course.id} className="flex flex-col overflow-hidden transition-transform duration-300 hover:scale-105 hover:shadow-xl">
               <CardHeader className="p-0">
@@ -94,7 +94,7 @@ export default function CoursesPage() {
                   {courseImage && (
                     <Image
                       src={courseImage.imageUrl}
-                      alt={course.title}
+                      alt={course.titre}
                       fill
                       className="object-cover"
                       data-ai-hint={courseImage.imageHint}
@@ -104,11 +104,11 @@ export default function CoursesPage() {
                 </Link>
               </CardHeader>
               <CardContent className="flex-grow p-6">
-                <Badge variant="secondary" className="mb-2">{course.category}</Badge>
+                <Badge variant="secondary" className="mb-2">{course.categorie}</Badge>
                 <CardTitle className="text-xl font-headline leading-tight hover:text-primary">
-                  <Link href={`/courses/${course.id}`}>{course.title}</Link>
+                  <Link href={`/courses/${course.id}`}>{course.titre}</Link>
                 </CardTitle>
-                <p className="mt-2 text-sm text-muted-foreground">{course.shortDescription}</p>
+                <p className="mt-2 text-sm text-muted-foreground">{course.description}</p>
               </CardContent>
               <CardFooter className="p-6 pt-0 flex justify-between items-center">
                 <div className="flex items-center gap-2">

@@ -10,10 +10,31 @@ export type Category =
   | 'Langues & Communication'
   | 'Finances & Inclusion économique';
 
+export interface Video {
+  titre: string;
+  url: string;
+}
+
+export interface Module {
+  id: string; // Changed from title to id for key purposes
+  titre: string;
+  videos: Video[];
+}
+
 export interface Course {
   id: string;
-  title: string;
-  category: Category;
+  titre: string;
+  categorie: Category;
+  description: string;
+  image: string; // maps to imageId
+  niveau: 'Débutant' | 'Intermédiaire' | 'Avancé';
+  langue: string;
+  prix: number;
+  modules: Module[];
+  date_creation: string; // ISO 8601 date string
+  publie: boolean;
+  auteur: string; // maps to instructor
+  // --- Deprecated fields to be removed/migrated ---
   shortDescription: string;
   longDescription: string;
   instructor: {
@@ -24,20 +45,10 @@ export interface Course {
   imageId: string;
   enrollmentCount: number;
   duration: string;
-  level: 'Débutant' | 'Intermédiaire' | 'Avancé';
   whatYouWillLearn: string[];
-  modules: Module[];
-  price: number; // 0 if free
-  dateAdded: string; // ISO 8601 date string
+  dateAdded: string;
 }
 
-export interface Module {
-  id: string;
-  title: string;
-  duration: string;
-  videoUrl: string;
-  content: string;
-}
 
 export interface UserProfile {
   name: string;

@@ -24,9 +24,9 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
     notFound();
   }
 
-  const courseImage = PlaceHolderImages.find((img) => img.id === course.imageId);
+  const courseImage = PlaceHolderImages.find((img) => img.id === course.image);
   const instructorImage = PlaceHolderImages.find((img) => img.id === course.instructor.avatarId);
-  const isFree = course.price === 0;
+  const isFree = course.prix === 0;
 
   return (
     <div>
@@ -35,18 +35,18 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
         <div className="container mx-auto px-4 md:px-6 py-12 md:py-20">
           <div className="grid md:grid-cols-3 gap-8 items-center">
             <div className="md:col-span-2 space-y-4">
-              <h1 className="text-4xl lg:text-5xl font-bold font-headline">{course.title}</h1>
-              <Badge variant="secondary">{course.category}</Badge>
-              <p className="text-lg text-primary-foreground/80">{course.shortDescription}</p>
+              <h1 className="text-4xl lg:text-5xl font-bold font-headline">{course.titre}</h1>
+              <Badge variant="secondary">{course.categorie}</Badge>
+              <p className="text-lg text-primary-foreground/80">{course.description}</p>
               <div className="flex items-center space-x-4">
                 <div className="flex items-center">
                   <Avatar className="h-8 w-8 mr-2">
                     {instructorImage && (
-                      <AvatarImage src={instructorImage.imageUrl} alt={course.instructor.name} data-ai-hint={instructorImage.imageHint} />
+                      <AvatarImage src={instructorImage.imageUrl} alt={course.auteur} data-ai-hint={instructorImage.imageHint} />
                     )}
-                    <AvatarFallback>{course.instructor.name.charAt(0)}</AvatarFallback>
+                    <AvatarFallback>{course.auteur.charAt(0)}</AvatarFallback>
                   </Avatar>
-                  <span>{course.instructor.name}</span>
+                  <span>{course.auteur}</span>
                 </div>
               </div>
             </div>
@@ -57,7 +57,7 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
                     <div className="aspect-video relative">
                       <Image
                         src={courseImage.imageUrl}
-                        alt={course.title}
+                        alt={course.titre}
                         fill
                         className="object-cover rounded-t-lg"
                         data-ai-hint={courseImage.imageHint}
@@ -67,7 +67,7 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
                 </CardHeader>
                 <CardContent className="p-6 space-y-4">
                     <div className="text-3xl font-bold text-center">
-                      {isFree ? 'Gratuit' : `${course.price} €`}
+                      {isFree ? 'Gratuit' : `${course.prix} €`}
                     </div>
                     <div className="flex justify-between items-center text-sm">
                       <span className="flex items-center gap-2 text-muted-foreground"><Clock size={16} /> Durée</span>
@@ -75,7 +75,7 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
                     </div>
                     <div className="flex justify-between items-center text-sm">
                       <span className="flex items-center gap-2 text-muted-foreground"><BarChart size={16} /> Niveau</span>
-                      <span className="font-semibold">{course.level}</span>
+                      <span className="font-semibold">{course.niveau}</span>
                     </div>
                     <div className="flex justify-between items-center text-sm">
                       <span className="flex items-center gap-2 text-muted-foreground"><Users size={16} /> Inscrits</span>
@@ -139,8 +139,8 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
                         <div className="flex items-center">
                           <PlayCircle className="h-6 w-6 text-primary mr-4" />
                           <div>
-                            <p className="font-semibold">{module.title}</p>
-                            <p className="text-sm text-muted-foreground">{module.duration}</p>
+                            <p className="font-semibold">{module.titre}</p>
+                            <p className="text-sm text-muted-foreground">{module.videos.length} vidéo(s)</p>
                           </div>
                         </div>
                         <Button variant="ghost" size="sm">Voir</Button>
@@ -161,14 +161,14 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
               <CardContent className="text-center flex flex-col items-center">
                 <Avatar className="w-24 h-24 mb-4 border-4 border-primary">
                   {instructorImage && (
-                    <AvatarImage src={instructorImage.imageUrl} alt={course.instructor.name} data-ai-hint={instructorImage.imageHint}/>
+                    <AvatarImage src={instructorImage.imageUrl} alt={course.auteur} data-ai-hint={instructorImage.imageHint}/>
                   )}
-                  <AvatarFallback>{course.instructor.name.charAt(0)}</AvatarFallback>
+                  <AvatarFallback>{course.auteur.charAt(0)}</AvatarFallback>
                 </Avatar>
-                <h3 className="text-xl font-semibold">{course.instructor.name}</h3>
+                <h3 className="text-xl font-semibold">{course.auteur}</h3>
                 <p className="text-accent-foreground font-medium">{course.instructor.title}</p>
                 <p className="mt-4 text-sm text-muted-foreground">
-                  {course.instructor.name} est un {course.instructor.title} passionné avec plus de 10 ans d'expérience dans l'industrie. Il se consacre à partager ses connaissances pour former la prochaine génération de talents en Afrique.
+                  {course.auteur} est un {course.instructor.title} passionné avec plus de 10 ans d'expérience dans l'industrie. Il se consacre à partager ses connaissances pour former la prochaine génération de talents en Afrique.
                 </p>
               </CardContent>
             </Card>
