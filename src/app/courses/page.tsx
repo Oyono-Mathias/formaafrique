@@ -2,13 +2,12 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, ListFilter, Search, Users } from 'lucide-react';
+import { ArrowRight, ListFilter, Search, Users, Loader2 } from 'lucide-react';
 import React, { useState, useMemo } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { courses } from '@/lib/mock-data';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -20,17 +19,27 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import type { Category } from '@/lib/types';
+import type { Category, Course } from '@/lib/types';
+import { useCollection } from '@/firebase';
+import { courses as mockCourses } from '@/lib/mock-data'; // Keep for category source
+import { Timestamp } from 'firebase/firestore';
 
 export default function CoursesPage() {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<Category | 'all'>('all');
+  const { data: courses, loading, error } = useCollection<Course>('courses', {
+      where: ['publie', '==', true]
+  });
 
-  const categories = useMemo(() => [...new Set(courses.map(c => c.categorie))], []);
+  const categories = useMemo(() => [...new Set(mockCourses.map(c => c.categorie))], []);
   
   const sortedCourses = useMemo(() => {
-    return courses.sort((a, b) => new Date(b.date_creation).getTime() - new Date(a.date_creation).getTime());
-  }, []);
+    return [...courses].sort((a, b) => {
+        const dateA = a.date_creation instanceof Timestamp ? a.date_creation.toMillis() : new Date(a.date_creation as string).getTime();
+        const dateB = b.date_creation instanceof Timestamp ? b.date_creation.toMillis() : new Date(b.date_creation as string).getTime();
+        return dateB - dateA;
+    });
+  }, [courses]);
 
   const filteredCourses = useMemo(() => {
     return sortedCourses
@@ -41,6 +50,19 @@ export default function CoursesPage() {
         category === 'all' || course.categorie === category
       );
   }, [search, category, sortedCourses]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <p className="ml-4">Chargement des formations...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+      return <div className="text-center py-12 text-destructive">Erreur de chargement des formations.</div>
+  }
 
 
   return (
@@ -111,18 +133,19 @@ export default function CoursesPage() {
                 <p className="mt-2 text-sm text-muted-foreground">{course.description}</p>
               </CardContent>
               <CardFooter className="p-6 pt-0 flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <Users className="text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">{course.enrollmentCount} inscrits</span>
-                </div>
-                <Button asChild variant="link" size="sm">
-                  <Link href={`/courses/${course.id}`}>Détails <ArrowRight className="ml-1 h-4 w-4" /></Link>
+                 <Button asChild variant="link" size="sm">
+                  <Link href={`/courses/${course.id}`}>Voir les détails <ArrowRight className="ml-1 h-4 w-4" /></Link>
                 </Button>
               </CardFooter>
             </Card>
           );
         })}
       </div>
+      {filteredCourses.length === 0 && (
+          <div className="text-center py-12 text-muted-foreground">
+              <p>Aucune formation ne correspond à vos critères.</p>
+          </div>
+      )}
     </div>
   );
 }

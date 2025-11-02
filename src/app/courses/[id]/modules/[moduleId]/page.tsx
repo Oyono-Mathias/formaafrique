@@ -1,13 +1,17 @@
-import { notFound } from 'next/navigation';
+'use client';
+
+import { notFound, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { PlayCircle, CheckCircle, Lock } from 'lucide-react';
+import { PlayCircle, CheckCircle, Lock, Loader2 } from 'lucide-react';
 
-import { courses } from '@/lib/mock-data';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
+import { useDoc } from '@/firebase';
+import type { Course } from '@/lib/types';
+
 
 type ModulePageProps = {
   params: {
@@ -17,13 +21,28 @@ type ModulePageProps = {
 };
 
 export default function ModulePage({ params }: ModulePageProps) {
-  const course = courses.find((c) => c.id === params.id);
-  if (!course) notFound();
+  const { data: course, loading, error } = useDoc<Course>('courses', params.id);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-[calc(100vh-4rem)]">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <p className="ml-4">Chargement du module...</p>
+      </div>
+    );
+  }
+  
+  if (error || !course) {
+    notFound();
+  }
 
   const currentModule = course.modules.find((m) => m.id === params.moduleId);
   if (!currentModule) notFound();
   
   const videoPlaceholder = PlaceHolderImages.find((img) => img.id === 'video-placeholder');
+
+  // Logic for completion status (to be implemented with user progress)
+  const currentModuleIndex = course.modules.findIndex(m => m.id === currentModule.id);
 
   return (
     <div className="flex flex-col lg:flex-row min-h-[calc(100vh-4rem)]">
@@ -71,8 +90,9 @@ export default function ModulePage({ params }: ModulePageProps) {
         <Accordion type="single" collapsible defaultValue={`module-${currentModule.id}`} className="w-full">
             {course.modules.map((module, index) => {
               const isCurrentModule = module.id === currentModule.id;
-              const isCompleted = index < course.modules.findIndex(m => m.id === currentModule.id);
-              const isLocked = index > course.modules.findIndex(m => m.id === currentModule.id);
+              // Mock progress logic
+              const isCompleted = index < currentModuleIndex;
+              const isLocked = false; // For now, all are unlocked
 
               return (
                 <AccordionItem value={`module-${module.id}`} key={module.id}>
@@ -80,17 +100,19 @@ export default function ModulePage({ params }: ModulePageProps) {
                       className={cn('font-semibold', isCurrentModule && 'text-primary')}
                       disabled={isLocked}
                     >
-                      <div className="flex items-center gap-3">
-                        {isCompleted ? <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" /> : <PlayCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />}
-                        <span>{module.titre}</span>
-                      </div>
+                       <Link href={`/courses/${course.id}/modules/${module.id}`} className='w-full text-left'>
+                         <div className="flex items-center gap-3">
+                          {isCompleted ? <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" /> : <PlayCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />}
+                          <span>{module.titre}</span>
+                        </div>
+                       </Link>
                     </AccordionTrigger>
                     <AccordionContent>
                       <div className="space-y-2 pl-4">
                         {module.videos.map((video, videoIndex) => (
                            <Link
                             key={videoIndex}
-                            href="#"
+                            href="#" // Link to the actual video player view in the future
                             className={cn(
                               "block p-3 rounded-md transition-colors text-sm hover:bg-muted"
                             )}

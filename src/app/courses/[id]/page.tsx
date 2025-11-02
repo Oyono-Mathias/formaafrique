@@ -1,15 +1,18 @@
+'use client';
+
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { CheckCircle, Clock, BarChart, Users, PlayCircle } from 'lucide-react';
+import { CheckCircle, Clock, BarChart, Users, PlayCircle, Loader2 } from 'lucide-react';
 
-import { courses } from '@/lib/mock-data';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { useDoc } from '@/firebase';
+import type { Course } from '@/lib/types';
 
 type CoursePageProps = {
   params: {
@@ -18,14 +21,26 @@ type CoursePageProps = {
 };
 
 export default function CourseDetailPage({ params }: CoursePageProps) {
-  const course = courses.find((c) => c.id === params.id);
+  const { data: course, loading, error } = useDoc<Course>('courses', params.id);
 
-  if (!course) {
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <p className="ml-4">Chargement de la formation...</p>
+      </div>
+    );
+  }
+  
+  if (error || !course) {
     notFound();
   }
 
   const courseImage = PlaceHolderImages.find((img) => img.id === course.image);
-  const instructorImage = PlaceHolderImages.find((img) => img.id === course.instructor.avatarId);
+  
+  // Instructor info is now directly on the course object
+  const instructorImageId = `instructor-${course.auteur.split(' ')[0].toLowerCase()}`;
+  const instructorImage = PlaceHolderImages.find((img) => img.id === instructorImageId);
   const isFree = course.prix === 0;
 
   return (
@@ -71,16 +86,13 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
                     </div>
                     <div className="flex justify-between items-center text-sm">
                       <span className="flex items-center gap-2 text-muted-foreground"><Clock size={16} /> Durée</span>
-                      <span className="font-semibold">{course.duration}</span>
+                      <span className="font-semibold">{course.modules.length} modules</span>
                     </div>
                     <div className="flex justify-between items-center text-sm">
                       <span className="flex items-center gap-2 text-muted-foreground"><BarChart size={16} /> Niveau</span>
                       <span className="font-semibold">{course.niveau}</span>
                     </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="flex items-center gap-2 text-muted-foreground"><Users size={16} /> Inscrits</span>
-                      <span className="font-semibold">{course.enrollmentCount}</span>
-                    </div>
+                    
                   <Button size="lg" className="w-full" asChild>
                     {isFree ? (
                       <Link href={`/courses/${course.id}/modules/${course.modules[0].id}`}>
@@ -103,27 +115,11 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
       <div className="container mx-auto px-4 md:px-6 py-12">
         <div className="grid lg:grid-cols-3 gap-12">
           <div className="lg:col-span-2">
-            {/* What you'll learn */}
-            <Card className="mb-8 bg-primary/5">
-              <CardHeader>
-                <CardTitle className="font-headline text-2xl">Ce que vous allez apprendre</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {course.whatYouWillLearn.map((item, index) => (
-                    <li key={index} className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-accent-foreground mr-3 mt-1 flex-shrink-0" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
             
             {/* Description */}
             <div className="prose prose-lg max-w-none mb-8">
               <h2 className="font-headline text-2xl text-primary">Description du cours</h2>
-              <p>{course.longDescription}</p>
+              <p>{course.description}</p>
             </div>
 
             <Separator className="my-8" />
@@ -166,9 +162,9 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
                   <AvatarFallback>{course.auteur.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <h3 className="text-xl font-semibold">{course.auteur}</h3>
-                <p className="text-accent-foreground font-medium">{course.instructor.title}</p>
+                {/* <p className="text-accent-foreground font-medium">{instructor?.title}</p> */}
                 <p className="mt-4 text-sm text-muted-foreground">
-                  {course.auteur} est un {course.instructor.title} passionné avec plus de 10 ans d'expérience dans l'industrie. Il se consacre à partager ses connaissances pour former la prochaine génération de talents en Afrique.
+                  {course.auteur} est un formateur passionné avec une vaste expérience dans son domaine.
                 </p>
               </CardContent>
             </Card>

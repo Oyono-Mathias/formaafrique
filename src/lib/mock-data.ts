@@ -1,11 +1,5 @@
 import type { Course, User, Testimonial, Category, Module } from './types';
 
-const instructors = {
-  yannick: { name: 'Yannick Noah', title: 'Ingénieur Full-Stack & IA', avatarId: 'instructor-yann' },
-  aisha: { name: 'Aisha Keita', title: 'Stratège en Marketing & Data Scientist', avatarId: 'instructor-aisha' },
-  david: { name: 'David Okoro', title: 'Serial Entrepreneur & Coach Agile', avatarId: 'instructor-david' },
-};
-
 const oldModules: Module[] = [
     { id: 'm1', titre: 'De l\'idée au projet', videos: [{titre: "Introduction", url: "#"}]},
     { id: 'm2', titre: 'Structure du Business Plan', videos: [{titre: "Les sections", url: "#"}]},
@@ -43,15 +37,6 @@ export const courses: Course[] = [
     date_creation: "2025-10-31",
     publie: true,
     auteur: "Admin FormaAfrique",
-    // --- Deprecated fields ---
-    shortDescription: "Formation complète sur le marketing digital, e-commerce et importation depuis Alibaba.",
-    longDescription: "Apprenez le marketing digital, comment monter votre business de e-commerce et comment importer des produits depuis des plateformes comme Alibaba.",
-    instructor: instructors.david,
-    imageId: 'course-marketing',
-    enrollmentCount: 4210,
-    duration: '10 semaines',
-    whatYouWillLearn: ['Marketing Digital', 'E-commerce', 'Importation Alibaba'],
-    dateAdded: '2025-10-31T10:00:00Z',
   },
   // --- Other courses adapted to new structure ---
   {
@@ -65,17 +50,8 @@ export const courses: Course[] = [
     prix: 15,
     date_creation: '2024-07-20',
     publie: true,
-    auteur: instructors.david.name,
+    auteur: "David Okoro",
     modules: oldModules,
-    // --- Deprecated fields ---
-    shortDescription: 'De l’idée à l’immatriculation, maîtrisez chaque étape pour lancer votre projet avec succès.',
-    longDescription: 'Ce cours complet vous guide pas à pas dans le processus de création d’entreprise. Vous apprendrez à valider votre idée, à choisir votre statut juridique, et à accomplir toutes les démarches administratives.',
-    instructor: instructors.david,
-    imageId: 'course-entrepreneurship',
-    enrollmentCount: 2345,
-    duration: '6 semaines',
-    whatYouWillLearn: ['Valider son idée', 'Choisir son statut juridique', 'Immatriculer son entreprise'],
-    dateAdded: '2024-07-20T10:00:00Z',
   },
   {
     id: 'business-plan',
@@ -88,17 +64,8 @@ export const courses: Course[] = [
     prix: 20,
     date_creation: '2024-07-18',
     publie: true,
-    auteur: instructors.david.name,
+    auteur: "David Okoro",
     modules: oldModules,
-    // --- Deprecated fields ---
-    shortDescription: 'Apprenez à structurer un business plan qui séduira les investisseurs et guidera votre croissance.',
-    longDescription: 'Un business plan solide est la feuille de route de votre succès. Ce cours vous apprend à définir votre marché, à projeter vos finances et à présenter votre vision de manière professionnelle.',
-    instructor: instructors.david,
-    imageId: 'course-entrepreneurship',
-    enrollmentCount: 1890,
-    duration: '4 semaines',
-    whatYouWillLearn: ['Analyse de marché', 'Prévisions financières', 'Stratégie marketing'],
-    dateAdded: '2024-07-18T10:00:00Z',
   },
 ];
 

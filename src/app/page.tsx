@@ -1,17 +1,35 @@
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, BookOpen, BrainCircuit, Star, Users } from 'lucide-react';
+import { ArrowRight, BookOpen, BrainCircuit, Star, Users, Loader2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { courses, testimonials } from '@/lib/mock-data';
+import { testimonials } from '@/lib/mock-data';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { useCollection } from '@/firebase';
+import type { Course } from '@/lib/types';
+import { useMemo } from 'react';
+import { Timestamp } from 'firebase/firestore';
 
 export default function Home() {
   const heroImage = PlaceHolderImages.find((img) => img.id === 'hero');
-  const featuredCourses = courses.sort((a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime()).slice(0, 3);
+  const { data: courses, loading, error } = useCollection<Course>('courses', {
+      where: ['publie', '==', true]
+  });
+
+  const featuredCourses = useMemo(() => {
+    return [...courses]
+        .sort((a, b) => {
+            const dateA = a.date_creation instanceof Timestamp ? a.date_creation.toMillis() : new Date(a.date_creation as string).getTime();
+            const dateB = b.date_creation instanceof Timestamp ? b.date_creation.toMillis() : new Date(b.date_creation as string).getTime();
+            return dateB - dateA;
+        })
+        .slice(0, 3);
+  }, [courses]);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -61,43 +79,49 @@ export default function Home() {
                 Démarrez votre parcours d'apprentissage avec nos cours les plus populaires.
               </p>
             </div>
-            <div className="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-              {featuredCourses.map((course) => {
-                const courseImage = PlaceHolderImages.find((img) => img.id === course.imageId);
-                return (
-                  <Card key={course.id} className="flex flex-col overflow-hidden transition-transform duration-300 hover:scale-105 hover:shadow-xl">
-                    <CardHeader className="p-0">
-                      <div className="aspect-video relative">
-                        {courseImage && (
-                          <Image
-                            src={courseImage.imageUrl}
-                            alt={course.title}
-                            fill
-                            className="object-cover"
-                            data-ai-hint={courseImage.imageHint}
-                          />
-                        )}
-                      </div>
-                    </CardHeader>
-                    <CardContent className="flex-grow p-6">
-                      <Badge variant="secondary" className="mb-2">{course.category}</Badge>
-                      <CardTitle className="text-xl font-headline leading-tight hover:text-primary">
-                        <Link href={`/courses/${course.id}`}>{course.title}</Link>
-                      </CardTitle>
-                      <p className="mt-2 text-sm text-muted-foreground">{course.shortDescription}</p>
-                    </CardContent>
-                    <CardFooter className="p-6 pt-0 flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        <Users className="text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">{course.enrollmentCount} inscrits</span>
-                      </div>
-                      <Button asChild variant="link">
-                        <Link href={`/courses/${course.id}`}>Voir le cours <ArrowRight className="ml-1" /></Link>
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                );
-              })}
+            <div className="mt-12">
+              {loading ? (
+                 <div className="flex justify-center items-center h-40">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                 </div>
+              ) : error ? (
+                <div className="text-center text-destructive">Erreur de chargement des formations.</div>
+              ) : (
+                <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+                  {featuredCourses.map((course) => {
+                    const courseImage = PlaceHolderImages.find((img) => img.id === course.image);
+                    return (
+                      <Card key={course.id} className="flex flex-col overflow-hidden transition-transform duration-300 hover:scale-105 hover:shadow-xl">
+                        <CardHeader className="p-0">
+                          <div className="aspect-video relative">
+                            {courseImage && (
+                              <Image
+                                src={courseImage.imageUrl}
+                                alt={course.titre}
+                                fill
+                                className="object-cover"
+                                data-ai-hint={courseImage.imageHint}
+                              />
+                            )}
+                          </div>
+                        </CardHeader>
+                        <CardContent className="flex-grow p-6">
+                          <Badge variant="secondary" className="mb-2">{course.categorie}</Badge>
+                          <CardTitle className="text-xl font-headline leading-tight hover:text-primary">
+                            <Link href={`/courses/${course.id}`}>{course.titre}</Link>
+                          </CardTitle>
+                          <p className="mt-2 text-sm text-muted-foreground">{course.description}</p>
+                        </CardContent>
+                        <CardFooter className="p-6 pt-0 flex justify-between items-center">
+                          <Button asChild variant="link">
+                            <Link href={`/courses/${course.id}`}>Voir le cours <ArrowRight className="ml-1" /></Link>
+                          </Button>
+                        </CardFooter>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
             </div>
             <div className="mt-12 text-center">
               <Button asChild size="lg" variant="outline">

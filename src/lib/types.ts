@@ -16,37 +16,24 @@ export interface Video {
 }
 
 export interface Module {
-  id: string; // Changed from title to id for key purposes
+  id: string;
   titre: string;
   videos: Video[];
 }
 
 export interface Course {
-  id: string;
+  id?: string; // Firestore ID will be added by the hook
   titre: string;
   categorie: Category;
   description: string;
-  image: string; // maps to imageId
+  image: string; // maps to imageId in placeholder-images
   niveau: 'Débutant' | 'Intermédiaire' | 'Avancé';
   langue: string;
   prix: number;
   modules: Module[];
-  date_creation: string; // ISO 8601 date string
+  date_creation: Timestamp | string; // Can be a Timestamp from Firestore
   publie: boolean;
-  auteur: string; // maps to instructor
-  // --- Deprecated fields to be removed/migrated ---
-  shortDescription: string;
-  longDescription: string;
-  instructor: {
-    name: string;
-    title: string;
-    avatarId: string;
-  };
-  imageId: string;
-  enrollmentCount: number;
-  duration: string;
-  whatYouWillLearn: string[];
-  dateAdded: string;
+  auteur: string;
 }
 
 
@@ -67,8 +54,16 @@ export interface User {
 
 export interface Testimonial {
   id: string;
-  name: string;
+  name:string;
   course: string;
   quote: string;
   imageId: string;
+}
+
+export interface CourseProgress {
+    courseId: string;
+    userId: string;
+    completedVideos: string[];
+    progressPercentage: number;
+    lastUpdated: Timestamp;
 }
