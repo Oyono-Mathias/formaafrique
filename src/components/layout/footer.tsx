@@ -1,31 +1,30 @@
 import Link from 'next/link';
-import { Github, Twitter, Linkedin, Facebook } from 'lucide-react';
+import { Github, Twitter, Linkedin, Facebook, MessageCircle } from 'lucide-react';
 import { Logo } from '@/components/icons/logo';
 
 export default function Footer() {
   const socialLinks = [
     { name: 'Facebook', icon: Facebook, href: '#' },
-    { name: 'Twitter', icon: Twitter, href: '#' },
+    { name: 'WhatsApp', icon: MessageCircle, href: '#' },
     { name: 'LinkedIn', icon: Linkedin, href: '#' },
-    { name: 'GitHub', icon: Github, href: '#' },
   ];
 
   const footerLinks = [
     {
       title: 'Formations',
       links: [
-        { label: 'Développement Web', href: '/courses' },
-        { label: 'Marketing Digital', href: '/courses' },
+        { label: 'Toutes les formations', href: '/courses' },
         { label: 'Entrepreneuriat', href: '/courses' },
-        { label: 'Data Science', href: '/courses' },
+        { label: 'Compétences numériques', href: '/courses' },
+        { label: 'Agriculture', href: '/courses' },
       ],
     },
     {
-      title: 'Entreprise',
+      title: 'FormaAfrique',
       links: [
         { label: 'À propos', href: '/about' },
         { label: 'Contact', href: '/contact' },
-        { label: 'Admin', href: '/admin' },
+        { label: 'Faire un don', href: '/donate' },
       ],
     },
     {

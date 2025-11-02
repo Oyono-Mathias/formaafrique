@@ -1,9 +1,10 @@
 import Image from 'next/image';
-import { Check, Target, Eye, Users } from 'lucide-react';
+import { Check, Target, Eye, Users, Heart } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { courses } from '@/lib/mock-data';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 export default function AboutPage() {
   const aboutImage = PlaceHolderImages.find((img) => img.id === 'about-us');
@@ -18,9 +19,9 @@ export default function AboutPage() {
       {/* Hero Section */}
       <section className="bg-primary text-primary-foreground py-20 md:py-28 text-center">
         <div className="container mx-auto px-4 md:px-6">
-          <h1 className="text-4xl sm:text-5xl font-bold font-headline">Notre Mission</h1>
+          <h1 className="text-4xl sm:text-5xl font-bold font-headline">À propos de FormaAfrique</h1>
           <p className="mt-4 text-lg md:text-xl max-w-3xl mx-auto text-primary-foreground/80">
-            Rendre l'éducation de qualité accessible à tous en Afrique, pour former les leaders et innovateurs de demain.
+            Une plateforme panafricaine de formation gratuite et inclusive, visant à autonomiser les jeunes, femmes et entrepreneurs à travers l’éducation numérique.
           </p>
         </div>
       </section>
@@ -59,32 +60,23 @@ export default function AboutPage() {
       {/* Mission, Vision, Values */}
       <section className="py-16 sm:py-24 bg-primary/5">
         <div className="container mx-auto px-4 md:px-6">
-          <div className="grid md:grid-cols-3 gap-8 text-center">
+          <div className="grid md:grid-cols-2 gap-8">
             <Card>
               <CardHeader>
                 <Target className="mx-auto h-12 w-12 text-primary" />
-                <CardTitle className="mt-4 font-headline">Mission</CardTitle>
+                <CardTitle className="mt-4 font-headline text-center">Mission</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p>Démocratiser l'accès à une éducation de classe mondiale en Afrique.</p>
+              <CardContent className="text-center">
+                <p>Rendre la formation professionnelle accessible à tous, même sans connexion Internet constante.</p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader>
                 <Eye className="mx-auto h-12 w-12 text-primary" />
-                <CardTitle className="mt-4 font-headline">Vision</CardTitle>
+                <CardTitle className="mt-4 font-headline text-center">Vision</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p>Devenir le catalyseur de la transformation numérique et économique du continent par l'éducation.</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <Check className="mx-auto h-12 w-12 text-primary" />
-                <CardTitle className="mt-4 font-headline">Valeurs</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>Excellence, Accessibilité, Pertinence locale et Communauté.</p>
+              <CardContent className="text-center">
+                <p>Faire de l’Afrique un continent d’innovateurs et de créateurs autonomes.</p>
               </CardContent>
             </Card>
           </div>
@@ -94,7 +86,7 @@ export default function AboutPage() {
       {/* Team Section */}
       <section className="py-16 sm:py-24">
         <div className="container mx-auto px-4 md:px-6 text-center">
-          <h2 className="text-3xl font-bold font-headline text-primary">Notre Équipe</h2>
+          <h2 className="text-3xl font-bold font-headline text-primary">Notre Équipe Fondatrice</h2>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
             Une équipe passionnée et engagée pour votre réussite.
           </p>
@@ -114,6 +106,23 @@ export default function AboutPage() {
             })}
           </div>
         </div>
+      </section>
+
+      {/* Support Section */}
+      <section className="bg-primary/10 py-16 sm:py-24">
+          <div className="container mx-auto px-4 md:px-6 text-center">
+              <h2 className="text-3xl font-bold font-headline text-primary">Soutenez Notre Mission</h2>
+              <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
+                  Votre contribution, quelle qu'elle soit, nous aide à maintenir la gratuité et la qualité de nos formations pour des milliers d'apprenants à travers le continent.
+              </p>
+              <div className="mt-8">
+                  <Button size="lg" asChild>
+                      <Link href="/donate">
+                          <Heart className="mr-2 h-5 w-5" /> Nous soutenir
+                      </Link>
+                  </Button>
+              </div>
+          </div>
       </section>
     </div>
   );

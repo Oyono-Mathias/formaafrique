@@ -1,4 +1,4 @@
-import { Mail, Phone, MapPin } from 'lucide-react';
+import { Mail, Phone, MapPin, Facebook, Linkedin, MessageCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -65,9 +65,8 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold">Email</h3>
-                    <p className="text-muted-foreground">Pour toute question générale.</p>
-                    <a href="mailto:contact@formaafrique.com" className="text-primary hover:underline">
-                      contact@formaafrique.com
+                    <a href="mailto:contact@formaafrique.org" className="text-primary hover:underline">
+                      contact@formaafrique.org
                     </a>
                   </div>
                 </div>
@@ -77,9 +76,8 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold">Téléphone</h3>
-                    <p className="text-muted-foreground">Disponible du Lundi au Vendredi, 9h-17h.</p>
-                    <a href="tel:+221338000000" className="text-primary hover:underline">
-                      +221 33 800 00 00
+                    <a href="tel:+237677000000" className="text-primary hover:underline">
+                      +237 6 77 00 00 00
                     </a>
                   </div>
                 </div>
@@ -88,13 +86,20 @@ export default function ContactPage() {
                     <MapPin className="w-6 h-6 text-primary" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold">Bureau</h3>
+                    <h3 className="text-lg font-semibold">Adresse</h3>
                     <p className="text-muted-foreground">
-                      123 Avenue de l'Innovation<br/>
-                      Dakar, Sénégal
+                      Yaoundé, Cameroun
                     </p>
                   </div>
                 </div>
+              </div>
+              <div className="space-y-4">
+                 <h3 className="text-lg font-semibold">Suivez-nous</h3>
+                 <div className="flex space-x-4">
+                    <a href="#" className="text-muted-foreground hover:text-primary"><Facebook className="w-6 h-6" /></a>
+                    <a href="#" className="text-muted-foreground hover:text-primary"><MessageCircle className="w-6 h-6" /></a>
+                    <a href="#" className="text-muted-foreground hover:text-primary"><Linkedin className="w-6 h-6" /></a>
+                 </div>
               </div>
             </div>
           </div>

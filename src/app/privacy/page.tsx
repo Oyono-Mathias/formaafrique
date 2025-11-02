@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/button";
+
 export default function PrivacyPolicyPage() {
   return (
     <div className="container mx-auto px-4 md:px-6 py-12 md:py-20">
@@ -10,47 +12,59 @@ export default function PrivacyPolicyPage() {
           
           <h2>1. Introduction</h2>
           <p>
-            Bienvenue sur FormaAfrique. Nous nous engageons à protéger votre vie privée. Cette politique de confidentialité explique comment nous collectons, utilisons, divulguons et protégeons vos informations lorsque vous visitez notre site web.
+            Nous respectons votre vie privée. Cette politique explique comment nous collectons, utilisons et protégeons vos données.
           </p>
 
-          <h2>2. Collecte de vos informations</h2>
+          <h2>2. Données que nous collectons</h2>
           <p>
-            Nous pouvons collecter des informations vous concernant de plusieurs manières. Les informations que nous pouvons collecter sur le site comprennent :
+            Nous pouvons collecter des informations que vous nous fournissez directement :
           </p>
           <ul>
             <li>
-              <strong>Données personnelles :</strong> Les informations personnellement identifiables, telles que votre nom, votre adresse e-mail, que vous nous fournissez volontairement lorsque vous vous inscrivez sur le site ou que vous choisissez de participer à diverses activités liées au site.
+              <strong>Informations de compte :</strong> Votre nom, votre adresse e-mail, et votre mot de passe pour créer et gérer votre compte.
             </li>
             <li>
-              <strong>Données de progression :</strong> Nous collectons des informations sur les cours que vous suivez, vos progrès et les certificats que vous obtenez.
+              <strong>Progression de formation :</strong> Nous suivons les cours que vous suivez, votre progression dans les modules et les certificats que vous obtenez.
+            </li>
+             <li>
+              <strong>Dons :</strong> Si vous faites un don, nous collectons les informations de transaction nécessaires (sans stocker les détails de votre carte de crédit).
             </li>
           </ul>
 
-          <h2>3. Utilisation de vos informations</h2>
+          <h2>3. Comment nous utilisons vos données</h2>
           <p>
-            Avoir des informations précises sur vous nous permet de vous offrir une expérience fluide, efficace et personnalisée. Spécifiquement, nous pouvons utiliser les informations collectées à votre sujet via le site pour :
+            Vos données sont utilisées uniquement pour les finalités suivantes :
           </p>
           <ul>
-            <li>Créer et gérer votre compte.</li>
-            <li>Vous envoyer par e-mail des informations concernant votre compte ou vos commandes.</li>
-            <li>Suivre et analyser l'utilisation et les tendances pour améliorer votre expérience avec le site.</li>
-            <li>Vous notifier des mises à jour du site.</li>
+            <li>Fournir, opérer et améliorer nos services de formation.</li>
+            <li>Personnaliser votre expérience d'apprentissage.</li>
+            <li>Délivrer vos certificats de réussite.</li>
+            <li>Traiter vos dons de manière sécurisée.</li>
+            <li>Communiquer avec vous concernant votre compte ou nos services.</li>
           </ul>
 
-          <h2>4. Sécurité de vos informations</h2>
+          <h2>4. Sécurité de vos données</h2>
           <p>
-            Nous utilisons des mesures de sécurité administratives, techniques et physiques pour aider à protéger vos informations personnelles. Bien que nous ayons pris des mesures raisonnables pour sécuriser les informations personnelles que vous nous fournissez, veuillez être conscient que malgré nos efforts, aucune mesure de sécurité n'est parfaite ou impénétrable.
+            La sécurité de vos données est une priorité. Nous utilisons des services de stockage de données sécurisés comme Firebase Firestore, qui applique des mesures de sécurité robustes, y compris le chiffrement, pour protéger vos informations.
+          </p>
+          
+          <h2>5. Partage de vos données</h2>
+          <p>
+            Nous ne vendons, n'échangeons ni ne transférons vos informations personnelles à des tiers. Vos données restent confidentielles et ne sont utilisées que dans le cadre des services de FormaAfrique.
           </p>
 
-          <h2>5. Vos droits</h2>
+          <h2>6. Vos droits</h2>
           <p>
-            Vous avez le droit de consulter, de modifier ou de supprimer vos données personnelles. Vous pouvez le faire directement depuis les paramètres de votre profil ou en nous contactant aux coordonnées ci-dessous.
+            Vous avez le droit d'accéder à vos données, de les corriger ou de demander leur suppression. Pour toute demande de suppression de compte et de données associées, veuillez nous contacter.
           </p>
 
-          <h2>6. Nous contacter</h2>
+          <h2>7. Nous contacter</h2>
           <p>
-            Si vous avez des questions ou des commentaires sur cette politique de confidentialité, veuillez nous contacter à : <a href="mailto:privacy@formaafrique.com">privacy@formaafrique.com</a>.
+            Si vous avez des questions sur cette politique ou si vous souhaitez exercer vos droits, veuillez nous contacter à : <a href="mailto:contact@formaafrique.org">contact@formaafrique.org</a>.
           </p>
+        </div>
+        <div className="mt-8 text-center">
+            <Button>J’ai lu et j’accepte la politique de confidentialité</Button>
         </div>
       </div>
     </div>
