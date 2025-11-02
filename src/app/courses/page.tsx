@@ -1,6 +1,9 @@
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, ListFilter, Search, Users } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,9 +20,28 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import type { Category } from '@/lib/types';
 
 export default function CoursesPage() {
-  const categories = [...new Set(courses.map(c => c.category))];
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState<Category | 'all'>('all');
+
+  const categories = useMemo(() => [...new Set(courses.map(c => c.category))], []);
+  
+  const sortedCourses = useMemo(() => {
+    return courses.sort((a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime());
+  }, []);
+
+  const filteredCourses = useMemo(() => {
+    return sortedCourses
+      .filter(course => 
+        search === '' || course.title.toLowerCase().includes(search.toLowerCase())
+      )
+      .filter(course =>
+        category === 'all' || course.category === category
+      );
+  }, [search, category, sortedCourses]);
+
 
   return (
     <div className="container mx-auto px-4 md:px-6 py-12">
@@ -35,7 +57,12 @@ export default function CoursesPage() {
       <div className="flex flex-col md:flex-row gap-4 mb-8">
         <div className="relative flex-grow">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-          <Input placeholder="Rechercher une formation..." className="pl-10" />
+          <Input 
+            placeholder="Rechercher une formation..." 
+            className="pl-10"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -47,10 +74,10 @@ export default function CoursesPage() {
           <DropdownMenuContent className="w-56">
             <DropdownMenuLabel>Catégories</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuRadioGroup value="all">
+            <DropdownMenuRadioGroup value={category} onValueChange={(value) => setCategory(value as Category | 'all')}>
               <DropdownMenuRadioItem value="all">Toutes</DropdownMenuRadioItem>
               {categories.map(cat => (
-                 <DropdownMenuRadioItem key={cat} value={cat.toLowerCase()}>{cat}</DropdownMenuRadioItem>
+                 <DropdownMenuRadioItem key={cat} value={cat}>{cat}</DropdownMenuRadioItem>
               ))}
             </DropdownMenuRadioGroup>
           </DropdownMenuContent>
@@ -58,7 +85,7 @@ export default function CoursesPage() {
       </div>
 
       <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {courses.map((course) => {
+        {filteredCourses.map((course) => {
           const courseImage = PlaceHolderImages.find((img) => img.id === course.imageId);
           return (
             <Card key={course.id} className="flex flex-col overflow-hidden transition-transform duration-300 hover:scale-105 hover:shadow-xl">

@@ -11,7 +11,7 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export default function Home() {
   const heroImage = PlaceHolderImages.find((img) => img.id === 'hero');
-  const featuredCourses = courses.slice(0, 3);
+  const featuredCourses = courses.sort((a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime()).slice(0, 3);
 
   return (
     <div className="flex flex-col min-h-screen">

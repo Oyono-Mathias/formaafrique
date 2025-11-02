@@ -12,13 +12,13 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { courses } from '@/lib/mock-data';
+import { courses, users } from '@/lib/mock-data';
 import { useUser } from '@/firebase';
 
 export default function DashboardPage() {
   const { user } = useUser();
   // This is mock data. We'll replace this with real user data later.
-  const enrolledCourses = courses.filter(course => ['developpement-web-moderne', 'entrepreneuriat-en-afrique'].includes(course.id));
+  const enrolledCourses = courses.filter(course => users[0].enrolledCourses.includes(course.id));
 
   const stats = [
     { label: 'Cours Inscrits', value: enrolledCourses.length, icon: BookCopy },
@@ -56,7 +56,7 @@ export default function DashboardPage() {
           Mes Formations en cours
         </h2>
         <div className="grid gap-6 md:grid-cols-2">
-          {enrolledCourses.map((course) => (
+          {enrolledCourses.filter(c => c.id === 'developpement-web').map((course) => (
             <Card key={course.id}>
               <CardHeader>
                 <CardTitle>{course.title}</CardTitle>
@@ -64,8 +64,8 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-4">
-                  <Progress value={course.id === 'developpement-web-moderne' ? 66 : 25} className="flex-grow" />
-                  <span className="text-sm font-medium">{course.id === 'developpement-web-moderne' ? 66 : 25}%</span>
+                  <Progress value={66} className="flex-grow" />
+                  <span className="text-sm font-medium">66%</span>
                 </div>
               </CardContent>
               <CardFooter>

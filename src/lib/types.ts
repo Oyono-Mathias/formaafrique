@@ -1,9 +1,19 @@
 import type { Timestamp } from 'firebase/firestore';
 
+export type Category = 
+  | 'Entrepreneuriat & Commerce'
+  | 'Compétences numériques'
+  | 'Agriculture & Agro-industrie'
+  | 'Métiers manuels & Artisanat'
+  | 'Éducation & Renforcement des capacités'
+  | 'Santé & Bien-être'
+  | 'Langues & Communication'
+  | 'Finances & Inclusion économique';
+
 export interface Course {
   id: string;
   title: string;
-  category: string;
+  category: Category;
   shortDescription: string;
   longDescription: string;
   instructor: {
@@ -18,6 +28,7 @@ export interface Course {
   whatYouWillLearn: string[];
   modules: Module[];
   price: number; // 0 if free
+  dateAdded: string; // ISO 8601 date string
 }
 
 export interface Module {

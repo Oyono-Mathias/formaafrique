@@ -21,7 +21,7 @@ import {
 export default function MyCertificatesPage() {
   const user = users[0];
   // Mock: assume one course is completed
-  const completedCourses = courses.filter(c => c.id === 'entrepreneuriat-en-afrique'); 
+  const completedCourses = courses.filter(c => c.id === 'business-plan'); 
 
   return (
     <div className="space-y-8">

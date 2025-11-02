@@ -41,7 +41,7 @@ export default function MyCoursesPage() {
         </TabsList>
         <TabsContent value="in-progress" className="mt-6">
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {enrolledCourses.map((course) => (
+            {inProgressCourses.map((course) => (
               <Card key={course.id}>
                 <CardHeader>
                   <CardTitle className='leading-tight'>{course.title}</CardTitle>
@@ -49,8 +49,8 @@ export default function MyCoursesPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center gap-4">
-                    <Progress value={course.id === 'developpement-web-moderne' ? 66 : 25} className="flex-grow" />
-                    <span className="text-sm font-medium">{course.id === 'developpement-web-moderne' ? '66' : '25'}%</span>
+                    <Progress value={66} className="flex-grow" />
+                    <span className="text-sm font-medium">66%</span>
                   </div>
                 </CardContent>
                 <CardFooter>
@@ -65,9 +65,29 @@ export default function MyCoursesPage() {
           </div>
         </TabsContent>
         <TabsContent value="completed" className="mt-6">
-          <p className="text-muted-foreground">
-            Vous n'avez pas encore terminé de formation.
-          </p>
+           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {completedCourses.map((course) => (
+              <Card key={course.id}>
+                <CardHeader>
+                  <CardTitle className='leading-tight'>{course.title}</CardTitle>
+                  <CardDescription>{course.category}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-4">
+                    <Progress value={100} className="flex-grow" />
+                    <span className="text-sm font-medium">100%</span>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                   <Button asChild variant="outline" className="w-full">
+                    <Link href={`/dashboard/certificate/${course.id}`}>
+                      Voir le certificat
+                    </Link>
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
         </TabsContent>
       </Tabs>
     </div>
