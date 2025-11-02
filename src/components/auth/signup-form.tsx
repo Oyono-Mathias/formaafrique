@@ -14,6 +14,12 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { useAuth, useFirestore } from '@/firebase';
+import { useRouter } from 'next/navigation';
+import type { UserProfile } from '@/lib/types';
+
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Le nom doit contenir au moins 2 caractères.' }),
@@ -27,6 +33,9 @@ const formSchema = z.object({
 
 export default function SignupForm() {
   const { toast } = useToast();
+  const router = useRouter();
+  const auth = useAuth();
+  const db = useFirestore();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -38,14 +47,41 @@ export default function SignupForm() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
-    // Here you would typically handle the signup logic, e.g., call Firebase auth
-    toast({
-      title: 'Inscription réussie !',
-      description: 'Veuillez vous connecter pour continuer.',
-    });
-    // Potentially switch tabs or redirect
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!auth || !db) return;
+
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+      const user = userCredential.user;
+
+      // Update user profile
+      await updateProfile(user, {
+        displayName: values.name,
+      });
+
+      // Create user document in Firestore
+      const userDocRef = doc(db, 'users', user.uid);
+      const newUser: Omit<UserProfile, 'createdAt'> & { createdAt: any } = {
+        name: values.name,
+        email: values.email,
+        createdAt: serverTimestamp(),
+        photoURL: null,
+      };
+      await setDoc(userDocRef, newUser);
+
+      toast({
+        title: 'Inscription réussie !',
+        description: 'Vous êtes maintenant connecté. Redirection...',
+      });
+      router.push('/dashboard');
+    } catch (error: any) {
+      console.error('Error signing up:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Erreur d\'inscription',
+        description: error.message || 'Une erreur est survenue.',
+      });
+    }
   }
 
   return (
@@ -103,8 +139,8 @@ export default function SignupForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full">
-          Créer un compte
+        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+          {form.formState.isSubmitting ? 'Création du compte...' : 'Créer un compte'}
         </Button>
       </form>
     </Form>

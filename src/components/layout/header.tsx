@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Logo } from '@/components/icons/logo';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { useUser } from '@/firebase';
 
 const navLinks = [
   { href: '/', label: 'Accueil' },
@@ -21,9 +22,11 @@ const navLinks = [
 export default function Header() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const isAuthenticated = false; // Mock authentication state
+  const { user, loading } = useUser();
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
+
+  const isAuthenticated = !!user;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -101,7 +104,7 @@ export default function Header() {
 
         <div className="flex flex-1 items-center justify-end space-x-4">
           <nav className="flex items-center">
-            {isAuthenticated ? (
+            {loading ? null : isAuthenticated ? (
               <Button asChild>
                 <Link href="/dashboard">Tableau de bord</Link>
               </Button>

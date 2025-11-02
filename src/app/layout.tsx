@@ -4,6 +4,8 @@ import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
+import { FirebaseProvider } from '@/firebase/client-provider';
+import { UserProvider } from '@/firebase';
 
 export const metadata: Metadata = {
   title: 'FormaAfrique - Votre avenir commence ici',
@@ -29,10 +31,14 @@ export default function RootLayout({
         />
       </head>
       <body className={cn('font-body antialiased flex flex-col min-h-screen')}>
-        <Header />
-        <main className="flex-grow">{children}</main>
-        <Footer />
-        <Toaster />
+        <FirebaseProvider>
+          <UserProvider>
+            <Header />
+            <main className="flex-grow">{children}</main>
+            <Footer />
+            <Toaster />
+          </UserProvider>
+        </FirebaseProvider>
       </body>
     </html>
   );

@@ -15,6 +15,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { useAuth } from '@/firebase';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Adresse email invalide.' }),
@@ -23,6 +26,8 @@ const formSchema = z.object({
 
 export default function LoginForm() {
   const { toast } = useToast();
+  const router = useRouter();
+  const auth = useAuth();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -32,14 +37,23 @@ export default function LoginForm() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
-    // Here you would typically handle the login logic, e.g., call Firebase auth
-    toast({
-      title: 'Connexion réussie',
-      description: 'Redirection vers votre tableau de bord...',
-    });
-    // router.push('/dashboard');
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!auth) return;
+    try {
+      await signInWithEmailAndPassword(auth, values.email, values.password);
+      toast({
+        title: 'Connexion réussie',
+        description: 'Redirection vers votre tableau de bord...',
+      });
+      router.push('/dashboard');
+    } catch (error: any) {
+      console.error('Error signing in:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Erreur de connexion',
+        description: error.message || 'Une erreur est survenue.',
+      });
+    }
   }
 
   return (
@@ -76,8 +90,8 @@ export default function LoginForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full">
-          Se connecter
+        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+          {form.formState.isSubmitting ? 'Connexion...' : 'Se connecter'}
         </Button>
       </form>
     </Form>

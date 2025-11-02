@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import { ArrowRight, BookCopy, CheckCircle, Clock } from 'lucide-react';
 import {
@@ -10,11 +12,13 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { users, courses } from '@/lib/mock-data';
+import { courses } from '@/lib/mock-data';
+import { useUser } from '@/firebase';
 
 export default function DashboardPage() {
-  const user = users[0];
-  const enrolledCourses = courses.filter(course => user.enrolledCourses.includes(course.id));
+  const { user } = useUser();
+  // This is mock data. We'll replace this with real user data later.
+  const enrolledCourses = courses.filter(course => ['developpement-web-moderne', 'entrepreneuriat-en-afrique'].includes(course.id));
 
   const stats = [
     { label: 'Cours Inscrits', value: enrolledCourses.length, icon: BookCopy },
@@ -26,7 +30,7 @@ export default function DashboardPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold font-headline">
-          Bienvenue, {user.name} !
+          Bienvenue, {user?.displayName || 'cher étudiant'} !
         </h1>
         <p className="text-muted-foreground">
           Continuons à apprendre et à grandir ensemble.

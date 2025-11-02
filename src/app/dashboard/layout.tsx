@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import React, { useEffect } from 'react';
 import {
   LayoutDashboard,
   BookCopy,
@@ -27,6 +28,8 @@ import { Logo } from '@/components/icons/logo';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { useUser, useAuth } from '@/firebase';
+import { signOut } from 'firebase/auth';
 
 const dashboardNavLinks = [
   { href: '/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
@@ -41,7 +44,31 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const { user, loading } = useUser();
+  const auth = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
+  
+  const handleSignOut = async () => {
+    if (!auth) return;
+    await signOut(auth);
+    router.push('/');
+  };
+
   const userAvatar = PlaceHolderImages.find((img) => img.id === 'user-avatar');
+
+  if (loading || !user) {
+    return (
+        <div className="flex justify-center items-center h-screen">
+            <p>Chargement...</p>
+        </div>
+    );
+  }
 
   return (
     <SidebarProvider>
@@ -77,12 +104,10 @@ export default function DashboardLayout({
               </Link>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <Link href="/">
-                <SidebarMenuButton tooltip="Déconnexion" className="text-destructive hover:bg-destructive/10 hover:text-destructive">
-                    <LogOut />
-                    <span>Déconnexion</span>
-                </SidebarMenuButton>
-              </Link>
+              <SidebarMenuButton onClick={handleSignOut} tooltip="Déconnexion" className="text-destructive hover:bg-destructive/10 hover:text-destructive">
+                  <LogOut />
+                  <span>Déconnexion</span>
+              </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>
@@ -91,10 +116,10 @@ export default function DashboardLayout({
         <header className="flex items-center justify-between p-4 border-b">
           <SidebarTrigger />
           <div className="flex items-center gap-4">
-             <span className="font-medium hidden sm:inline">Jean Dupont</span>
+             <span className="font-medium hidden sm:inline">{user.displayName || 'Utilisateur'}</span>
              <Avatar>
-                {userAvatar && <AvatarImage src={userAvatar.imageUrl} alt="User Avatar" />}
-                <AvatarFallback>JD</AvatarFallback>
+                {user.photoURL ? <AvatarImage src={user.photoURL} alt="User Avatar" /> : userAvatar && <AvatarImage src={userAvatar.imageUrl} alt="User Avatar" />}
+                <AvatarFallback>{user.displayName ? user.displayName.charAt(0) : 'U'}</AvatarFallback>
              </Avatar>
           </div>
         </header>

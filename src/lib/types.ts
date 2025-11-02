@@ -1,3 +1,5 @@
+import type { Timestamp } from 'firebase/firestore';
+
 export interface Course {
   id: string;
   title: string;
@@ -23,6 +25,13 @@ export interface Module {
   duration: string;
   videoUrl: string;
   content: string;
+}
+
+export interface UserProfile {
+  name: string;
+  email: string;
+  createdAt: Timestamp;
+  photoURL: string | null;
 }
 
 export interface User {

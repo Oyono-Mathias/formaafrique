@@ -1,3 +1,5 @@
+'use client';
+
 import {
   Card,
   CardContent,
@@ -9,13 +11,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { users } from '@/lib/mock-data';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useUser } from '@/firebase';
 
 export default function ProfilePage() {
-  const user = users[0];
-  const userAvatar = PlaceHolderImages.find((img) => img.id === user.avatarId);
+  const { user } = useUser();
+  const userAvatar = PlaceHolderImages.find((img) => img.id === 'user-avatar');
+  
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="space-y-8">
@@ -34,11 +40,11 @@ export default function ProfilePage() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Nom complet</Label>
-                <Input id="name" defaultValue={user.name} />
+                <Input id="name" defaultValue={user.displayName || ''} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Adresse email</Label>
-                <Input id="email" type="email" defaultValue={user.email} />
+                <Input id="email" type="email" defaultValue={user.email || ''} readOnly />
               </div>
               <Button>Enregistrer les modifications</Button>
             </CardContent>
@@ -52,8 +58,12 @@ export default function ProfilePage() {
             </CardHeader>
             <CardContent className="flex flex-col items-center space-y-4">
               <Avatar className="w-32 h-32">
-                {userAvatar && <AvatarImage src={userAvatar.imageUrl} />}
-                <AvatarFallback className="text-4xl">{user.name.charAt(0)}</AvatarFallback>
+                {user.photoURL ? (
+                  <AvatarImage src={user.photoURL} />
+                ) : userAvatar ? (
+                  <AvatarImage src={userAvatar.imageUrl} />
+                ) : null}
+                <AvatarFallback className="text-4xl">{user.displayName?.charAt(0) || user.email?.charAt(0)}</AvatarFallback>
               </Avatar>
               <Button variant="outline">Changer la photo</Button>
             </CardContent>
