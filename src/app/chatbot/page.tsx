@@ -1,17 +1,20 @@
 'use client';
 
-import { useState } from 'react';
-import { Send, Bot, User } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Send, Bot, User, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { users } from '@/lib/mock-data';
+import { useUser } from '@/firebase';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { courses } from '@/lib/mock-data';
+import { aiTutorChatbot } from '@/ai/ai-tutor-chatbot';
+import { useToast } from '@/hooks/use-toast';
 
 interface Message {
-  id: number;
+  id: string;
   text: string;
   sender: 'user' | 'bot';
 }
@@ -19,46 +22,85 @@ interface Message {
 export default function ChatbotPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: 1,
-      text: "Bonjour ! Je suis votre formateur virtuel IA. Comment puis-je vous aider aujourd'hui ? Vous pouvez me poser des questions sur un cours, un concept spécifique, ou même des exercices.",
+      id: 'initial-bot-message',
+      text: "Bonjour ! Je suis votre formateur virtuel IA pour FormaAfrique. Comment puis-je vous aider aujourd'hui ? Posez-moi une question sur nos formations.",
       sender: 'bot',
     },
   ]);
   const [input, setInput] = useState('');
-  const user = users[0];
-  const userAvatar = PlaceHolderImages.find(img => img.id === user.avatarId);
+  const [isLoading, setIsLoading] = useState(false);
+  const { user } = useUser();
+  const { toast } = useToast();
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  const handleSend = () => {
-    if (input.trim() === '') return;
+  const userAvatar = PlaceHolderImages.find(img => img.id === 'user-avatar');
+  const userImage = user?.photoURL || userAvatar?.imageUrl;
 
-    const newMessages: Message[] = [
-      ...messages,
-      { id: Date.now(), text: input, sender: 'user' },
-    ];
-    setMessages(newMessages);
+  const courseContent = `
+    Voici les catégories de formation que nous proposons sur FormaAfrique :
+    - Entrepreneuriat & Commerce (ex: Création d’entreprise, Business plan, E-commerce)
+    - Compétences numériques (ex: Marketing digital, Développement web, Cybersécurité)
+    - Agriculture & Agro-industrie (ex: Agriculture intelligente, Transformation des produits)
+    - Métiers manuels & Artisanat (ex: Couture, Coiffure, Menuiserie)
+    - Éducation & Renforcement des capacités (ex: Tutoriels scolaires, Préparation aux examens)
+    - Santé & Bien-être (ex: Hygiène et prévention, Nutrition)
+    - Langues & Communication (ex: Français, Anglais, Prise de parole)
+    - Finances & Inclusion économique (ex: Épargne, Mobile Money, Comptabilité)
+    `;
+
+  useEffect(() => {
+    // Scroll to bottom when messages change
+    if (scrollAreaRef.current) {
+        const viewport = scrollAreaRef.current.querySelector('div');
+        if (viewport) {
+            viewport.scrollTop = viewport.scrollHeight;
+        }
+    }
+  }, [messages]);
+
+
+  const handleSend = async () => {
+    if (input.trim() === '' || isLoading) return;
+
+    const userMessage: Message = { id: Date.now().toString(), text: input, sender: 'user' };
+    setMessages(prev => [...prev, userMessage]);
     setInput('');
+    setIsLoading(true);
 
-    // Mock bot response
-    setTimeout(() => {
-      setMessages([
-        ...newMessages,
-        {
-          id: Date.now() + 1,
-          text: `C'est une excellente question sur "${input}". Laissez-moi vous expliquer... (réponse de l'IA à venir)`,
-          sender: 'bot',
-        },
-      ]);
-    }, 1000);
+    try {
+      const response = await aiTutorChatbot({
+        question: input,
+        courseContent: courseContent,
+      });
+
+      const botMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: response.answer,
+        sender: 'bot',
+      };
+      setMessages(prev => [...prev, botMessage]);
+    } catch (error) {
+      console.error('Error with AI tutor:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Erreur du chatbot',
+        description: "Désolé, je n'ai pas pu répondre. Veuillez réessayer.",
+      });
+      // Optionally remove the user's message if the bot fails
+      setMessages(prev => prev.filter(m => m.id !== userMessage.id));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] bg-primary/5">
-      <header className="p-4 border-b text-center">
-        <h1 className="text-2xl font-bold font-headline text-primary">Formateur Virtuel IA</h1>
+    <div className="flex flex-col h-[calc(100vh-8rem)] bg-primary/5">
+      <header className="p-4 border-b text-center bg-card">
+        <h1 className="text-2xl font-bold font-headline text-primary">Formateur Virtuel FormaAfrique 🤖</h1>
       </header>
 
       <div className="flex-1 overflow-hidden">
-        <ScrollArea className="h-full">
+        <ScrollArea className="h-full" ref={scrollAreaRef}>
           <div className="p-4 md:p-8 space-y-6">
             {messages.map((message) => (
               <div
@@ -75,7 +117,7 @@ export default function ChatbotPage() {
                 )}
                 <div
                   className={cn(
-                    'max-w-md p-4 rounded-lg shadow',
+                    'max-w-md md:max-w-lg p-4 rounded-lg shadow prose',
                     message.sender === 'user'
                       ? 'bg-primary text-primary-foreground'
                       : 'bg-card'
@@ -83,14 +125,24 @@ export default function ChatbotPage() {
                 >
                   <p>{message.text}</p>
                 </div>
-                 {message.sender === 'user' && (
+                 {message.sender === 'user' && user && (
                   <Avatar>
-                    {userAvatar && <AvatarImage src={userAvatar.imageUrl} />}
-                    <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                    {userImage && <AvatarImage src={userImage} />}
+                    <AvatarFallback>{user.displayName?.charAt(0) || user.email?.charAt(0) || 'U'}</AvatarFallback>
                   </Avatar>
                 )}
               </div>
             ))}
+            {isLoading && (
+              <div className="flex items-start gap-4 justify-start">
+                  <Avatar>
+                    <AvatarFallback><Bot /></AvatarFallback>
+                  </Avatar>
+                  <div className="max-w-md p-4 rounded-lg shadow bg-card">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  </div>
+              </div>
+            )}
           </div>
         </ScrollArea>
       </div>
@@ -103,9 +155,10 @@ export default function ChatbotPage() {
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
             placeholder="Posez votre question ici..."
             className="flex-1 h-12"
+            disabled={isLoading}
           />
-          <Button onClick={handleSend} size="icon" className="h-12 w-12 flex-shrink-0">
-            <Send />
+          <Button onClick={handleSend} size="icon" className="h-12 w-12 flex-shrink-0" disabled={isLoading}>
+            {isLoading ? <Loader2 className="animate-spin" /> : <Send />}
             <span className="sr-only">Envoyer</span>
           </Button>
         </div>
