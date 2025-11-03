@@ -48,7 +48,14 @@ export default function SignupForm() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!auth || !db) return;
+    if (!auth || !db) {
+       toast({
+        variant: 'destructive',
+        title: 'Configuration Firebase incomplète',
+        description: 'Veuillez configurer vos clés Firebase dans le fichier .env.local pour vous inscrire.',
+      });
+      return;
+    }
 
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);

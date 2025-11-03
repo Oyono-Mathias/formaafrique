@@ -38,7 +38,14 @@ export default function LoginForm() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!auth) return;
+    if (!auth) {
+      toast({
+        variant: 'destructive',
+        title: 'Configuration Firebase incomplète',
+        description: 'Veuillez configurer vos clés Firebase dans le fichier .env.local pour vous connecter.',
+      });
+      return;
+    }
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
       toast({
