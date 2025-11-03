@@ -3,7 +3,7 @@
 import { notFound, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { PlayCircle, CheckCircle, Lock, Loader2 } from 'lucide-react';
+import { PlayCircle, CheckCircle, Lock, Loader2, ArrowLeft } from 'lucide-react';
 
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -11,6 +11,8 @@ import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { useDoc } from '@/firebase';
 import type { Course } from '@/lib/types';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 
 
 type ModulePageProps = {
@@ -49,6 +51,14 @@ export default function ModulePage({ params }: ModulePageProps) {
       {/* Main Content: Video Player and Details */}
       <div className="flex-grow lg:w-3/4 p-4 md:p-8">
         <div className="max-w-4xl mx-auto">
+          <div className="mb-4">
+             <Button variant="ghost" asChild>
+                <Link href={`/courses/${course.id}`}>
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Retour à la formation
+                </Link>
+            </Button>
+          </div>
           <div className="aspect-video bg-black rounded-lg overflow-hidden mb-6 shadow-lg">
              {videoPlaceholder && (
                 <Image 
@@ -65,18 +75,25 @@ export default function ModulePage({ params }: ModulePageProps) {
             {currentModule.titre}
           </h1>
           <p className="text-muted-foreground mb-6">
-            Formation : <Link href={`/courses/${course.id}`} className="text-primary hover:underline">{course.titre}</Link>
+            Leçon en cours de la formation : <Link href={`/courses/${course.id}`} className="text-primary hover:underline">{course.titre}</Link>
           </p>
           <Separator />
-          <div className="prose prose-lg max-w-none mt-6">
+          <div className="prose max-w-none mt-8">
             <h2 className="font-headline text-2xl">À propos de cette leçon</h2>
-            <p>Contenu de la leçon à venir...</p>
-             <h3 className="font-headline text-xl mt-4">Vidéos du module</h3>
-              <ul className="list-disc pl-5 space-y-2">
+            <p>Contenu de la leçon à venir. Vous trouverez ci-dessous les vidéos incluses dans ce module.</p>
+          </div>
+          <div className='mt-8'>
+             <h3 className="font-headline text-xl mb-4 text-primary">Vidéos du module</h3>
+              <ul className="list-none p-0 space-y-3">
                 {currentModule.videos.map((video, index) => (
-                  <li key={index} className="flex items-center gap-2">
-                    <PlayCircle className="h-5 w-5 text-primary" />
-                    <span>{video.titre}</span>
+                  <li key={index}>
+                    <Card className="hover:bg-muted transition-colors hover:shadow-md">
+                        <CardContent className='p-4 flex items-center gap-4'>
+                            <PlayCircle className="h-6 w-6 text-primary flex-shrink-0" />
+                            <span className="font-medium flex-grow">{video.titre}</span>
+                            <Button variant="ghost" size="sm">Regarder</Button>
+                        </CardContent>
+                    </Card>
                   </li>
                 ))}
               </ul>
