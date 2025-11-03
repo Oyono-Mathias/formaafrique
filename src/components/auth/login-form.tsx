@@ -18,6 +18,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useAuth } from '@/firebase';
+import { isFirebaseConfigured } from '@/firebase/config';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Terminal } from 'lucide-react';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Adresse email invalide.' }),
@@ -39,6 +42,7 @@ export default function LoginForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!auth) {
+      // This case should not be reached if the form is disabled, but it's a good safeguard.
       toast({
         variant: 'destructive',
         title: 'Configuration Firebase incomplète',
@@ -58,13 +62,22 @@ export default function LoginForm() {
       toast({
         variant: 'destructive',
         title: 'Erreur de connexion',
-        description: error.message || 'Une erreur est survenue.',
+        description: "L'email ou le mot de passe est incorrect.",
       });
     }
   }
 
   return (
     <Form {...form}>
+      {!isFirebaseConfigured && (
+        <Alert variant="destructive" className="mb-4">
+          <Terminal className="h-4 w-4" />
+          <AlertTitle>Action requise</AlertTitle>
+          <AlertDescription>
+            La configuration de Firebase est manquante. Veuillez ajouter vos clés au fichier .env.local pour activer la connexion.
+          </AlertDescription>
+        </Alert>
+      )}
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <FormField
           control={form.control}
@@ -73,7 +86,7 @@ export default function LoginForm() {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder="votre@email.com" {...field} />
+                <Input placeholder="votre@email.com" {...field} disabled={!isFirebaseConfigured} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -91,13 +104,13 @@ export default function LoginForm() {
                 </Link>
               </div>
               <FormControl>
-                <Input type="password" placeholder="********" {...field} />
+                <Input type="password" placeholder="********" {...field} disabled={!isFirebaseConfigured} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || !isFirebaseConfigured}>
           {form.formState.isSubmitting ? 'Connexion...' : 'Se connecter'}
         </Button>
       </form>

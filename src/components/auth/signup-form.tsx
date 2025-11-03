@@ -19,6 +19,9 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth, useFirestore } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import type { UserProfile } from '@/lib/types';
+import { isFirebaseConfigured } from '@/firebase/config';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Terminal } from 'lucide-react';
 
 
 const formSchema = z.object({
@@ -52,7 +55,7 @@ export default function SignupForm() {
        toast({
         variant: 'destructive',
         title: 'Configuration Firebase incomplète',
-        description: 'Veuillez configurer vos clés Firebase dans le fichier .env.local pour vous inscrire.',
+        description: "Veuillez configurer vos clés Firebase dans le fichier .env.local pour vous inscrire.",
       });
       return;
     }
@@ -81,18 +84,34 @@ export default function SignupForm() {
         description: 'Vous êtes maintenant connecté. Redirection...',
       });
       router.push('/dashboard');
-    } catch (error: any) {
+    } catch (error: any)
+    {
       console.error('Error signing up:', error);
+      
+      let description = 'Une erreur est survenue.';
+      if (error.code === 'auth/email-already-in-use') {
+        description = 'Cette adresse email est déjà utilisée. Veuillez vous connecter.';
+      }
+
       toast({
         variant: 'destructive',
-        title: 'Erreur d\'inscription',
-        description: error.message || 'Une erreur est survenue.',
+        title: "Erreur d'inscription",
+        description: description,
       });
     }
   }
 
   return (
     <Form {...form}>
+      {!isFirebaseConfigured && (
+        <Alert variant="destructive" className="mb-4">
+          <Terminal className="h-4 w-4" />
+          <AlertTitle>Action requise</AlertTitle>
+          <AlertDescription>
+            La configuration de Firebase est manquante. Veuillez ajouter vos clés au fichier .env.local pour activer l'inscription.
+          </AlertDescription>
+        </Alert>
+      )}
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
           control={form.control}
@@ -101,7 +120,7 @@ export default function SignupForm() {
             <FormItem>
               <FormLabel>Nom complet</FormLabel>
               <FormControl>
-                <Input placeholder="Jean Dupont" {...field} />
+                <Input placeholder="Jean Dupont" {...field} disabled={!isFirebaseConfigured} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -114,7 +133,7 @@ export default function SignupForm() {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder="votre@email.com" {...field} />
+                <Input placeholder="votre@email.com" {...field} disabled={!isFirebaseConfigured} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -127,7 +146,7 @@ export default function SignupForm() {
             <FormItem>
               <FormLabel>Mot de passe</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="********" {...field} />
+                <Input type="password" placeholder="********" {...field} disabled={!isFirebaseConfigured} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -140,13 +159,13 @@ export default function SignupForm() {
             <FormItem>
               <FormLabel>Confirmer le mot de passe</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="********" {...field} />
+                <Input type="password" placeholder="********" {...field} disabled={!isFirebaseConfigured} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || !isFirebaseConfigured}>
           {form.formState.isSubmitting ? 'Création du compte...' : 'Créer un compte'}
         </Button>
       </form>

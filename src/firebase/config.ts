@@ -14,39 +14,23 @@ const firebaseConfig: FirebaseOptions = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+// A flag to check if the Firebase configuration is provided.
+export const isFirebaseConfigured = !!firebaseConfig.apiKey && !!firebaseConfig.projectId;
+
 let app: FirebaseApp | undefined;
 let auth: Auth | undefined;
 let db: Firestore | undefined;
 
-// This function initializes Firebase and handles the case where config is missing.
-function initializeFirebase() {
-    // Check if all required config values are present
-    if (firebaseConfig.apiKey && firebaseConfig.projectId) {
-        if (getApps().length === 0) {
-            try {
-                return initializeApp(firebaseConfig);
-            } catch (e) {
-                console.error("Erreur lors de l'initialisation de Firebase:", e);
-                return undefined;
-            }
-        } else {
-            return getApp();
-        }
-    } else {
-        // We are printing a warning here because the app is expected to fail in some places
-        // if Firebase is not configured. This is not a critical error.
-        if (typeof window !== 'undefined') {
-            console.warn("ATTENTION : La configuration de Firebase est manquante. Certaines fonctionnalités ne marcheront pas. Veuillez créer et configurer votre fichier .env.local.");
-        }
-        return undefined;
+if (isFirebaseConfigured) {
+    app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+    if (app) {
+        auth = getAuth(app);
+        db = getFirestore(app);
     }
-}
-
-// Initialize Firebase safely
-app = initializeFirebase();
-if (app) {
-    auth = getAuth(app);
-    db = getFirestore(app);
+} else {
+    if (typeof window !== 'undefined') {
+        console.warn("ATTENTION : La configuration de Firebase est manquante. L'authentification et la base de données ne fonctionneront pas. Veuillez créer et configurer votre fichier .env.local.");
+    }
 }
 
 export { app, auth, db };
