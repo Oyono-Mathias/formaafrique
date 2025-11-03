@@ -1,3 +1,5 @@
+'use client';
+
 // Import the functions you need from the SDKs you need
 import { initializeApp, getApps, getApp, type FirebaseOptions, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
@@ -34,7 +36,7 @@ function initializeFirebase() {
         // We are printing a warning here because the app is expected to fail in some places
         // if Firebase is not configured. This is not a critical error.
         if (typeof window !== 'undefined') {
-            console.warn("ATTENTION : La configuration de Firebase est manquante. Certaines fonctionnalités ne marcheront pas. Veuillez configurer votre fichier .env.local.");
+            console.warn("ATTENTION : La configuration de Firebase est manquante. Certaines fonctionnalités ne marcheront pas. Veuillez créer et configurer votre fichier .env.local.");
         }
         return undefined;
     }
