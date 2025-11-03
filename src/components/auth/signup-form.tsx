@@ -51,7 +51,7 @@ export default function SignupForm() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!auth || !db) {
+    if (!auth || !db || !isFirebaseConfigured) {
        toast({
         variant: 'destructive',
         title: 'Configuration Firebase incomplète',
@@ -91,7 +91,12 @@ export default function SignupForm() {
       let description = 'Une erreur est survenue.';
       if (error.code === 'auth/email-already-in-use') {
         description = 'Cette adresse email est déjà utilisée. Veuillez vous connecter.';
+      } else if (error.code === 'auth/configuration-not-found') {
+        description = "L'authentification par email/mot de passe n'est pas activée dans votre projet Firebase. Veuillez l'activer dans la console Firebase.";
+      } else if (error.code === 'auth/api-key-not-valid') {
+        description = "La clé d'API Firebase n'est pas valide. Veuillez vérifier votre configuration dans .env.local.";
       }
+
 
       toast({
         variant: 'destructive',
