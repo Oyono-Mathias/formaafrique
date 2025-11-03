@@ -34,7 +34,7 @@ export const courses: Course[] = [
         ]
       }
     ],
-    date_creation: "2025-10-31",
+    date_creation: new Date('2025-10-31').toISOString(),
     publie: true,
     auteur: "Admin FormaAfrique",
   },
@@ -48,7 +48,7 @@ export const courses: Course[] = [
     niveau: 'Débutant',
     langue: 'Français',
     prix: 15,
-    date_creation: '2024-07-20',
+    date_creation: new Date('2024-07-20').toISOString(),
     publie: true,
     auteur: "David Okoro",
     modules: oldModules,
@@ -62,7 +62,7 @@ export const courses: Course[] = [
     niveau: 'Intermédiaire',
     langue: 'Français',
     prix: 20,
-    date_creation: '2024-07-18',
+    date_creation: new Date('2024-07-18').toISOString(),
     publie: true,
     auteur: "David Okoro",
     modules: oldModules,
