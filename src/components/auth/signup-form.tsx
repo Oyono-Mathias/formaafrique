@@ -22,13 +22,17 @@ import type { UserProfile } from '@/lib/types';
 import { isFirebaseConfigured } from '@/firebase/config';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal } from 'lucide-react';
-
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { countries } from '@/lib/countries';
+import { ScrollArea } from '../ui/scroll-area';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Le nom doit contenir au moins 2 caractères.' }),
   email: z.string().email({ message: 'Adresse email invalide.' }),
   password: z.string().min(8, { message: 'Le mot de passe doit contenir au moins 8 caractères.' }),
   confirmPassword: z.string(),
+  paysOrigine: z.string().min(1, { message: 'Veuillez sélectionner un pays.'}),
+  paysActuel: z.string().min(1, { message: 'Veuillez sélectionner un pays.'}),
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'Les mots de passe ne correspondent pas.',
   path: ['confirmPassword'],
@@ -47,6 +51,8 @@ export default function SignupForm() {
       email: '',
       password: '',
       confirmPassword: '',
+      paysOrigine: '',
+      paysActuel: '',
     },
   });
 
@@ -71,12 +77,14 @@ export default function SignupForm() {
 
       // Create user document in Firestore
       const userDocRef = doc(db, 'users', user.uid);
-      const newUser: Omit<UserProfile, 'createdAt'> & { createdAt: any } = {
+      const newUser: Omit<UserProfile, 'createdAt' | 'photoURL'> & { createdAt: any; photoURL: null } = {
         name: values.name,
         email: values.email,
         createdAt: serverTimestamp(),
         photoURL: null,
         role: 'etudiant', // Default role for new users
+        paysOrigine: values.paysOrigine,
+        paysActuel: values.paysActuel,
       };
       await setDoc(userDocRef, newUser);
 
@@ -145,6 +153,52 @@ export default function SignupForm() {
             </FormItem>
           )}
         />
+        <div className="grid grid-cols-2 gap-4">
+            <FormField
+            control={form.control}
+            name="paysOrigine"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Pays d'origine</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!isFirebaseConfigured}>
+                    <FormControl>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Sélectionnez..." />
+                    </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                        <ScrollArea className='h-72'>
+                            {countries.map(c => <SelectItem key={c.code} value={c.name}>{c.name}</SelectItem>)}
+                        </ScrollArea>
+                    </SelectContent>
+                </Select>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+            <FormField
+            control={form.control}
+            name="paysActuel"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Pays actuel</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!isFirebaseConfigured}>
+                    <FormControl>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Sélectionnez..." />
+                    </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                       <ScrollArea className='h-72'>
+                         {countries.map(c => <SelectItem key={c.code} value={c.name}>{c.name}</SelectItem>)}
+                       </ScrollArea>
+                    </SelectContent>
+                </Select>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+        </div>
         <FormField
           control={form.control}
           name="password"

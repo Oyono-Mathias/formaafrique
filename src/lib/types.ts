@@ -43,6 +43,8 @@ export interface UserProfile {
   createdAt: Timestamp;
   photoURL: string | null;
   role: 'admin' | 'etudiant';
+  paysOrigine: string;
+  paysActuel: string;
 }
 
 export interface User {

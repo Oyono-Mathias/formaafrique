@@ -28,9 +28,17 @@
           "type": "string",
           "enum": ["admin", "etudiant"],
           "description": "The role of the user in the system."
+        },
+        "paysOrigine": {
+            "type": "string",
+            "description": "The user's country of origin."
+        },
+        "paysActuel": {
+            "type": "string",
+            "description": "The user's current country of residence."
         }
       },
-      "required": ["name", "email", "createdAt", "role"]
+      "required": ["name", "email", "createdAt", "role", "paysOrigine", "paysActuel"]
     },
     "Course": {
       "title": "Course",
@@ -80,7 +88,7 @@
       "description": "Stores public profile information for each user."
     },
     "/courses/{courseId}": {
-      "schema": { "$ref": "#/entities/Course" },
+      "schema": { "$9ref": "#/entities/Course" },
       "description": "Stores all the available courses on the platform."
     }
   }
