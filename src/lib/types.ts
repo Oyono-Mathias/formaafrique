@@ -34,6 +34,7 @@ export interface Course {
   date_creation: Timestamp | string; // Can be a Timestamp from Firestore
   publie: boolean;
   auteur: string;
+  instructorId?: string; // ID of the instructor (formateur)
 }
 
 
@@ -48,6 +49,21 @@ export interface UserProfile {
   bio?: string;
   skills?: string[];
 }
+
+export interface InstructorProfile extends UserProfile {
+    specialite?: string;
+    headline?: string;
+}
+
+export interface Enrollment {
+    id?: string;
+    studentId: string;
+    studentName: string;
+    courseId: string;
+    courseTitle: string;
+    enrollmentDate: Timestamp;
+}
+
 
 export interface User {
   id: string;

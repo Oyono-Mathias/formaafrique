@@ -62,6 +62,22 @@
         "paysActuel"
       ]
     },
+    "InstructorProfile": {
+        "title": "Instructor Profile",
+        "description": "Extends UserProfile with instructor-specific fields.",
+        "type": "object",
+        "allOf": [{ "$ref": "#/entities/UserProfile" }],
+        "properties": {
+            "specialite": {
+                "type": "string",
+                "description": "The instructor's area of specialization."
+            },
+            "headline": {
+                "type": "string",
+                "description": "A professional headline for the instructor."
+            }
+        }
+    },
     "Course": {
       "title": "Course",
       "description": "Represents a course on the platform.",
@@ -132,6 +148,10 @@
         },
         "auteur": {
           "type": "string"
+        },
+        "instructorId": {
+            "type": "string",
+            "description": "The UID of the instructor who created the course."
         }
       },
       "required": [
@@ -141,7 +161,8 @@
         "niveau",
         "prix",
         "date_creation",
-        "publie"
+        "publie",
+        "auteur"
       ]
     },
     "CourseProgress": {
@@ -178,6 +199,35 @@
         "lastUpdated",
         "courseTitle"
       ]
+    },
+     "Enrollment": {
+      "title": "Enrollment",
+      "description": "Represents a student's enrollment in a course.",
+      "type": "object",
+      "properties": {
+        "studentId": {
+          "type": "string",
+          "description": "The UID of the enrolled student."
+        },
+        "studentName": {
+            "type": "string",
+            "description": "The name of the student for easy display."
+        },
+        "courseId": {
+          "type": "string",
+          "description": "The ID of the course."
+        },
+        "courseTitle": {
+            "type": "string",
+            "description": "The title of the course for easy display."
+        },
+        "enrollmentDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp of the enrollment."
+        }
+      },
+      "required": ["studentId", "studentName", "courseId", "courseTitle", "enrollmentDate"]
     }
   },
   "auth": {
@@ -192,6 +242,10 @@
       },
       "description": "Stores public profile information for each user."
     },
+    "/instructors/{instructorId}": {
+        "schema": { "$ref": "#/entities/InstructorProfile" },
+        "description": "Stores public profile information for each instructor."
+    },
     "/courses/{courseId}": {
       "schema": {
         "$ref": "#/entities/Course"
@@ -203,6 +257,10 @@
         "$ref": "#/entities/CourseProgress"
       },
       "description": "Stores the learning progress for each user on different courses."
+    },
+    "/courses/{courseId}/enrollments/{enrollmentId}": {
+        "schema": { "$ref": "#/entities/Enrollment" },
+        "description": "Stores all enrollments for a specific course."
     }
   }
 }
