@@ -11,13 +11,18 @@ export type Category =
   | 'Finances & Inclusion économique';
 
 export interface Video {
+  id?: string;
   titre: string;
   url: string;
+  duree?: number | null;
+  ordre: number;
 }
 
 export interface Module {
-  id: string;
+  id?: string;
   titre: string;
+  description: string;
+  ordre: number;
   videos: Video[];
 }
 
@@ -31,7 +36,7 @@ export interface Course {
   niveau: 'Débutant' | 'Intermédiaire' | 'Avancé';
   langue: string;
   prix: number;
-  modules: Module[];
+  modules: Module[]; // This can be used for summary or if not using subcollections
   date_creation: Timestamp | string; // Can be a Timestamp from Firestore
   publie: boolean;
   auteur: string;

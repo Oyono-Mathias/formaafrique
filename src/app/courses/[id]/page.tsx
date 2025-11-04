@@ -11,8 +11,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { useDoc } from '@/firebase';
-import type { Course } from '@/lib/types';
+import { useDoc, useCollection } from '@/firebase';
+import type { Course, Module } from '@/lib/types';
 
 type CoursePageProps = {
   params: {
@@ -22,8 +22,10 @@ type CoursePageProps = {
 
 export default function CourseDetailPage({ params }: CoursePageProps) {
   const { data: course, loading, error } = useDoc<Course>('courses', params.id);
+  const { data: modules, loading: modulesLoading } = useCollection<Module>(`courses/${params.id}/modules`);
 
-  if (loading) {
+
+  if (loading || modulesLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -42,6 +44,10 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
   const instructorImageId = `instructor-${course.auteur.split(' ')[0].toLowerCase()}`;
   const instructorImage = PlaceHolderImages.find((img) => img.id === instructorImageId);
   const isFree = course.prix === 0;
+
+  const sortedModules = modules.sort((a, b) => a.ordre - b.ordre);
+  const firstModuleId = sortedModules.length > 0 ? sortedModules[0].id : null;
+
 
   return (
     <div>
@@ -86,16 +92,16 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
                     </div>
                     <div className="flex justify-between items-center text-sm">
                       <span className="flex items-center gap-2 text-muted-foreground"><Clock size={16} /> Durée</span>
-                      <span className="font-semibold">{course.modules.length} modules</span>
+                      <span className="font-semibold">{modules.length} modules</span>
                     </div>
                     <div className="flex justify-between items-center text-sm">
                       <span className="flex items-center gap-2 text-muted-foreground"><BarChart size={16} /> Niveau</span>
                       <span className="font-semibold">{course.niveau}</span>
                     </div>
                     
-                  <Button size="lg" className="w-full" asChild>
+                  <Button size="lg" className="w-full" asChild disabled={!firstModuleId}>
                     {isFree ? (
-                      <Link href={`/courses/${course.id}/modules/${course.modules[0].id}`}>
+                      <Link href={firstModuleId ? `/courses/${course.id}/modules/${firstModuleId}` : '#'}>
                         Commencer la formation
                       </Link>
                     ) : (
@@ -128,7 +134,7 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
             <div>
               <h2 className="font-headline text-2xl text-primary mb-4">Contenu du cours</h2>
               <div className="space-y-4">
-                {course.modules.map((module) => (
+                {sortedModules.map((module) => (
                   <Link href={`/courses/${course.id}/modules/${module.id}`} key={module.id} className="block">
                     <Card className="hover:bg-muted/50 transition-colors">
                       <CardContent className="p-4 flex items-center justify-between">
@@ -144,6 +150,9 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
                     </Card>
                   </Link>
                 ))}
+                 {modules.length === 0 && (
+                    <p className="text-muted-foreground">Le contenu du cours sera bientôt disponible.</p>
+                )}
               </div>
             </div>
           </div>
