@@ -23,6 +23,7 @@ export interface Module {
 
 export interface Course {
   id?: string; // Firestore ID will be added by the hook
+  slug?: string;
   titre: string;
   categorie: Category;
   description: string;
