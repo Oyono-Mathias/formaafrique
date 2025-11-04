@@ -29,8 +29,11 @@ import { updateProfile } from 'firebase/auth';
 
 export default function ProfilePage() {
   const { user, loading: userLoading } = useUser();
-  const { data: userProfile, loading: profileLoading } = useDoc<UserProfile>(user ? 'users' : '', user?.uid || '');
-  const { data: courseProgress, loading: progressLoading } = useCollection<CourseProgress>(user ? `users/${user.uid}/progress` : '');
+  const { data: userProfileData, loading: profileLoading } = useDoc<UserProfile>(user ? 'users' : null, user?.uid);
+  const { data: courseProgressData, loading: progressLoading } = useCollection<CourseProgress>(user ? `users/${user.uid}/progress` : null);
+  
+  const userProfile = userProfileData;
+  const courseProgress = courseProgressData || [];
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newSkill, setNewSkill] = useState('');
@@ -174,7 +177,7 @@ export default function ProfilePage() {
                 </CardHeader>
                 <CardContent>
                     <div className="flex flex-wrap gap-2 mb-4">
-                        {userProfile?.skills?.map((skill, index) => (
+                        {(userProfile?.skills || []).map((skill, index) => (
                         <Badge key={index} variant="secondary" className="text-base py-1 px-3 flex items-center gap-2">
                             {skill}
                             <button onClick={() => handleRemoveSkill(skill)} className="rounded-full hover:bg-destructive/20 p-0.5">

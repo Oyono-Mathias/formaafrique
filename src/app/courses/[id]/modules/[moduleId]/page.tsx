@@ -25,12 +25,13 @@ type ModulePageProps = {
 
 export default function ModulePage({ params }: ModulePageProps) {
   const { data: course, loading: courseLoading } = useDoc<Course>('courses', params.id);
-  const { data: modules, loading: modulesLoading } = useCollection<Module>(`courses/${params.id}/modules`);
+  const { data: modulesData, loading: modulesLoading } = useCollection<Module>(`courses/${params.id}/modules`);
   
+  const modules = modulesData || [];
   const loading = courseLoading || modulesLoading;
 
   const { currentModule, sortedModules } = useMemo(() => {
-      const sorted = modules.sort((a,b) => a.ordre - b.ordre);
+      const sorted = (modules || []).sort((a,b) => a.ordre - b.ordre);
       const current = sorted.find(m => m.id === params.moduleId);
       return { currentModule: current, sortedModules: sorted };
   }, [modules, params.moduleId]);
@@ -91,7 +92,7 @@ export default function ModulePage({ params }: ModulePageProps) {
           <div className='mt-8'>
              <h3 className="font-headline text-xl mb-4 text-primary">Vidéos du module</h3>
               <ul className="list-none p-0 space-y-3">
-                {currentModule.videos.sort((a,b) => a.ordre - b.ordre).map((video, index) => (
+                {(currentModule.videos || []).sort((a,b) => a.ordre - b.ordre).map((video, index) => (
                   <li key={index}>
                     <Card className="hover:bg-muted transition-colors hover:shadow-md">
                         <CardContent className='p-4 flex items-center gap-4'>
@@ -111,7 +112,7 @@ export default function ModulePage({ params }: ModulePageProps) {
       <aside className="w-full lg:w-1/4 bg-primary/5 border-l p-4 lg:p-6 overflow-y-auto">
         <h2 className="text-xl font-bold font-headline mb-4">Contenu du cours</h2>
         <Accordion type="single" collapsible defaultValue={`module-${currentModule.id}`} className="w-full">
-            {sortedModules.map((module, index) => {
+            {(sortedModules || []).map((module, index) => {
               const isCurrentModule = module.id === currentModule.id;
               // Mock progress logic
               const isCompleted = index < currentModuleIndex;
@@ -132,7 +133,7 @@ export default function ModulePage({ params }: ModulePageProps) {
                     </AccordionTrigger>
                     <AccordionContent>
                       <div className="space-y-2 pl-4">
-                        {module.videos.sort((a,b) => a.ordre - b.ordre).map((video, videoIndex) => (
+                        {(module.videos || []).sort((a,b) => a.ordre - b.ordre).map((video, videoIndex) => (
                            <Link
                             key={videoIndex}
                             href="#" // Link to the actual video player view in the future

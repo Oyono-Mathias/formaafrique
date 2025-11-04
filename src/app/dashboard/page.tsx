@@ -12,13 +12,16 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { courses, users } from '@/lib/mock-data';
-import { useUser } from '@/firebase';
+import { courses as mockCourses, users } from '@/lib/mock-data';
+import { useUser, useCollection } from '@/firebase';
+import { Course } from '@/lib/types';
+
 
 export default function DashboardPage() {
   const { user } = useUser();
   // This is mock data. We'll replace this with real user data later.
-  const enrolledCourses = courses.filter(course => users[0].enrolledCourses.includes(course.id));
+  const {data: courses} = useCollection<Course>("courses");
+  const enrolledCourses = (courses || []).filter(course => (users[0].enrolledCourses || []).includes(course.id!));
 
   return (
     <div className="space-y-8">
@@ -42,7 +45,7 @@ export default function DashboardPage() {
             </Button>
         </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {enrolledCourses.filter(c => c.id === 'developpement-web').map((course) => (
+          {(enrolledCourses || []).filter(c => c.slug === 'developpement-web-mobile').map((course) => (
             <Card key={course.id} className="overflow-hidden shadow-md transition-transform hover:scale-105 duration-300 rounded-2xl">
               <CardHeader>
                 <CardTitle className="text-lg">{course.titre}</CardTitle>
@@ -56,7 +59,7 @@ export default function DashboardPage() {
               </CardContent>
               <CardFooter>
                 <Button asChild variant="default" className="w-full">
-                  <Link href={`/courses/${course.id}/modules/${course.modules[0].id}`}>
+                  <Link href={`/courses/${course.id}/modules/${(course.modules && course.modules[0]) ? course.modules[0].id : ''}`}>
                     Continuer la formation <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>

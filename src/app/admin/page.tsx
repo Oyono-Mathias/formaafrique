@@ -30,8 +30,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
 export default function AdminDashboardPage() {
-  const { data: users, loading: usersLoading } = useCollection<UserProfile>('users');
-  const { data: courses, loading: coursesLoading } = useCollection<Course>('courses');
+  const { data: usersData, loading: usersLoading } = useCollection<UserProfile>('users');
+  const { data: coursesData, loading: coursesLoading } = useCollection<Course>('courses');
+
+  const users = usersData || [];
+  const courses = coursesData || [];
 
   const stats = [
     {
@@ -117,7 +120,7 @@ export default function AdminDashboardPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users.slice(0, 5).map(user => (
+                  {(users || []).slice(0, 5).map(user => (
                     <TableRow key={user.id}>
                       <TableCell>{user.name}</TableCell>
                       <TableCell className="hidden sm:table-cell">{user.email}</TableCell>

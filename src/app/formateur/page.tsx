@@ -19,20 +19,22 @@ import { Button } from '@/components/ui/button';
 
 export default function FormateurDashboardPage() {
   const { user } = useUser();
-  const { data: courses, loading: coursesLoading } = useCollection<Course>('courses', {
-    where: ['instructorId', '==', user?.uid || '']
+  const { data: coursesData, loading: coursesLoading } = useCollection<Course>('courses', {
+    where: user?.uid ? ['instructorId', '==', user.uid] : undefined
   });
   
+  const courses = coursesData || [];
+
   // This is a simplified query. For a real app, you'd query each course's subcollection.
   const { data: enrollments, loading: enrollmentsLoading } = useCollection<Enrollment>(`courses/${courses[0]?.id}/enrollments`);
 
-  const totalStudents = courses.reduce((acc, course) => acc + (course.modules?.length || 0), 0); // Mock, needs real enrollment count per course
-  const totalRevenue = courses.reduce((acc, course) => acc + course.prix, 0) * totalStudents; // Highly simplified mock revenue
+  const totalStudents = (courses || []).reduce((acc, course) => acc + (course.modules?.length || 0), 0); // Mock, needs real enrollment count per course
+  const totalRevenue = (courses || []).reduce((acc, course) => acc + course.prix, 0) * totalStudents; // Highly simplified mock revenue
 
   const stats = [
     {
       label: 'Cours publiés',
-      value: coursesLoading ? '...' : courses.length,
+      value: coursesLoading ? '...' : (courses || []).length,
       icon: BookOpen,
       description: 'Nombre total de formations que vous avez créées.',
     },
@@ -83,7 +85,7 @@ export default function FormateurDashboardPage() {
                 </Link>
             </Button>
           </div>
-          {courses.length > 0 ? (
+          {(courses || []).length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {/* Course cards will be rendered here */}
             </div>
