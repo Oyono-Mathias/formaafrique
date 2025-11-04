@@ -40,7 +40,7 @@ export interface Course {
   date_creation: Timestamp | string; // Can be a Timestamp from Firestore
   publie: boolean;
   auteur: string;
-  instructorId?: string; // ID of the instructor (formateur)
+  instructorId: string; // ID of the instructor (formateur)
 }
 
 

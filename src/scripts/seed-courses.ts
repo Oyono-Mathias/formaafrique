@@ -1,12 +1,12 @@
 // This is a script to seed the Firestore database with initial courses and their modules.
 // IMPORTANT: To run this script, you would typically use a tool like `ts-node`
 // from your terminal in a secure, server-side environment.
-// Example command: `ts-node -r dotenv/config src/scripts/seed-courses.ts`
+// Example command: `npm run db:seed`
 // Ensure you have `ts-node` and `dotenv` installed as dev dependencies.
 //
 // This script is NOT meant to be run in the browser.
 
-import { collection, addDoc, getDocs, query, where, serverTimestamp, getFirestore, updateDoc, writeBatch } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, serverTimestamp, getFirestore, writeBatch } from 'firebase/firestore';
 import { initializeApp } from 'firebase/app';
 
 // Manually configure Firebase Admin SDK or a client SDK with sufficient privileges
@@ -34,25 +34,65 @@ type Category =
   | 'Langues & Communication'
   | 'Finances & Inclusion économique';
 
+const slugify = (text: string) => {
+    return text.toString().toLowerCase()
+        .replace(/\s+/g, '-')           // Replace spaces with -
+        .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
+        .replace(/\-\-+/g, '-')         // Replace multiple - with single -
+        .replace(/^-+/, '')             // Trim - from start of text
+        .replace(/-+$/, '');            // Trim - from end of text
+}
+
+
 const coursesToSeed = [
     // Entrepreneuriat & Commerce
-    { titre: 'Création d’entreprise', slug: 'creation-d-entreprise', categorie: 'Entrepreneuriat & Commerce', image: 'course-entrepreneurship' },
-    { titre: 'Business plan', slug: 'business-plan', categorie: 'Entrepreneuriat & Commerce', image: 'course-entrepreneurship' },
-    { titre: 'Import-export (achat sur Alibaba)', slug: 'import-export-alibaba', categorie: 'Entrepreneuriat & Commerce', image: 'course-marketing' },
-    { titre: 'E-commerce (Shopify, Jumia, etc.)', slug: 'e-commerce', categorie: 'Entrepreneuriat & Commerce', image: 'course-marketing' },
-    { titre: 'Micro-entrepreneuriat', slug: 'micro-entrepreneuriat', categorie: 'Entrepreneuriat & Commerce', image: 'course-entrepreneurship' },
+    { titre: 'Création d’entreprise', categorie: 'Entrepreneuriat & Commerce', image: 'course-entrepreneurship' },
+    { titre: 'Business plan', categorie: 'Entrepreneuriat & Commerce', image: 'course-entrepreneurship' },
+    { titre: 'Import-export (achat sur Alibaba)', categorie: 'Entrepreneuriat & Commerce', image: 'course-marketing' },
+    { titre: 'E-commerce (Shopify, Jumia, etc.)', categorie: 'Entrepreneuriat & Commerce', image: 'course-marketing' },
+    { titre: 'Micro-entrepreneuriat', categorie: 'Entrepreneuriat & Commerce', image: 'course-entrepreneurship' },
     // Compétences numériques
-    { titre: 'Marketing digital', slug: 'marketing-digital', categorie: 'Compétences numériques', image: 'course-marketing' },
-    { titre: 'Développement web & mobile', slug: 'developpement-web-mobile', categorie: 'Compétences numériques', image: 'course-dev-web' },
-    { titre: 'Montage vidéo & création de contenu', slug: 'montage-video', categorie: 'Compétences numériques', image: 'course-dev-web' },
-    { titre: 'Utilisation d’outils (Canva, Google Workspace)', slug: 'outils-bureautiques', categorie: 'Compétences numériques', image: 'course-project-management' },
-    { titre: 'Cybersécurité de base', slug: 'cybersecurite-base', categorie: 'Compétences numériques', image: 'course-ai-ml' },
+    { titre: 'Marketing digital', categorie: 'Compétences numériques', image: 'course-marketing' },
+    { titre: 'Développement web & mobile', categorie: 'Compétences numériques', image: 'course-dev-web' },
+    { titre: 'Montage vidéo & création de contenu', categorie: 'Compétences numériques', image: 'course-dev-web' },
+    { titre: 'Utilisation d’outils (Canva, Google Workspace)', categorie: 'Compétences numériques', image: 'course-project-management' },
+    { titre: 'Cybersécurité de base', categorie: 'Compétences numériques', image: 'course-ai-ml' },
     // Agriculture & Agro-industrie
-    { titre: 'Agriculture intelligente', slug: 'agriculture-intelligente', categorie: 'Agriculture & Agro-industrie', image: 'course-data-science' },
-    { titre: 'Transformation des produits agricoles', slug: 'transformation-agricole', categorie: 'Agriculture & Agro-industrie', image: 'course-data-science' },
-    { titre: 'Commercialisation des produits locaux', slug: 'commercialisation-produits-locaux', categorie: 'Agriculture & Agro-industrie', image: 'course-marketing' },
-    { titre: 'Élevage et pisciculture', slug: 'elevage-pisciculture', categorie: 'Agriculture & Agro-industrie', image: 'course-data-science' },
-    { titre: 'Techniques agroécologiques', slug: 'techniques-agroecologiques', categorie: 'Agriculture & Agro-industrie', image: 'course-data-science' },
+    { titre: 'Agriculture intelligente', categorie: 'Agriculture & Agro-industrie', image: 'course-data-science' },
+    { titre: 'Transformation des produits agricoles', categorie: 'Agriculture & Agro-industrie', image: 'course-data-science' },
+    { titre: 'Commercialisation des produits locaux', categorie: 'Agriculture & Agro-industrie', image: 'course-marketing' },
+    { titre: 'Élevage et pisciculture', categorie: 'Agriculture & Agro-industrie', image: 'course-data-science' },
+    { titre: 'Techniques agroécologiques', categorie: 'Agriculture & Agro-industrie', image: 'course-data-science' },
+     // Métiers manuels & artisanaux
+    { titre: 'Couture, teinture', categorie: 'Métiers manuels & Artisanat', image: 'course-project-management' },
+    { titre: 'Coiffure, esthétique', categorie: 'Métiers manuels & Artisanat', image: 'course-project-management' },
+    { titre: 'Menuiserie, maçonnerie, électricité', categorie: 'Métiers manuels & Artisanat', image: 'course-project-management' },
+    { titre: 'Cuisson et transformation alimentaire', categorie: 'Métiers manuels & Artisanat', image: 'course-data-science' },
+    { titre: 'Artisanat (vannerie, poterie, bijoux)', categorie: 'Métiers manuels & Artisanat', image: 'course-project-management' },
+    // Éducation & Renforcement des capacités
+    { titre: 'Tutoriels scolaires', categorie: 'Éducation & Renforcement des capacités', image: 'course-project-management' },
+    { titre: 'Préparation aux examens', categorie: 'Éducation & Renforcement des capacités', image: 'course-project-management' },
+    { titre: 'Formation des enseignants', categorie: 'Éducation & Renforcement des capacités', image: 'course-project-management' },
+    { titre: 'Littératie numérique et financière', categorie: 'Éducation & Renforcement des capacités', image: 'course-ai-ml' },
+    { titre: 'Éducation civique', categorie: 'Éducation & Renforcement des capacités', image: 'course-project-management' },
+    // Santé & Bien-être
+    { titre: 'Hygiène et prévention (VIH, paludisme, grossesse)', categorie: 'Santé & Bien-être', image: 'course-data-science' },
+    { titre: 'Soins à domicile', categorie: 'Santé & Bien-être', image: 'course-data-science' },
+    { titre: 'Nutrition', categorie: 'Santé & Bien-être', image: 'course-data-science' },
+    { titre: 'Santé mentale', categorie: 'Santé & Bien-être', image: 'course-ai-ml' },
+    { titre: 'Formation des agents de santé', categorie: 'Santé & Bien-être', image: 'course-data-science' },
+    // Langues & Communication
+    { titre: 'Langues officielles (français, anglais, portugais)', categorie: 'Langues & Communication', image: 'course-project-management' },
+    { titre: 'Langues locales (douala, fulfulde, lingala, etc.)', categorie: 'Langues & Communication', image: 'course-project-management' },
+    { titre: 'Communication interpersonnelle', categorie: 'Langues & Communication', image: 'course-project-management' },
+    { titre: 'Prise de parole en public', categorie: 'Langues & Communication', image: 'course-project-management' },
+    { titre: 'Rédaction professionnelle', categorie: 'Langues & Communication', image: 'course-project-management' },
+    // Finances & Inclusion économique
+    { titre: 'Épargne et microfinance', categorie: 'Finances & Inclusion économique', image: 'course-marketing' },
+    { titre: 'Gestion de trésorerie', categorie: 'Finances & Inclusion économique', image: 'course-project-management' },
+    { titre: 'Mobile money (Orange Money, MTN MoMo, etc.)', categorie: 'Finances & Inclusion économique', image: 'course-marketing' },
+    { titre: 'Comptabilité de base', categorie: 'Finances & Inclusion économique', image: 'course-project-management' },
+    { titre: 'Investissement solidaire', categorie: 'Finances & Inclusion économique', image: 'course-entrepreneurship' },
 ];
 
 const modulesData: { [key: string]: any[] } = {
@@ -89,14 +129,15 @@ async function seedCourses() {
     console.log(`Starting to seed ${coursesToSeed.length} courses...`);
 
     for (const course of coursesToSeed) {
-        const q = query(coursesCollectionRef, where("slug", "==", course.slug));
+        const slug = slugify(course.titre);
+        const q = query(coursesCollectionRef, where("slug", "==", slug));
         const querySnapshot = await getDocs(q);
 
         if (querySnapshot.empty) {
             try {
                 const docData = {
                     titre: course.titre,
-                    slug: course.slug,
+                    slug: slug,
                     categorie: course.categorie as Category,
                     description: `Formation sur ${course.titre.toLowerCase()} pour vous aider à maîtriser les compétences clés.`,
                     image: course.image,
@@ -156,12 +197,19 @@ async function seedModules() {
         const modulesForCourse = modulesData[slug];
         
         for (const module of modulesForCourse) {
-            const newModuleRef = collection(db, `courses/${courseId}/modules`).doc();
-            batch.set(newModuleRef, module);
-            modulesCrees++;
+            // Need to get a reference to a new document in the subcollection.
+            // Since we're in a client-side script without `doc(collectionRef)`, we can't easily get a ref with an auto-id before setting.
+            // A common workaround is to use `addDoc` but that doesn't work in a batch.
+            // For batching, we need explicit IDs. We'll use addDoc inside the loop without batching.
+            // This is less efficient but compatible with client SDK constraints.
+             try {
+                await addDoc(modulesCollectionRef, module);
+                modulesCrees++;
+             } catch(error) {
+                 console.error(`Error adding module "${module.titre}" to course "${courseDoc.data().titre}"`, error)
+             }
         }
         
-        await batch.commit();
         formationsMaj++;
         console.log(`    -> Added ${modulesForCourse.length} modules.`);
     }
@@ -179,7 +227,10 @@ async function main() {
 
 // Check if running in a Node.js environment
 if (typeof process !== 'undefined') {
-    main().catch(e => {
+    main().then(() => {
+        console.log("\nSeeding process finished.");
+        process.exit(0);
+    }).catch(e => {
         console.error("Seeding failed with an unhandled error:", e);
         process.exit(1);
     });
