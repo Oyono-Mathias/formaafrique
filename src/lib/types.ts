@@ -42,6 +42,7 @@ export interface UserProfile {
   email: string;
   createdAt: Timestamp;
   photoURL: string | null;
+  role: 'admin' | 'etudiant';
 }
 
 export interface User {

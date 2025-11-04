@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   LayoutDashboard,
   BookCopy,
@@ -10,8 +10,8 @@ import {
   GraduationCap,
   LogOut,
   ShieldCheck,
+  Loader2,
 } from 'lucide-react';
-
 import {
   SidebarProvider,
   Sidebar,
@@ -26,8 +26,11 @@ import {
 } from '@/components/ui/sidebar';
 import { Logo } from '@/components/icons/logo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useUser, useAuth } from '@/firebase';
+import { useUser, useAuth, useFirestore } from '@/firebase';
 import { signOut } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import type { UserProfile } from '@/lib/types';
+import { useToast } from '@/hooks/use-toast';
 
 const adminNavLinks = [
   { href: '/admin', label: 'Tableau de bord', icon: LayoutDashboard },
@@ -42,29 +45,67 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const { user, loading } = useUser();
+  const { user, loading: userLoading } = useUser();
   const auth = useAuth();
+  const db = useFirestore();
   const router = useRouter();
+  const { toast } = useToast();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login');
+    if (userLoading) {
+      return; // Wait for user auth state to be resolved
     }
-    // Here you would add logic to check if the user is an admin
-    // For now, we just check if they are logged in.
-  }, [user, loading, router]);
-  
+
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    if (!db) {
+        // Firestore not available yet
+        return;
+    }
+
+    const checkAdminRole = async () => {
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (userDoc.exists()) {
+        const userData = userDoc.data() as UserProfile;
+        if (userData.role === 'admin') {
+          setIsAdmin(true);
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Accès refusé',
+            description: "Vous n'avez pas les droits pour accéder à cette page.",
+          });
+          router.push('/');
+        }
+      } else {
+        // User document doesn't exist, deny access
+        router.push('/');
+      }
+      setLoading(false);
+    };
+
+    checkAdminRole();
+  }, [user, userLoading, db, router, toast]);
+
   const handleSignOut = async () => {
     if (!auth) return;
     await signOut(auth);
     router.push('/');
   };
 
-  if (loading || !user) {
+  if (loading || userLoading || !isAdmin) {
     return (
-        <div className="flex justify-center items-center h-screen">
-            <p>Vérification de l'accès...</p>
-        </div>
+      <div className="flex justify-center items-center h-screen">
+        <Loader2 className="h-6 w-6 animate-spin" />
+        <p className='ml-2'>Vérification de l'accès administrateur...</p>
+      </div>
     );
   }
 
@@ -110,10 +151,10 @@ export default function AdminLayout({
         <header className="flex items-center justify-between p-4 border-b">
           <SidebarTrigger />
           <div className="flex items-center gap-4">
-             <span className="font-medium hidden sm:inline">{user.displayName || 'Admin'}</span>
+             <span className="font-medium hidden sm:inline">{user?.displayName || 'Admin'}</span>
              <Avatar>
-                {user.photoURL && <AvatarImage src={user.photoURL} alt="Admin Avatar" />}
-                <AvatarFallback>{user.displayName ? user.displayName.charAt(0) : 'A'}</AvatarFallback>
+                {user?.photoURL && <AvatarImage src={user.photoURL} alt="Admin Avatar" />}
+                <AvatarFallback>{user?.displayName ? user.displayName.charAt(0) : 'A'}</AvatarFallback>
              </Avatar>
           </div>
         </header>

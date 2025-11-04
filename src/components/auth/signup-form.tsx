@@ -76,6 +76,7 @@ export default function SignupForm() {
         email: values.email,
         createdAt: serverTimestamp(),
         photoURL: null,
+        role: 'etudiant', // Default role for new users
       };
       await setDoc(userDocRef, newUser);
 

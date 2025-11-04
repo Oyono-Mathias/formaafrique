@@ -23,9 +23,14 @@
           "type": "string",
           "format": "date-time",
           "description": "The timestamp when the user account was created."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["admin", "etudiant"],
+          "description": "The role of the user in the system."
         }
       },
-      "required": ["name", "email", "createdAt"]
+      "required": ["name", "email", "createdAt", "role"]
     },
     "Course": {
       "title": "Course",

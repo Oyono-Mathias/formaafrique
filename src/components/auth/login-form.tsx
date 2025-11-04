@@ -17,10 +17,12 @@ import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { useAuth } from '@/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { useAuth, useFirestore } from '@/firebase';
 import { isFirebaseConfigured } from '@/firebase/config';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal } from 'lucide-react';
+import type { UserProfile } from '@/lib/types';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Adresse email invalide.' }),
@@ -31,6 +33,7 @@ export default function LoginForm() {
   const { toast } = useToast();
   const router = useRouter();
   const auth = useAuth();
+  const db = useFirestore();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -41,28 +44,54 @@ export default function LoginForm() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!auth) {
-      // This case should not be reached if the form is disabled, but it's a good safeguard.
+    if (!auth || !db || !isFirebaseConfigured) {
       toast({
         variant: 'destructive',
         title: 'Configuration Firebase incomplète',
-        description: 'Veuillez configurer vos clés Firebase dans le fichier .env.local pour vous connecter.',
+        description: 'Veuillez configurer vos clés Firebase pour vous connecter.',
       });
       return;
     }
     try {
-      await signInWithEmailAndPassword(auth, values.email, values.password);
-      toast({
-        title: 'Connexion réussie',
-        description: 'Redirection vers votre tableau de bord...',
-      });
-      router.push('/dashboard');
+      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+      const user = userCredential.user;
+
+      // Check user role in Firestore
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (userDoc.exists()) {
+        const userData = userDoc.data() as UserProfile;
+        if (userData.role === 'admin') {
+          toast({
+            title: 'Connexion réussie (Admin)',
+            description: 'Redirection vers le tableau de bord administrateur...',
+          });
+          router.push('/admin');
+        } else {
+          toast({
+            title: 'Connexion réussie',
+            description: 'Redirection vers votre tableau de bord...',
+          });
+          router.push('/dashboard');
+        }
+      } else {
+        // Fallback if user doc doesn't exist, redirect to standard dashboard
+        router.push('/dashboard');
+      }
+
     } catch (error: any) {
       console.error('Error signing in:', error);
+      let description = "L'email ou le mot de passe est incorrect.";
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+          description = "L'email ou le mot de passe est incorrect.";
+      } else if (error.code === 'auth/configuration-not-found') {
+          description = "L'authentification par email/mot de passe n'est pas activée dans votre projet Firebase.";
+      }
       toast({
         variant: 'destructive',
         title: 'Erreur de connexion',
-        description: "L'email ou le mot de passe est incorrect.",
+        description: description,
       });
     }
   }
