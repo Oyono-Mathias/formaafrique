@@ -24,7 +24,7 @@ import EditProfileDialog from '@/components/dashboard/edit-profile-dialog';
 
 export default function ProfilePage() {
   const { user } = useUser();
-  const { data: userProfile, loading: profileLoading } = useDoc<UserProfile>(user ? 'users' : '', user?.uid || '');
+  const { data: userProfile, loading: profileLoading } = useDoc<UserProfile>(user ? 'users' : null, user?.uid || '');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   if (profileLoading || !user) {
