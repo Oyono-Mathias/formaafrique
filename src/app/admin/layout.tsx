@@ -66,7 +66,7 @@ function AdminSidebar({ onSignOut }: { onSignOut: () => void }) {
         </nav>
       </div>
       <div className="mt-auto p-4">
-        <Button variant="ghost" className="w-full justify-start gap-3 text-gray-300 hover:text-red-500" onClick={onSignOut}>
+        <Button variant="ghost" className="w-full justify-start flex items-center gap-3 text-gray-300 hover:text-red-500" onClick={onSignOut}>
           <LogOut className="h-4 w-4" />
           Déconnexion
         </Button>

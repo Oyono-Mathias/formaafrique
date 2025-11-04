@@ -13,7 +13,6 @@ import {
   Menu,
   Bell,
   Search,
-  X,
 } from 'lucide-react';
 import { Logo } from '@/components/icons/logo';
 import { Button } from '@/components/ui/button';
@@ -30,6 +29,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 
 const dashboardNavLinks = [
   { href: '/dashboard', label: 'Accueil', icon: Home },
@@ -94,13 +94,14 @@ function SidebarContent() {
         ))}
       </nav>
       <div className="p-4 mt-auto">
-        <button
+        <Button
           onClick={handleSignOut}
-          className="flex w-full items-center gap-4 px-4 py-3 rounded-lg text-destructive-foreground/70 hover:bg-destructive/80 hover:text-destructive-foreground transition-colors text-sm"
+          variant="ghost"
+          className="w-full justify-start flex items-center gap-4 px-4 py-3 text-destructive hover:bg-destructive/10"
         >
           <LogOut className="h-5 w-5" />
           <span className="font-medium">Déconnexion</span>
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -112,6 +113,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const { user, loading } = useUser();
+  const auth = useAuth();
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -130,6 +132,13 @@ export default function DashboardLayout({
       </div>
     );
   }
+  
+  const handleSignOut = async () => {
+    if (!auth) return;
+    await signOut(auth);
+    router.push('/');
+  };
+
 
   return (
     <div className="min-h-screen w-full bg-background flex">
@@ -150,7 +159,9 @@ export default function DashboardLayout({
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-64 p-0">
-              <SheetTitle className="sr-only">Menu principal</SheetTitle>
+              <VisuallyHidden>
+                <SheetTitle>Menu principal</SheetTitle>
+              </VisuallyHidden>
               <SidebarContent />
             </SheetContent>
           </Sheet>
@@ -195,7 +206,7 @@ export default function DashboardLayout({
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  onClick={() => signOut(useAuth()!)}
+                  onClick={handleSignOut}
                   className="text-destructive focus:bg-destructive/10 focus:text-destructive"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
