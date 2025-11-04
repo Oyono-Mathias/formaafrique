@@ -96,6 +96,31 @@ const coursesToSeed = [
 ];
 
 const modulesData: { [key: string]: any[] } = {
+    'creation-dentreprise': [
+        { ordre: 1, titre: "De l'idée au concept", description: "Validez votre idée et définissez votre proposition de valeur.", videos: [ { ordre: 1, titre: "Valider son idée de business", url: "https://drive.google.com/drive/folders/placeholder_formafrique" } ] },
+        { ordre: 2, titre: "Les formes juridiques", description: "Choisissez le statut juridique le plus adapté à votre projet en Afrique.", videos: [ { ordre: 1, titre: "SARL, SASU, Entreprise individuelle : que choisir ?", url: "https://drive.google.com/drive/folders/placeholder_formafrique" } ] },
+        { ordre: 3, titre: "Démarches administratives", description: "Comprenez les étapes clés pour immatriculer votre entreprise.", videos: [ { ordre: 1, titre: "Le guide des démarches de création", url: "https://drive.google.com/drive/folders/placeholder_formafrique" } ] },
+    ],
+    'business-plan': [
+        { ordre: 1, titre: "Fondamentaux du Business Plan", description: "Comprendre l'importance et la structure d'un business plan solide.", videos: [{ ordre: 1, titre: "Pourquoi rédiger un business plan ?", url: "https://drive.google.com/drive/folders/placeholder_formafrique" }] },
+        { ordre: 2, titre: "Analyse de marché et stratégie", description: "Définir son marché cible et sa proposition de valeur.", videos: [{ ordre: 1, titre: "Réaliser une étude de marché simple", url: "https://drive.google.com/drive/folders/placeholder_formafrique" }] },
+        { ordre: 3, titre: "Prévisions financières", description: "Estimer ses revenus, ses coûts et sa rentabilité.", videos: [{ ordre: 1, titre: "Construire son tableau de prévisions financières", url: "https://drive.google.com/drive/folders/placeholder_formafrique" }] },
+    ],
+    'import-export-achat-sur-alibaba': [
+        { ordre: 1, titre: "Introduction à l'import-export", description: "Les bases du commerce international et les opportunités avec la Chine.", videos: [ { ordre: 1, titre: "Comprendre le circuit import-export", url: "https://drive.google.com/drive/folders/placeholder_formafrique" } ] },
+        { ordre: 2, titre: "Acheter sur Alibaba", description: "Trouvez des fournisseurs fiables et négociez les meilleurs prix.", videos: [ { ordre: 1, titre: "Rechercher et vérifier un fournisseur", url: "https://drive.google.com/drive/folders/placeholder_formafrique" }, { ordre: 2, titre: "Passer une commande sécurisée", url: "https://drive.google.com/drive/folders/placeholder_formafrique" } ] },
+        { ordre: 3, titre: "Logistique et dédouanement", description: "Gérez le transport et les formalités douanières en Afrique.", videos: [ { ordre: 1, titre: "Choisir son transitaire", url: "https://drive.google.com/drive/folders/placeholder_formafrique" } ] },
+    ],
+    'e-commerce-shopify-jumia-etc': [
+        { ordre: 1, titre: "Lancer sa boutique en ligne", description: "Choisissez la bonne plateforme et configurez votre e-commerce.", videos: [ { ordre: 1, titre: "Shopify vs Jumia : avantages et inconvénients", url: "https://drive.google.com/drive/folders/placeholder_formafrique" } ] },
+        { ordre: 2, titre: "Gestion des paiements et livraisons", description: "Intégrez des solutions de paiement mobile et organisez votre logistique.", videos: [ { ordre: 1, titre: "Configurer Orange Money et MTN MoMo", url: "https://drive.google.com/drive/folders/placeholder_formafrique" }, { ordre: 2, titre: "Optimiser sa logistique de livraison locale", url: "https://drive.google.com/drive/folders/placeholder_formafrique" } ] },
+        { ordre: 3, titre: "Promouvoir sa boutique", description: "Attirez vos premiers clients grâce aux réseaux sociaux et à la publicité.", videos: [ { ordre: 1, titre: "Stratégies marketing pour l'e-commerce en Afrique", url: "https://drive.google.com/drive/folders/placeholder_formafrique" } ] },
+    ],
+    'micro-entrepreneuriat': [
+        { ordre: 1, titre: "Identifier une idée de petit commerce", description: "Trouvez des idées de business rentables à l'échelle locale.", videos: [ { ordre: 1, titre: "Analyser les besoins de sa communauté", url: "https://drive.google.com/drive/folders/placeholder_formafrique" } ] },
+        { ordre: 2, titre: "Gestion d'un petit commerce", description: "Les bases de la gestion des stocks, des prix et de la relation client.", videos: [ { ordre: 1, titre: "Fixer ses prix pour être rentable", url: "https://drive.google.com/drive/folders/placeholder_formafrique" } ] },
+        { ordre: 3, titre: "Faire grandir son activité", description: "Découvrez des stratégies pour développer votre service ou commerce local.", videos: [ { ordre: 1, titre: "De la boutique physique à la vente en ligne", url: "https://drive.google.com/drive/folders/placeholder_formafrique" } ] },
+    ],
     'marketing-digital': [
         { ordre: 1, titre: "Introduction au marketing digital", description: "Découvrez les fondements et les principaux concepts du marketing en ligne.", videos: [ { ordre: 1, titre: "Qu’est-ce que le marketing digital ?", url: "https://drive.google.com/drive/folders/placeholder_formafrique" }, { ordre: 2, titre: "Les canaux de communication en ligne", url: "https://drive.google.com/drive/folders/placeholder_formafrique" }] },
         { ordre: 2, titre: "Création de contenu pour les réseaux sociaux", description: "Apprenez à produire du contenu engageant et adapté à chaque plateforme.", videos: [ { ordre: 1, titre: "Créer un visuel attractif sur Canva", url: "https://drive.google.com/drive/folders/placeholder_formafrique" }, { ordre: 2, titre: "Optimiser ses publications Facebook et Instagram", url: "https://drive.google.com/drive/folders/placeholder_formafrique" }] },
@@ -113,11 +138,6 @@ const modulesData: { [key: string]: any[] } = {
         { ordre: 1, titre: "Introduction à l’agriculture intelligente", description: "Comprendre les enjeux et les technologies de l'agriculture de demain.", videos: [{ ordre: 1, titre: "Les piliers de l'AgriTech", url: "https://drive.google.com/drive/folders/placeholder_formafrique" }] },
         { ordre: 2, titre: "Gestion de l’irrigation et du climat", description: "Optimisez l'utilisation de l'eau et anticipez les conditions météorologiques.", videos: [{ ordre: 1, titre: "Systèmes d'irrigation goutte-à-goutte", url: "https://drive.google.com/drive/folders/placeholder_formafrique" }, { ordre: 2, titre: "Utiliser les données météo pour planifier", url: "https://drive.google.com/drive/folders/placeholder_formafrique" }] },
         { ordre: 3, titre: "Utilisation des capteurs et données", description: "Collectez des données sur vos parcelles pour prendre de meilleures décisions.", videos: [{ ordre: 1, titre: "Introduction aux capteurs d'humidité et de nutriments", url: "https://drive.google.com/drive/folders/placeholder_formafrique" }] },
-    ],
-     'business-plan': [
-        { ordre: 1, titre: "Fondamentaux du Business Plan", description: "Comprendre l'importance et la structure d'un business plan solide.", videos: [{ ordre: 1, titre: "Pourquoi rédiger un business plan ?", url: "https://drive.google.com/drive/folders/placeholder_formafrique" }] },
-        { ordre: 2, titre: "Analyse de marché et stratégie", description: "Définir son marché cible et sa proposition de valeur.", videos: [{ ordre: 1, titre: "Réaliser une étude de marché simple", url: "https://drive.google.com/drive/folders/placeholder_formafrique" }] },
-        { ordre: 3, titre: "Prévisions financières", description: "Estimer ses revenus, ses coûts et sa rentabilité.", videos: [{ ordre: 1, titre: "Construire son tableau de prévisions financières", url: "https://drive.google.com/drive/folders/placeholder_formafrique" }] },
     ],
 };
 
