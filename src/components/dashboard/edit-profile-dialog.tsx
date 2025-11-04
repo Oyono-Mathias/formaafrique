@@ -1,6 +1,6 @@
 'use client';
 
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import {
@@ -37,11 +37,13 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { countries } from '@/lib/countries';
+import { Textarea } from '../ui/textarea';
 
 const profileSchema = z.object({
   name: z.string().min(2, { message: 'Le nom doit contenir au moins 2 caractères.' }),
   paysOrigine: z.string().min(1, { message: 'Veuillez sélectionner un pays.' }),
   paysActuel: z.string().min(1, { message: 'Veuillez sélectionner un pays.' }),
+  bio: z.string().max(300, { message: 'La biographie ne doit pas dépasser 300 caractères.' }).optional(),
 });
 
 type EditProfileDialogProps = {
@@ -66,6 +68,7 @@ export default function EditProfileDialog({
       name: '',
       paysOrigine: '',
       paysActuel: '',
+      bio: '',
     },
   });
 
@@ -75,6 +78,7 @@ export default function EditProfileDialog({
         name: userProfile.name,
         paysOrigine: userProfile.paysOrigine,
         paysActuel: userProfile.paysActuel,
+        bio: userProfile.bio || '',
       });
     }
   }, [userProfile, form, isOpen]);
@@ -88,6 +92,7 @@ export default function EditProfileDialog({
         name: values.name,
         paysOrigine: values.paysOrigine,
         paysActuel: values.paysActuel,
+        bio: values.bio,
       });
       toast({
         title: 'Profil mis à jour',
@@ -106,7 +111,7 @@ export default function EditProfileDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Modifier mes informations</DialogTitle>
           <DialogDescription>
@@ -128,59 +133,74 @@ export default function EditProfileDialog({
                 </FormItem>
               )}
             />
-            <FormField
+             <FormField
               control={form.control}
-              name="paysOrigine"
+              name="bio"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Pays d'origine</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionnez..." />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <ScrollArea className="h-72">
-                        {countries.map((c) => (
-                          <SelectItem key={c.code} value={c.name}>
-                            {c.name}
-                          </SelectItem>
-                        ))}
-                      </ScrollArea>
-                    </SelectContent>
-                  </Select>
+                  <FormLabel>Biographie</FormLabel>
+                  <FormControl>
+                    <Textarea {...field} placeholder="Parlez un peu de vous..." rows={3} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="paysActuel"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Pays actuel</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionnez..." />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <ScrollArea className="h-72">
-                        {countries.map((c) => (
-                          <SelectItem key={c.code} value={c.name}>
-                            {c.name}
-                          </SelectItem>
-                        ))}
-                      </ScrollArea>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
+            <div className="grid grid-cols-2 gap-4">
+                <FormField
+                control={form.control}
+                name="paysOrigine"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Pays d'origine</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Sélectionnez..." />
+                        </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                        <ScrollArea className="h-72">
+                            {countries.map((c) => (
+                            <SelectItem key={c.code} value={c.name}>
+                                {c.name}
+                            </SelectItem>
+                            ))}
+                        </ScrollArea>
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                <FormField
+                control={form.control}
+                name="paysActuel"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Pays actuel</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Sélectionnez..." />
+                        </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                        <ScrollArea className="h-72">
+                            {countries.map((c) => (
+                            <SelectItem key={c.code} value={c.name}>
+                                {c.name}
+                            </SelectItem>
+                            ))}
+                        </ScrollArea>
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+            </div>
+            
             <DialogFooter className="pt-4">
               <DialogClose asChild>
                 <Button type="button" variant="secondary">

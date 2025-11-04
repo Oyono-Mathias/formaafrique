@@ -77,14 +77,16 @@ export default function SignupForm() {
 
       // Create user document in Firestore
       const userDocRef = doc(db, 'users', user.uid);
-      const newUser: Omit<UserProfile, 'createdAt' | 'photoURL'> & { createdAt: any; photoURL: null } = {
+      const newUser: Omit<UserProfile, 'createdAt' | 'photoURL'> & { createdAt: any } = {
         name: values.name,
         email: values.email,
         createdAt: serverTimestamp(),
-        photoURL: null,
         role: 'etudiant', // Default role for new users
         paysOrigine: values.paysOrigine,
         paysActuel: values.paysActuel,
+        bio: `Bonjour, je suis ${values.name}. Je suis passionné(e) par l'apprentissage et le développement de nouvelles compétences.`,
+        skills: [],
+        photoURL: null,
       };
       await setDoc(userDocRef, newUser);
 

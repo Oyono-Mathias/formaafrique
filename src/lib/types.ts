@@ -45,6 +45,8 @@ export interface UserProfile {
   role: 'admin' | 'etudiant';
   paysOrigine: string;
   paysActuel: string;
+  bio?: string;
+  skills?: string[];
 }
 
 export interface User {
@@ -64,9 +66,10 @@ export interface Testimonial {
 }
 
 export interface CourseProgress {
+    id?: string;
     courseId: string;
     userId: string;
-    completedVideos: string[];
     progressPercentage: number;
     lastUpdated: Timestamp;
+    courseTitle: string;
 }

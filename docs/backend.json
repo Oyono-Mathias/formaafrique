@@ -26,70 +26,182 @@
         },
         "role": {
           "type": "string",
-          "enum": ["admin", "etudiant"],
+          "enum": [
+            "admin",
+            "etudiant"
+          ],
           "description": "The role of the user in the system."
         },
         "paysOrigine": {
-            "type": "string",
-            "description": "The user's country of origin."
+          "type": "string",
+          "description": "The user's country of origin."
         },
         "paysActuel": {
-            "type": "string",
-            "description": "The user's current country of residence."
+          "type": "string",
+          "description": "The user's current country of residence."
+        },
+        "bio": {
+          "type": "string",
+          "description": "A short biography or description written by the user."
+        },
+        "skills": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "A list of skills the user has."
         }
       },
-      "required": ["name", "email", "createdAt", "role", "paysOrigine", "paysActuel"]
+      "required": [
+        "name",
+        "email",
+        "createdAt",
+        "role",
+        "paysOrigine",
+        "paysActuel"
+      ]
     },
     "Course": {
       "title": "Course",
       "description": "Represents a course on the platform.",
       "type": "object",
       "properties": {
-        "titre": { "type": "string" },
-        "categorie": { "type": "string" },
-        "description": { "type": "string" },
-        "image": { "type": "string", "format": "uri" },
-        "niveau": { "type": "string", "enum": ["Débutant", "Intermédiaire", "Avancé"] },
-        "langue": { "type": "string" },
-        "prix": { "type": "number" },
+        "titre": {
+          "type": "string"
+        },
+        "categorie": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "image": {
+          "type": "string",
+          "format": "uri"
+        },
+        "niveau": {
+          "type": "string",
+          "enum": [
+            "Débutant",
+            "Intermédiaire",
+            "Avancé"
+          ]
+        },
+        "langue": {
+          "type": "string"
+        },
+        "prix": {
+          "type": "number"
+        },
         "modules": {
           "type": "array",
           "items": {
             "type": "object",
             "properties": {
-              "id": { "type": "string" },
-              "titre": { "type": "string" },
+              "id": {
+                "type": "string"
+              },
+              "titre": {
+                "type": "string"
+              },
               "videos": {
                 "type": "array",
                 "items": {
                   "type": "object",
                   "properties": {
-                    "titre": { "type": "string" },
-                    "url": { "type": "string", "format": "uri" }
+                    "titre": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string",
+                      "format": "uri"
+                    }
                   }
                 }
               }
             }
           }
         },
-        "date_creation": { "type": "string", "format": "date-time" },
-        "publie": { "type": "boolean" },
-        "auteur": { "type": "string" }
+        "date_creation": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "publie": {
+          "type": "boolean"
+        },
+        "auteur": {
+          "type": "string"
+        }
       },
-      "required": ["titre", "categorie", "description", "niveau", "prix", "date_creation", "publie"]
+      "required": [
+        "titre",
+        "categorie",
+        "description",
+        "niveau",
+        "prix",
+        "date_creation",
+        "publie"
+      ]
+    },
+    "CourseProgress": {
+      "title": "Course Progress",
+      "description": "Tracks a user's progress in a specific course.",
+      "type": "object",
+      "properties": {
+        "courseId": {
+          "type": "string",
+          "description": "The ID of the course."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user."
+        },
+        "progressPercentage": {
+          "type": "number",
+          "description": "The completion percentage of the course."
+        },
+        "lastUpdated": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the progress was last updated."
+        },
+        "courseTitle": {
+          "type": "string",
+          "description": "The title of the course, denormalized for easy display."
+        }
+      },
+      "required": [
+        "courseId",
+        "userId",
+        "progressPercentage",
+        "lastUpdated",
+        "courseTitle"
+      ]
     }
   },
   "auth": {
-    "providers": ["email"]
+    "providers": [
+      "email"
+    ]
   },
   "firestore": {
     "/users/{userId}": {
-      "schema": { "$ref": "#/entities/UserProfile" },
+      "schema": {
+        "$ref": "#/entities/UserProfile"
+      },
       "description": "Stores public profile information for each user."
     },
     "/courses/{courseId}": {
-      "schema": { "$9ref": "#/entities/Course" },
+      "schema": {
+        "$ref": "#/entities/Course"
+      },
       "description": "Stores all the available courses on the platform."
+    },
+    "/users/{userId}/progress/{progressId}": {
+      "schema": {
+        "$ref": "#/entities/CourseProgress"
+      },
+      "description": "Stores the learning progress for each user on different courses."
     }
   }
 }

@@ -4,6 +4,8 @@
 import { initializeApp, getApps, getApp, type FirebaseOptions, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
+import { getStorage, type FirebaseStorage } from 'firebase/storage';
+
 
 const firebaseConfig: FirebaseOptions = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -20,12 +22,14 @@ export const isFirebaseConfigured = !!firebaseConfig.apiKey && !!firebaseConfig.
 let app: FirebaseApp | undefined;
 let auth: Auth | undefined;
 let db: Firestore | undefined;
+let storage: FirebaseStorage | undefined;
 
 if (isFirebaseConfigured) {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
     if (app) {
         auth = getAuth(app);
         db = getFirestore(app);
+        storage = getStorage(app);
     }
 } else {
     if (typeof window !== 'undefined') {
@@ -33,4 +37,4 @@ if (isFirebaseConfigured) {
     }
 }
 
-export { app, auth, db };
+export { app, auth, db, storage };
