@@ -17,8 +17,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        body: ['"PT Sans"', 'sans-serif'],
-        headline: ['"PT Sans"', 'sans-serif'],
+        sans: ['var(--font-sans)', 'sans-serif'],
+        headline: ['var(--font-sans)', 'sans-serif'],
         code: ['monospace'],
       },
       colors: {
@@ -88,7 +88,7 @@ export default {
           },
         },
         'fade-in': {
-          from: { opacity: '0', transform: 'translateY(20px)' },
+          from: { opacity: '0', transform: 'translateY(10px)' },
           to: { opacity: '1', transform: 'translateY(0)' },
         },
         'slide-up': {
@@ -99,7 +99,7 @@ export default {
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
-        'fade-in': 'fade-in 0.5s ease-out',
+        'fade-in': 'fade-in 0.5s ease-out forwards',
         'slide-up': 'slide-up 0.8s ease-out',
       },
     },

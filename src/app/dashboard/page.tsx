@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, BookCopy, CheckCircle, Clock } from 'lucide-react';
+import { ArrowRight, BookCopy } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -20,68 +20,49 @@ export default function DashboardPage() {
   // This is mock data. We'll replace this with real user data later.
   const enrolledCourses = courses.filter(course => users[0].enrolledCourses.includes(course.id));
 
-  const stats = [
-    { label: 'Cours Inscrits', value: enrolledCourses.length, icon: BookCopy },
-    { label: 'Cours Terminés', value: 1, icon: CheckCircle },
-    { label: 'Heures Apprises', value: '15h', icon: Clock },
-  ];
-
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold font-headline">
-          Bienvenue, {user?.displayName || 'cher étudiant'} !
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+          Bienvenue, {user?.displayName || 'cher étudiant'} 👋
         </h1>
-        <p className="text-muted-foreground">
-          Continuons à apprendre et à grandir ensemble.
+        <p className="text-muted-foreground mt-2 text-lg">
+          Prêt à apprendre quelque chose de nouveau aujourd'hui ?
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        {stats.map((stat) => (
-          <Card key={stat.label}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.label}</CardTitle>
-              <stat.icon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
 
       <div>
-        <h2 className="text-2xl font-bold font-headline mb-4">
-          Mes Formations en cours
-        </h2>
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className='flex justify-between items-center mb-4'>
+            <h2 className="text-2xl font-bold">
+            Reprendre là où vous vous êtes arrêté
+            </h2>
+             <Button asChild variant="link">
+                <Link href="/dashboard/courses">Voir toutes mes formations</Link>
+            </Button>
+        </div>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {enrolledCourses.filter(c => c.id === 'developpement-web').map((course) => (
-            <Card key={course.id}>
+            <Card key={course.id} className="overflow-hidden shadow-md transition-transform hover:scale-105 duration-300 rounded-2xl">
               <CardHeader>
-                <CardTitle>{course.title}</CardTitle>
-                <CardDescription>{course.category}</CardDescription>
+                <CardTitle className="text-lg">{course.titre}</CardTitle>
+                <CardDescription>{course.categorie}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-4">
-                  <Progress value={66} className="flex-grow" />
+                  <Progress value={66} className="h-2 flex-grow" />
                   <span className="text-sm font-medium">66%</span>
                 </div>
               </CardContent>
               <CardFooter>
-                <Button asChild variant="default" size="sm">
+                <Button asChild variant="default" className="w-full">
                   <Link href={`/courses/${course.id}/modules/${course.modules[0].id}`}>
-                    Continuer <ArrowRight className="ml-2 h-4 w-4" />
+                    Continuer la formation <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
               </CardFooter>
             </Card>
           ))}
-        </div>
-        <div className="mt-6">
-            <Button asChild variant="outline">
-                <Link href="/dashboard/courses">Voir toutes mes formations</Link>
-            </Button>
         </div>
       </div>
     </div>

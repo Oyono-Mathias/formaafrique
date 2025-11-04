@@ -69,26 +69,42 @@ export default function AdminLayout({
     }
 
     const checkAdminRole = async () => {
-      const userDocRef = doc(db, 'users', user.uid);
-      const userDoc = await getDoc(userDocRef);
+      try {
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef);
 
-      if (userDoc.exists()) {
-        const userData = userDoc.data() as UserProfile;
-        if (userData.role === 'admin') {
-          setIsAdmin(true);
+        if (userDoc.exists()) {
+          const userData = userDoc.data() as UserProfile;
+          if (userData.role === 'admin') {
+            setIsAdmin(true);
+          } else {
+            toast({
+              variant: 'destructive',
+              title: 'Accès refusé',
+              description: "Vous n'avez pas les droits pour accéder à cette page.",
+            });
+            router.push('/');
+          }
         } else {
+          // User document doesn't exist, deny access
           toast({
             variant: 'destructive',
             title: 'Accès refusé',
-            description: "Vous n'avez pas les droits pour accéder à cette page.",
+            description: "Profil utilisateur non trouvé.",
           });
           router.push('/');
         }
-      } else {
-        // User document doesn't exist, deny access
+      } catch (error) {
+        console.error("Error checking admin role:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Erreur de vérification',
+            description: "Une erreur est survenue lors de la vérification de vos droits.",
+          });
         router.push('/');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     checkAdminRole();
@@ -111,57 +127,59 @@ export default function AdminLayout({
 
   return (
     <SidebarProvider>
-      <Sidebar>
-        <SidebarHeader>
-          <Logo />
-        </SidebarHeader>
-        <SidebarContent>
-           <div className='p-2 flex items-center gap-2 bg-primary/10 rounded-md m-2 border border-primary/20'>
-              <ShieldCheck className='text-primary' />
-              <span className='font-semibold text-primary text-sm'>Menu Admin</span>
-           </div>
-          <SidebarMenu>
-            {adminNavLinks.map((link) => (
-              <SidebarMenuItem key={link.href}>
-                <Link href={link.href}>
-                  <SidebarMenuButton
-                    isActive={pathname === link.href}
-                    tooltip={link.label}
-                  >
-                    <link.icon />
-                    <span>{link.label}</span>
-                  </SidebarMenuButton>
-                </Link>
+      <div className="flex min-h-screen">
+        <Sidebar>
+          <SidebarHeader>
+            <Logo />
+          </SidebarHeader>
+          <SidebarContent>
+            <div className='p-2 flex items-center gap-2 bg-primary/10 rounded-md m-2 border border-primary/20'>
+                <ShieldCheck className='text-primary' />
+                <span className='font-semibold text-primary text-sm'>Menu Admin</span>
+            </div>
+            <SidebarMenu>
+              {adminNavLinks.map((link) => (
+                <SidebarMenuItem key={link.href}>
+                  <Link href={link.href}>
+                    <SidebarMenuButton
+                      isActive={pathname === link.href}
+                      tooltip={link.label}
+                    >
+                      <link.icon />
+                      <span>{link.label}</span>
+                    </SidebarMenuButton>
+                  </Link>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarContent>
+          <SidebarFooter>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={handleSignOut} tooltip="Déconnexion" className="text-destructive hover:bg-destructive/10 hover:text-destructive">
+                    <LogOut />
+                    <span>Déconnexion</span>
+                </SidebarMenuButton>
               </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarContent>
-        <SidebarFooter>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton onClick={handleSignOut} tooltip="Déconnexion" className="text-destructive hover:bg-destructive/10 hover:text-destructive">
-                  <LogOut />
-                  <span>Déconnexion</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarFooter>
-      </Sidebar>
-      <SidebarInset>
-        <header className="flex items-center justify-between p-4 border-b">
-          <SidebarTrigger />
-          <div className="flex items-center gap-4">
-             <span className="font-medium hidden sm:inline">{user?.displayName || 'Admin'}</span>
-             <Avatar>
-                {user?.photoURL && <AvatarImage src={user.photoURL} alt="Admin Avatar" />}
-                <AvatarFallback>{user?.displayName ? user.displayName.charAt(0) : 'A'}</AvatarFallback>
-             </Avatar>
+            </SidebarMenu>
+          </SidebarFooter>
+        </Sidebar>
+        <SidebarInset>
+          <header className="flex items-center justify-between p-4 border-b h-16 sticky top-0 bg-card z-10">
+            <SidebarTrigger />
+            <div className="flex items-center gap-4">
+              <span className="font-medium hidden sm:inline">{user?.displayName || 'Admin'}</span>
+              <Avatar>
+                  {user?.photoURL && <AvatarImage src={user.photoURL} alt="Admin Avatar" />}
+                  <AvatarFallback>{user?.displayName ? user.displayName.charAt(0) : 'A'}</AvatarFallback>
+              </Avatar>
+            </div>
+          </header>
+          <div className="p-4 sm:p-6 lg:p-8 bg-primary/5 min-h-[calc(100vh-4rem)]">
+              {children}
           </div>
-        </header>
-        <div className="p-4 sm:p-6 lg:p-8 bg-primary/5 min-h-[calc(100vh-4rem)]">
-            {children}
-        </div>
-      </SidebarInset>
+        </SidebarInset>
+      </div>
     </SidebarProvider>
   );
 }

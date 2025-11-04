@@ -2,131 +2,210 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  LayoutDashboard,
+  Home,
   BookCopy,
   GraduationCap,
-  User,
+  User as UserIcon,
   Settings,
   LogOut,
+  Menu,
+  Bell,
+  Search,
+  X,
 } from 'lucide-react';
-
-import {
-  SidebarProvider,
-  Sidebar,
-  SidebarHeader,
-  SidebarContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarFooter,
-  SidebarInset,
-  SidebarTrigger,
-} from '@/components/ui/sidebar';
 import { Logo } from '@/components/icons/logo';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useUser, useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { cn } from '@/lib/utils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const dashboardNavLinks = [
-  { href: '/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
+  { href: '/dashboard', label: 'Accueil', icon: Home },
   { href: '/dashboard/courses', label: 'Mes Formations', icon: BookCopy },
   { href: '/dashboard/certificates', label: 'Certificats', icon: GraduationCap },
-  { href: '/dashboard/profile', label: 'Profil', icon: User },
+  { href: '/dashboard/profile', label: 'Profil', icon: UserIcon },
+  { href: '/dashboard/settings', label: 'Paramètres', icon: Settings },
 ];
 
-export default function DashboardLayout({
-  children,
+function NavLink({
+  href,
+  icon: Icon,
+  label,
+  isMobile = false,
 }: {
-  children: React.ReactNode;
+  href: string;
+  icon: React.ElementType;
+  label: string;
+  isMobile?: boolean;
 }) {
   const pathname = usePathname();
-  const { user, loading } = useUser();
-  const auth = useAuth();
-  const router = useRouter();
+  const isActive = pathname === href;
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login');
-    }
-  }, [user, loading, router]);
-  
+  return (
+    <Link
+      href={href}
+      className={cn(
+        'flex items-center gap-4 px-4 py-3 rounded-lg transition-colors',
+        isActive
+          ? 'bg-primary text-primary-foreground'
+          : 'text-foreground/70 hover:bg-muted hover:text-foreground',
+        isMobile ? 'text-lg' : 'text-sm'
+      )}
+    >
+      <Icon className="h-5 w-5" />
+      <span className="font-medium">{label}</span>
+    </Link>
+  );
+}
+
+function SidebarContent() {
+  const { user } = useUser();
+  const router = useRouter();
+  const auth = useAuth();
+
   const handleSignOut = async () => {
     if (!auth) return;
     await signOut(auth);
     router.push('/');
   };
 
-  const userAvatar = PlaceHolderImages.find((img) => img.id === 'user-avatar');
+  return (
+    <div className="flex h-full flex-col">
+      <div className="p-4">
+        <Link href="/" aria-label="Retour à la page d'accueil">
+          <Logo />
+        </Link>
+      </div>
+      <nav className="flex-1 space-y-2 p-4">
+        {dashboardNavLinks.map((link) => (
+          <NavLink key={link.href} {...link} />
+        ))}
+      </nav>
+      <div className="p-4 mt-auto">
+        <button
+          onClick={handleSignOut}
+          className="flex w-full items-center gap-4 px-4 py-3 rounded-lg text-destructive-foreground/70 hover:bg-destructive/80 hover:text-destructive-foreground transition-colors text-sm"
+        >
+          <LogOut className="h-5 w-5" />
+          <span className="font-medium">Déconnexion</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const { user, loading } = useUser();
+  const router = useRouter();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
 
   if (loading || !user) {
     return (
-        <div className="flex justify-center items-center h-screen">
-            <p>Chargement...</p>
-        </div>
+      <div className="flex justify-center items-center h-screen bg-background">
+        <p className="flex items-center gap-2 text-lg">
+          Chargement...
+        </p>
+      </div>
     );
   }
 
   return (
-    <SidebarProvider>
-      <Sidebar>
-        <SidebarHeader>
-          <Logo />
-        </SidebarHeader>
-        <SidebarContent>
-          <SidebarMenu>
-            {dashboardNavLinks.map((link) => (
-              <SidebarMenuItem key={link.href}>
-                <Link href={link.href}>
-                  <SidebarMenuButton
-                    isActive={pathname === link.href}
-                    tooltip={link.label}
-                  >
-                    <link.icon />
-                    <span>{link.label}</span>
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarContent>
-        <SidebarFooter>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <Link href="#">
-                 <SidebarMenuButton tooltip="Paramètres">
-                    <Settings />
+    <div className="min-h-screen w-full bg-background flex">
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:block w-64 flex-shrink-0 border-r bg-card">
+        <SidebarContent />
+      </aside>
+
+      <div className="flex flex-col flex-1">
+        {/* Header */}
+        <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-card px-4 lg:px-8">
+          {/* Mobile Menu Trigger */}
+          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+            <SheetTrigger asChild className="lg:hidden">
+              <Button variant="ghost" size="icon">
+                <Menu className="h-6 w-6" />
+                <span className="sr-only">Ouvrir le menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-64 p-0">
+              <SidebarContent />
+            </SheetContent>
+          </Sheet>
+
+          {/* Spacer for mobile to center the logo or title if any */}
+          <div className="lg:hidden flex-1"></div>
+
+          <div className="flex items-center gap-4 ml-auto">
+            <Button variant="ghost" size="icon" className="hidden sm:inline-flex">
+              <Search className="h-5 w-5" />
+              <span className="sr-only">Rechercher</span>
+            </Button>
+            <Button variant="ghost" size="icon">
+              <Bell className="h-5 w-5" />
+              <span className="sr-only">Notifications</span>
+            </Button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-2 p-1 rounded-full h-auto">
+                  <Avatar className="h-9 w-9">
+                    {user.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || 'Avatar'} />}
+                    <AvatarFallback>{user.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}</AvatarFallback>
+                  </Avatar>
+                   <span className="hidden sm:inline font-medium">{user.displayName}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Mon Compte</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/profile">
+                    <UserIcon className="mr-2 h-4 w-4" />
+                    <span>Profil</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/settings">
+                    <Settings className="mr-2 h-4 w-4" />
                     <span>Paramètres</span>
-                  </SidebarMenuButton>
-              </Link>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton onClick={handleSignOut} tooltip="Déconnexion" className="text-destructive hover:bg-destructive/10 hover:text-destructive">
-                  <LogOut />
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => signOut(useAuth()!)}
+                  className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
                   <span>Déconnexion</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarFooter>
-      </Sidebar>
-      <SidebarInset>
-        <header className="flex items-center justify-between p-4 border-b">
-          <SidebarTrigger />
-          <div className="flex items-center gap-4">
-             <span className="font-medium hidden sm:inline">{user.displayName || 'Utilisateur'}</span>
-             <Avatar>
-                {user.photoURL ? <AvatarImage src={user.photoURL} alt="User Avatar" /> : userAvatar && <AvatarImage src={userAvatar.imageUrl} alt="User Avatar" />}
-                <AvatarFallback>{user.displayName ? user.displayName.charAt(0) : 'U'}</AvatarFallback>
-             </Avatar>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
-        <div className="p-4 sm:p-6 lg:p-8">
-            {children}
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 animate-fade-in">{children}</main>
+      </div>
+    </div>
   );
 }
