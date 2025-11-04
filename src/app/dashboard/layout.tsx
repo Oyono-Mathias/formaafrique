@@ -20,7 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useUser, useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
@@ -150,6 +150,7 @@ export default function DashboardLayout({
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-64 p-0">
+              <SheetTitle className="sr-only">Menu principal</SheetTitle>
               <SidebarContent />
             </SheetContent>
           </Sheet>

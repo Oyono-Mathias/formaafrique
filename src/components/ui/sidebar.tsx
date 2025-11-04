@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils"
 import { useIsMobile } from "@/hooks/use-mobile"
 
 import { Button } from "./button"
-import { Sheet, SheetContent, SheetTrigger } from "./sheet"
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "./sheet"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./tooltip"
 
 const sidebarVariants = cva("flex h-full flex-col", {
@@ -68,6 +68,7 @@ const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
       return (
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetContent side={side} className={cn("w-64 p-0", className)}>
+            <SheetTitle className="sr-only">Menu principal</SheetTitle>
             <div ref={ref} className={cn(sidebarVariants({ side }))} {...props}>
               {children}
             </div>
