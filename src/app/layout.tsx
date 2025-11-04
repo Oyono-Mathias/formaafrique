@@ -6,9 +6,13 @@ import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import { FirebaseProvider } from '@/firebase/client-provider';
 import { UserProvider } from '@/firebase';
-import { Inter } from 'next/font/google';
+import { PT_Sans } from 'next/font/google';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
+const ptSans = PT_Sans({ 
+  subsets: ['latin'], 
+  weight: ['400', '700'],
+  variable: '--font-sans' 
+});
 
 export const metadata: Metadata = {
   title: 'FormaAfrique | Formations pour un avenir meilleur',
@@ -26,7 +30,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" className={cn("h-full font-sans", inter.variable)}>
+    <html lang="fr" className={cn("h-full font-sans", ptSans.variable)}>
       <body className={cn('antialiased flex flex-col min-h-screen')}>
         <FirebaseProvider>
           <UserProvider>

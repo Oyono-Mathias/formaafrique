@@ -7,23 +7,12 @@ import {
   LayoutDashboard,
   BookCopy,
   Users,
-  GraduationCap,
+  CreditCard,
+  Settings,
   LogOut,
-  ShieldCheck,
   Loader2,
+  Menu,
 } from 'lucide-react';
-import {
-  SidebarProvider,
-  Sidebar,
-  SidebarHeader,
-  SidebarContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarFooter,
-  SidebarInset,
-  SidebarTrigger,
-} from '@/components/ui/sidebar';
 import { Logo } from '@/components/icons/logo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useUser, useAuth, useFirestore } from '@/firebase';
@@ -31,20 +20,67 @@ import { signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
+import { cn } from '@/lib/utils';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 
 const adminNavLinks = [
   { href: '/admin', label: 'Tableau de bord', icon: LayoutDashboard },
   { href: '/admin/courses', label: 'Formations', icon: BookCopy },
   { href: '/admin/users', label: 'Utilisateurs', icon: Users },
-  { href: '/admin/donations', label: 'Dons & Certificats', icon: GraduationCap },
+  { href: '/admin/donations', label: 'Transactions', icon: CreditCard },
+  { href: '/admin/settings', label: 'Paramètres', icon: Settings },
 ];
+
+function NavLink({ href, icon: Icon, label }: { href: string, icon: React.ElementType, label: string }) {
+  const pathname = usePathname();
+  const isActive = pathname === href;
+  return (
+    <Link
+      href={href}
+      className={cn(
+        'flex items-center gap-3 rounded-lg px-3 py-2 text-gray-300 transition-all hover:bg-primary/20 hover:text-white',
+        isActive && 'bg-primary text-white'
+      )}
+    >
+      <Icon className="h-4 w-4" />
+      {label}
+    </Link>
+  );
+}
+
+function AdminSidebar({ onSignOut }: { onSignOut: () => void }) {
+  return (
+    <div className="flex h-full max-h-screen flex-col gap-2">
+      <div className="flex h-16 items-center border-b border-gray-700 px-6">
+        <Link href="/admin">
+          <Logo className="h-6 text-white" />
+        </Link>
+      </div>
+      <div className="flex-1 overflow-auto py-2">
+        <nav className="grid items-start px-4 text-sm font-medium">
+          {adminNavLinks.map((link) => (
+            <NavLink key={link.href} {...link} />
+          ))}
+        </nav>
+      </div>
+      <div className="mt-auto p-4">
+        <Button variant="ghost" className="w-full justify-start gap-3 text-gray-300 hover:text-red-500" onClick={onSignOut}>
+          <LogOut className="h-4 w-4" />
+          Déconnexion
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const pathname = usePathname();
   const { user, loading: userLoading } = useUser();
   const auth = useAuth();
   const db = useFirestore();
@@ -54,19 +90,12 @@ export default function AdminLayout({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (userLoading) {
-      return; // Wait for user auth state to be resolved
-    }
-
+    if (userLoading) return;
     if (!user) {
       router.push('/login');
       return;
     }
-
-    if (!db) {
-        // Firestore not available yet
-        return;
-    }
+    if (!db) return;
 
     const checkAdminRole = async () => {
       try {
@@ -81,26 +110,17 @@ export default function AdminLayout({
             toast({
               variant: 'destructive',
               title: 'Accès refusé',
-              description: "Vous n'avez pas les droits pour accéder à cette page.",
+              description: "Vous n'êtes pas administrateur.",
             });
             router.push('/');
           }
         } else {
-          // User document doesn't exist, deny access
-          toast({
-            variant: 'destructive',
-            title: 'Accès refusé',
-            description: "Profil utilisateur non trouvé.",
-          });
+          toast({ variant: 'destructive', title: 'Accès refusé', description: "Profil non trouvé." });
           router.push('/');
         }
       } catch (error) {
         console.error("Error checking admin role:", error);
-        toast({
-            variant: 'destructive',
-            title: 'Erreur de vérification',
-            description: "Une erreur est survenue lors de la vérification de vos droits.",
-          });
+        toast({ variant: 'destructive', title: 'Erreur', description: "Impossible de vérifier vos droits." });
         router.push('/');
       } finally {
         setLoading(false);
@@ -113,73 +133,51 @@ export default function AdminLayout({
   const handleSignOut = async () => {
     if (!auth) return;
     await signOut(auth);
-    router.push('/');
+    router.push('/login');
   };
 
   if (loading || userLoading || !isAdmin) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <Loader2 className="h-6 w-6 animate-spin" />
-        <p className='ml-2'>Vérification de l'accès administrateur...</p>
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <p className='ml-3'>Vérification des droits d'administrateur...</p>
       </div>
     );
   }
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen">
-        <Sidebar>
-          <SidebarHeader>
-            <Logo />
-          </SidebarHeader>
-          <SidebarContent>
-            <div className='p-2 flex items-center gap-2 bg-primary/10 rounded-md m-2 border border-primary/20'>
-                <ShieldCheck className='text-primary' />
-                <span className='font-semibold text-primary text-sm'>Menu Admin</span>
-            </div>
-            <SidebarMenu>
-              {adminNavLinks.map((link) => (
-                <SidebarMenuItem key={link.href}>
-                  <Link href={link.href}>
-                    <SidebarMenuButton
-                      isActive={pathname === link.href}
-                      tooltip={link.label}
-                    >
-                      <link.icon />
-                      <span>{link.label}</span>
-                    </SidebarMenuButton>
-                  </Link>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarContent>
-          <SidebarFooter>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton onClick={handleSignOut} tooltip="Déconnexion" className="text-destructive hover:bg-destructive/10 hover:text-destructive">
-                    <LogOut />
-                    <span>Déconnexion</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarFooter>
-        </Sidebar>
-        <SidebarInset>
-          <header className="flex items-center justify-between p-4 border-b h-16 sticky top-0 bg-card z-10">
-            <SidebarTrigger />
-            <div className="flex items-center gap-4">
-              <span className="font-medium hidden sm:inline">{user?.displayName || 'Admin'}</span>
-              <Avatar>
-                  {user?.photoURL && <AvatarImage src={user.photoURL} alt="Admin Avatar" />}
-                  <AvatarFallback>{user?.displayName ? user.displayName.charAt(0) : 'A'}</AvatarFallback>
-              </Avatar>
-            </div>
-          </header>
-          <div className="p-4 sm:p-6 lg:p-8 bg-primary/5 min-h-[calc(100vh-4rem)]">
-              {children}
+    <div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr]">
+      <aside className="hidden border-r bg-[#111827] text-white lg:block">
+        <AdminSidebar onSignOut={handleSignOut} />
+      </aside>
+      <div className="flex flex-col">
+        <header className="flex h-16 items-center gap-4 border-b bg-card px-6 sticky top-0 z-30">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="lg:hidden">
+                <Menu className="h-6 w-6" />
+                <span className="sr-only">Ouvrir le menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[280px] bg-[#111827] text-white p-0 border-r-0">
+               <VisuallyHidden>
+                <SheetTitle>Menu administrateur</SheetTitle>
+              </VisuallyHidden>
+              <AdminSidebar onSignOut={handleSignOut} />
+            </SheetContent>
+          </Sheet>
+          <div className="flex-1">
+            <h1 className="text-lg font-semibold">FormAfrique Admin Dashboard</h1>
           </div>
-        </SidebarInset>
+          <Avatar>
+            <AvatarImage src={user?.photoURL || ''} alt="Admin" />
+            <AvatarFallback>{user?.displayName?.charAt(0) || 'A'}</AvatarFallback>
+          </Avatar>
+        </header>
+        <main className="flex-1 bg-background p-4 sm:p-6 lg:p-8 animate-fade-in">
+          {children}
+        </main>
       </div>
-    </SidebarProvider>
+    </div>
   );
 }

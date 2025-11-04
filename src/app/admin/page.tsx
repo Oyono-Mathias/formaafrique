@@ -8,46 +8,62 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import {
-  BarChart,
+  Activity,
   BookCopy,
+  CreditCard,
   DollarSign,
+  Download,
   GraduationCap,
   Users,
 } from 'lucide-react';
-import { courses, users } from '@/lib/mock-data';
+import { useCollection } from '@/firebase';
+import type { Course, UserProfile } from '@/lib/types';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 export default function AdminDashboardPage() {
+  const { data: users, loading: usersLoading } = useCollection<UserProfile>('users');
+  const { data: courses, loading: coursesLoading } = useCollection<Course>('courses');
+
   const stats = [
     {
-      label: 'Utilisateurs',
-      value: users.length,
+      label: 'Utilisateurs Inscrits',
+      value: usersLoading ? '...' : users.length,
       icon: Users,
-      description: 'Nombre total d\'utilisateurs inscrits.',
+      description: 'Nombre total d\'utilisateurs.',
     },
     {
-      label: 'Formations',
-      value: courses.length,
+      label: 'Formations Disponibles',
+      value: coursesLoading ? '...' : courses.length,
       icon: BookCopy,
-      description: 'Nombre total de formations disponibles.',
+      description: 'Nombre total de cours.',
     },
     {
-      label: 'Certificats Délivrés',
-      value: 1, // Mock data
-      icon: GraduationCap,
-      description: 'Basé sur les formations terminées.',
-    },
-    {
-      label: 'Dons Totals',
+      label: 'Revenus Mensuels',
       value: '150 €', // Mock data
       icon: DollarSign,
-      description: 'Montant total des contributions.',
+      description: '+15% ce mois-ci',
+    },
+    {
+      label: 'Taux d\'Activité',
+      value: '82%', // Mock data
+      icon: Activity,
+      description: 'Utilisateurs actifs cette semaine.',
     },
   ];
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold font-headline">Tableau de Bord Administrateur</h1>
+        <h1 className="text-3xl font-bold font-headline">Tableau de Bord</h1>
         <p className="text-muted-foreground">
           Vue d'ensemble de l'activité sur FormaAfrique.
         </p>
@@ -55,7 +71,7 @@ export default function AdminDashboardPage() {
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
-          <Card key={stat.label}>
+          <Card key={stat.label} className="rounded-2xl shadow-md transition-transform hover:scale-105">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">{stat.label}</CardTitle>
               <stat.icon className="h-4 w-4 text-muted-foreground" />
@@ -69,20 +85,47 @@ export default function AdminDashboardPage() {
       </div>
       
       <div className='grid lg:grid-cols-2 gap-6'>
-         <Card>
-            <CardHeader>
-              <CardTitle>Aperçu des inscriptions</CardTitle>
+         <Card className="rounded-2xl shadow-md">
+            <CardHeader className="flex flex-row items-center">
+              <div className="grid gap-2">
+                <CardTitle>Transactions Récentes</CardTitle>
+                <CardDescription>Les 5 derniers dons et paiements.</CardDescription>
+              </div>
+              <Button asChild size="sm" className="ml-auto gap-1">
+                <a href="#">
+                  Tout voir
+                  <CreditCard className="h-4 w-4" />
+                </a>
+              </Button>
             </CardHeader>
             <CardContent>
-               <p className='text-muted-foreground'>Graphique à venir...</p>
+               <p className='text-muted-foreground'>Journal des transactions à venir...</p>
             </CardContent>
           </Card>
-           <Card>
+           <Card className="rounded-2xl shadow-md">
             <CardHeader>
-              <CardTitle>Dernières activités</CardTitle>
+              <CardTitle>Inscriptions Récentes</CardTitle>
+              <CardDescription>Les 5 derniers utilisateurs inscrits.</CardDescription>
             </CardHeader>
             <CardContent>
-               <p className='text-muted-foreground'>Journal d'activité à venir...</p>
+               <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nom</TableHead>
+                    <TableHead className="hidden sm:table-cell">Email</TableHead>
+                    <TableHead className="text-right">Rôle</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {users.slice(0, 5).map(user => (
+                    <TableRow key={user.id}>
+                      <TableCell>{user.name}</TableCell>
+                      <TableCell className="hidden sm:table-cell">{user.email}</TableCell>
+                      <TableCell className="text-right"><Badge variant="outline">{user.role}</Badge></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
       </div>
