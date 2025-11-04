@@ -89,3 +89,16 @@ export interface CourseProgress {
     lastUpdated: Timestamp;
     courseTitle: string;
 }
+
+export interface Donation {
+  id?: string;
+  donateurId: string;
+  donateurNom: string;
+  donateurEmail: string;
+  montant: number;
+  devise: string;
+  date: Timestamp;
+  statut: 'succes' | 'en_attente' | 'echec';
+  moyenPaiement: 'carte' | 'mobile_money' | 'inconnu';
+  paysOrigine: string;
+}

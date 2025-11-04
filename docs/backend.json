@@ -228,6 +228,54 @@
         }
       },
       "required": ["studentId", "studentName", "courseId", "courseTitle", "enrollmentDate"]
+    },
+    "Donation": {
+      "title": "Donation",
+      "description": "Represents a donation made on the platform.",
+      "type": "object",
+      "properties": {
+        "donateurId": {
+          "type": "string",
+          "description": "The UID of the user who made the donation."
+        },
+        "donateurNom": {
+          "type": "string",
+          "description": "The name of the donor."
+        },
+        "donateurEmail": {
+          "type": "string",
+          "format": "email",
+          "description": "The email of the donor."
+        },
+        "montant": {
+          "type": "number",
+          "description": "The amount of the donation."
+        },
+        "devise": {
+          "type": "string",
+          "description": "The currency of the donation (e.g., EUR, XAF)."
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp of the donation."
+        },
+        "statut": {
+          "type": "string",
+          "enum": ["succes", "en_attente", "echec"],
+          "description": "The status of the donation transaction."
+        },
+        "moyenPaiement": {
+          "type": "string",
+          "enum": ["carte", "mobile_money", "inconnu"],
+          "description": "The payment method used for the donation."
+        },
+        "paysOrigine": {
+          "type": "string",
+          "description": "The country of origin of the donor."
+        }
+      },
+      "required": ["donateurId", "donateurNom", "donateurEmail", "montant", "devise", "date", "statut"]
     }
   },
   "auth": {
@@ -261,6 +309,10 @@
     "/courses/{courseId}/enrollments/{enrollmentId}": {
         "schema": { "$ref": "#/entities/Enrollment" },
         "description": "Stores all enrollments for a specific course."
+    },
+    "/donations/{donationId}": {
+        "schema": { "$ref": "#/entities/Donation" },
+        "description": "Stores all donations made on the platform."
     }
   }
 }
