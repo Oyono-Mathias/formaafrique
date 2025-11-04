@@ -21,7 +21,7 @@ import { useRouter } from 'next/navigation';
 import type { UserProfile } from '@/lib/types';
 import { isFirebaseConfigured } from '@/firebase/config';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Terminal } from 'lucide-react';
+import { Terminal, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { countries } from '@/lib/countries';
 import { ScrollArea } from '../ui/scroll-area';
@@ -70,7 +70,7 @@ export default function SignupForm() {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
 
-      // Update user profile
+      // Update user profile in auth
       await updateProfile(user, {
         displayName: values.name,
       });
@@ -136,7 +136,7 @@ export default function SignupForm() {
             <FormItem>
               <FormLabel>Nom complet</FormLabel>
               <FormControl>
-                <Input placeholder="Jean Dupont" {...field} disabled={!isFirebaseConfigured} />
+                <Input placeholder="Jean Dupont" {...field} disabled={!isFirebaseConfigured || form.formState.isSubmitting} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -149,7 +149,7 @@ export default function SignupForm() {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder="votre@email.com" {...field} disabled={!isFirebaseConfigured} />
+                <Input placeholder="votre@email.com" {...field} disabled={!isFirebaseConfigured || form.formState.isSubmitting} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -162,7 +162,7 @@ export default function SignupForm() {
             render={({ field }) => (
                 <FormItem>
                 <FormLabel>Pays d'origine</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!isFirebaseConfigured}>
+                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!isFirebaseConfigured || form.formState.isSubmitting}>
                     <FormControl>
                     <SelectTrigger>
                         <SelectValue placeholder="Sélectionnez..." />
@@ -184,7 +184,7 @@ export default function SignupForm() {
             render={({ field }) => (
                 <FormItem>
                 <FormLabel>Pays actuel</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!isFirebaseConfigured}>
+                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!isFirebaseConfigured || form.formState.isSubmitting}>
                     <FormControl>
                     <SelectTrigger>
                         <SelectValue placeholder="Sélectionnez..." />
@@ -208,7 +208,7 @@ export default function SignupForm() {
             <FormItem>
               <FormLabel>Mot de passe</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="********" {...field} disabled={!isFirebaseConfigured} />
+                <Input type="password" placeholder="********" {...field} disabled={!isFirebaseConfigured || form.formState.isSubmitting} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -221,13 +221,14 @@ export default function SignupForm() {
             <FormItem>
               <FormLabel>Confirmer le mot de passe</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="********" {...field} disabled={!isFirebaseConfigured} />
+                <Input type="password" placeholder="********" {...field} disabled={!isFirebaseConfigured || form.formState.isSubmitting} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
         <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || !isFirebaseConfigured}>
+          {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {form.formState.isSubmitting ? 'Création du compte...' : 'Créer un compte'}
         </Button>
       </form>

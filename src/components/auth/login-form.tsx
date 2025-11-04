@@ -21,7 +21,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { useAuth, useFirestore } from '@/firebase';
 import { isFirebaseConfigured } from '@/firebase/config';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Terminal } from 'lucide-react';
+import { Terminal, Loader2 } from 'lucide-react';
 import type { UserProfile } from '@/lib/types';
 
 const formSchema = z.object({
@@ -62,17 +62,15 @@ export default function LoginForm() {
 
       if (userDoc.exists()) {
         const userData = userDoc.data() as UserProfile;
-        if (userData.role === 'admin') {
-          toast({
-            title: 'Connexion réussie (Admin)',
-            description: 'Redirection vers le tableau de bord administrateur...',
-          });
-          router.push('/admin');
-        } else {
-          toast({
+        toast({
             title: 'Connexion réussie',
             description: 'Redirection vers votre tableau de bord...',
-          });
+        });
+        if (userData.role === 'admin') {
+          router.push('/admin');
+        } else if (userData.role === 'formateur') {
+            router.push('/formateur');
+        } else {
           router.push('/dashboard');
         }
       } else {
@@ -115,7 +113,7 @@ export default function LoginForm() {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder="votre@email.com" {...field} disabled={!isFirebaseConfigured} />
+                <Input placeholder="votre@email.com" {...field} disabled={!isFirebaseConfigured || form.formState.isSubmitting} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -133,13 +131,14 @@ export default function LoginForm() {
                 </Link>
               </div>
               <FormControl>
-                <Input type="password" placeholder="********" {...field} disabled={!isFirebaseConfigured} />
+                <Input type="password" placeholder="********" {...field} disabled={!isFirebaseConfigured || form.formState.isSubmitting} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
         <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || !isFirebaseConfigured}>
+          {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {form.formState.isSubmitting ? 'Connexion...' : 'Se connecter'}
         </Button>
       </form>
