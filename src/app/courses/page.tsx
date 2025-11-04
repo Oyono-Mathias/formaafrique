@@ -20,21 +20,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import type { Category, Course } from '@/lib/types';
+import type { Course } from '@/lib/types';
 import { useCollection } from '@/firebase';
-import { courses as mockCourses } from '@/lib/mock-data'; // Keep for category source
+import { categories } from '@/lib/categories';
 import { Timestamp } from 'firebase/firestore';
 
 export default function CoursesPage() {
   const [search, setSearch] = useState('');
-  const [category, setCategory] = useState<Category | 'all'>('all');
+  const [category, setCategory] = useState<string>('all');
   const { data: courses, loading, error } = useCollection<Course>('courses', {
       where: ['publie', '==', true]
   });
 
-  const categories = useMemo(() => [...new Set(mockCourses.map(c => c.categorie))], []);
-  
   const sortedCourses = useMemo(() => {
+    if (!courses) return [];
     return [...courses].sort((a, b) => {
         const dateA = a.date_creation instanceof Timestamp ? a.date_creation.toMillis() : new Date(a.date_creation as string).getTime();
         const dateB = b.date_creation instanceof Timestamp ? b.date_creation.toMillis() : new Date(b.date_creation as string).getTime();
@@ -97,7 +96,7 @@ export default function CoursesPage() {
           <DropdownMenuContent className="w-56">
             <DropdownMenuLabel>Catégories</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuRadioGroup value={category} onValueChange={(value) => setCategory(value as Category | 'all')}>
+            <DropdownMenuRadioGroup value={category} onValueChange={(value) => setCategory(value)}>
               <DropdownMenuRadioItem value="all">Toutes</DropdownMenuRadioItem>
               {categories.map(cat => (
                  <DropdownMenuRadioItem key={cat} value={cat}>{cat}</DropdownMenuRadioItem>
@@ -142,7 +141,7 @@ export default function CoursesPage() {
           );
         })}
       </div>
-      {filteredCourses.length === 0 && (
+      {filteredCourses.length === 0 && !loading && (
           <div className="text-center py-12 text-muted-foreground">
               <p>Aucune formation ne correspond à vos critères.</p>
           </div>
@@ -150,3 +149,4 @@ export default function CoursesPage() {
     </div>
   );
 }
+
