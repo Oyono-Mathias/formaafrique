@@ -4,6 +4,8 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { Auth, User } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
 import type { FirebaseStorage } from 'firebase/storage';
+import { doc, getDoc } from 'firebase/firestore';
+import type { UserProfile } from '@/lib/types';
 
 // Auth context
 const AuthContext = createContext<Auth | undefined>(undefined);
@@ -22,32 +24,58 @@ export const useStorage = () => useContext(StorageContext);
 
 
 // User context
-const UserContext = createContext<{ user: User | null; loading: boolean }>({
+interface UserContextType {
+  user: User | null;
+  userProfile: UserProfile | null;
+  loading: boolean;
+}
+
+const UserContext = createContext<UserContextType>({
   user: null,
+  userProfile: null,
   loading: true,
 });
 
 export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const auth = useAuth();
+  const db = useFirestore();
   const [user, setUser] = useState<User | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!auth) {
+    if (!auth || !db) {
       setLoading(false);
       return;
     }
 
-    const unsubscribe = auth.onAuthStateChanged(firebaseUser => {
-      setUser(firebaseUser);
+    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+      if (firebaseUser) {
+        setUser(firebaseUser);
+        try {
+          const userDocRef = doc(db, 'users', firebaseUser.uid);
+          const userDoc = await getDoc(userDocRef);
+          if (userDoc.exists()) {
+            setUserProfile(userDoc.data() as UserProfile);
+          } else {
+            setUserProfile(null);
+          }
+        } catch (error) {
+          console.error("Failed to fetch user profile:", error);
+          setUserProfile(null);
+        }
+      } else {
+        setUser(null);
+        setUserProfile(null);
+      }
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [auth]);
+  }, [auth, db]);
 
   return (
-    <UserContext.Provider value={{ user, loading }}>
+    <UserContext.Provider value={{ user, userProfile, loading }}>
       {children}
     </UserContext.Provider>
   );

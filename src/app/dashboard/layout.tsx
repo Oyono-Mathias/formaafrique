@@ -13,6 +13,7 @@ import {
   Menu,
   Bell,
   Search,
+  Loader2,
 } from 'lucide-react';
 import { Logo } from '@/components/icons/logo';
 import { Button } from '@/components/ui/button';
@@ -112,22 +113,34 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, loading } = useUser();
+  const { user, userProfile, loading } = useUser();
   const auth = useAuth();
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login');
-    }
-  }, [user, loading, router]);
+    if (loading) return;
 
-  if (loading || !user) {
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    if (userProfile) {
+      if (userProfile.role === 'admin') {
+        router.replace('/admin');
+      } else if (userProfile.role === 'formateur') {
+        router.replace('/formateur');
+      }
+    }
+  }, [user, userProfile, loading, router]);
+
+  if (loading || !user || !userProfile || ['admin', 'formateur'].includes(userProfile.role)) {
     return (
       <div className="flex justify-center items-center h-screen bg-background">
-        <p className="flex items-center gap-2 text-lg">
-          Chargement...
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <p className="flex items-center gap-2 text-lg ml-4">
+          Chargement de votre espace...
         </p>
       </div>
     );
