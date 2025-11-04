@@ -51,7 +51,7 @@ export default function ModulePage({ params }: ModulePageProps) {
   }
   
   const videoPlaceholder = PlaceHolderImages.find((img) => img.id === 'video-placeholder');
-  const currentModuleIndex = sortedModules.findIndex(m => m.id === currentModule.id);
+  const currentModuleIndex = (sortedModules || []).findIndex(m => m.id === currentModule.id);
 
   return (
     <div className="flex flex-col lg:flex-row min-h-[calc(100vh-4rem)]">

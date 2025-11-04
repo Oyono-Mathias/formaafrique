@@ -193,15 +193,9 @@ async function seedModules() {
         }
 
         console.log(`  - Adding modules to "${courseDoc.data().titre}"...`);
-        const batch = writeBatch(db);
         const modulesForCourse = modulesData[slug];
         
         for (const module of modulesForCourse) {
-            // Need to get a reference to a new document in the subcollection.
-            // Since we're in a client-side script without `doc(collectionRef)`, we can't easily get a ref with an auto-id before setting.
-            // A common workaround is to use `addDoc` but that doesn't work in a batch.
-            // For batching, we need explicit IDs. We'll use addDoc inside the loop without batching.
-            // This is less efficient but compatible with client SDK constraints.
              try {
                 await addDoc(modulesCollectionRef, module);
                 modulesCrees++;

@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useDoc, useCollection } from '@/firebase';
 import type { Course, Module } from '@/lib/types';
+import { useMemo } from 'react';
 
 type CoursePageProps = {
   params: {
@@ -22,7 +23,16 @@ type CoursePageProps = {
 
 export default function CourseDetailPage({ params }: CoursePageProps) {
   const { data: course, loading, error } = useDoc<Course>('courses', params.id);
-  const { data: modules, loading: modulesLoading } = useCollection<Module>(`courses/${params.id}/modules`);
+  const { data: modulesData, loading: modulesLoading } = useCollection<Module>(`courses/${params.id}/modules`);
+
+  const modules = modulesData || [];
+  
+  const sortedModules = useMemo(() => {
+      if (!modules) return [];
+      return [...modules].sort((a, b) => a.ordre - b.ordre);
+  }, [modules]);
+
+  const firstModuleId = (sortedModules.length > 0) ? sortedModules[0].id : null;
 
 
   if (loading || modulesLoading) {
@@ -40,14 +50,9 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
 
   const courseImage = PlaceHolderImages.find((img) => img.id === course.image);
   
-  // Instructor info is now directly on the course object
   const instructorImageId = `instructor-${course.auteur.split(' ')[0].toLowerCase()}`;
   const instructorImage = PlaceHolderImages.find((img) => img.id === instructorImageId);
   const isFree = course.prix === 0;
-
-  const sortedModules = modules.sort((a, b) => a.ordre - b.ordre);
-  const firstModuleId = sortedModules.length > 0 ? sortedModules[0].id : null;
-
 
   return (
     <div>
@@ -134,7 +139,7 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
             <div>
               <h2 className="font-headline text-2xl text-primary mb-4">Contenu du cours</h2>
               <div className="space-y-4">
-                {sortedModules.map((module) => (
+                {(sortedModules || []).map((module) => (
                   <Link href={`/courses/${course.id}/modules/${module.id}`} key={module.id} className="block">
                     <Card className="hover:bg-muted/50 transition-colors">
                       <CardContent className="p-4 flex items-center justify-between">
