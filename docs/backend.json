@@ -28,7 +28,8 @@
           "type": "string",
           "enum": [
             "admin",
-            "etudiant"
+            "etudiant",
+            "formateur"
           ],
           "description": "The role of the user in the system."
         },

@@ -2,7 +2,7 @@
 
 import { useCollection } from '@/firebase';
 import type { UserProfile } from '@/lib/types';
-import { Loader2, ShieldAlert, ShieldCheck, User } from 'lucide-react';
+import { Loader2, ShieldCheck, User, GraduationCap } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -28,15 +28,13 @@ import {
 import { useFirestore } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { Badge } from '@/components/ui/badge';
-
 
 export default function AdminUsersPage() {
   const { data: users, loading, error } = useCollection<UserProfile & { id: string }>('users');
   const db = useFirestore();
   const { toast } = useToast();
 
-  const handleRoleChange = async (userId: string, newRole: 'admin' | 'etudiant') => {
+  const handleRoleChange = async (userId: string, newRole: 'admin' | 'etudiant' | 'formateur') => {
     if (!db) return;
     
     const userDocRef = doc(db, 'users', userId);
@@ -44,7 +42,7 @@ export default function AdminUsersPage() {
       await updateDoc(userDocRef, { role: newRole });
       toast({
         title: "Rôle mis à jour",
-        description: `L'utilisateur est maintenant ${newRole === 'admin' ? 'un administrateur' : 'un étudiant'}.`,
+        description: `L'utilisateur a maintenant le rôle : ${newRole}.`,
       });
     } catch (err) {
       console.error(err);
@@ -69,7 +67,7 @@ export default function AdminUsersPage() {
         <CardHeader>
           <CardTitle>Liste des utilisateurs</CardTitle>
           <CardDescription>
-            Changez le rôle d'un utilisateur pour lui donner ou retirer les droits d'administrateur.
+            Changez le rôle d'un utilisateur pour lui donner des droits spécifiques.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -99,7 +97,7 @@ export default function AdminUsersPage() {
                                 <TableCell className="text-right">
                                      <Select
                                         defaultValue={user.role}
-                                        onValueChange={(value: 'admin' | 'etudiant') => handleRoleChange(user.id, value)}
+                                        onValueChange={(value: 'admin' | 'etudiant' | 'formateur') => handleRoleChange(user.id, value)}
                                     >
                                         <SelectTrigger className="w-[180px] float-right">
                                             <SelectValue placeholder="Changer le rôle" />
@@ -109,6 +107,12 @@ export default function AdminUsersPage() {
                                                 <div className='flex items-center gap-2'>
                                                     <User className='h-4 w-4'/>
                                                     Étudiant
+                                                </div>
+                                            </SelectItem>
+                                            <SelectItem value="formateur">
+                                                 <div className='flex items-center gap-2'>
+                                                    <GraduationCap className='h-4 w-4'/>
+                                                    Formateur
                                                 </div>
                                             </SelectItem>
                                             <SelectItem value="admin">

@@ -42,7 +42,7 @@ export interface UserProfile {
   email: string;
   createdAt: Timestamp;
   photoURL: string | null;
-  role: 'admin' | 'etudiant';
+  role: 'admin' | 'etudiant' | 'formateur';
   paysOrigine: string;
   paysActuel: string;
   bio?: string;
