@@ -31,6 +31,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
+import { useToast } from '@/hooks/use-toast';
 
 const dashboardNavLinks = [
   { href: '/dashboard', label: 'Accueil', icon: Home },
@@ -116,6 +117,7 @@ export default function DashboardLayout({
   const { user, userProfile, loading } = useUser();
   const auth = useAuth();
   const router = useRouter();
+  const { toast } = useToast();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -131,16 +133,24 @@ export default function DashboardLayout({
         router.replace('/admin');
       } else if (userProfile.role === 'formateur') {
         router.replace('/formateur');
+      } else if (userProfile.role !== 'etudiant') {
+        toast({
+            variant: 'destructive',
+            title: 'Rôle inconnu',
+            description: "Votre rôle n'est pas reconnu, déconnexion en cours."
+        });
+        signOut(auth);
+        router.replace('/login');
       }
     }
-  }, [user, userProfile, loading, router]);
+  }, [user, userProfile, loading, router, auth, toast]);
 
-  if (loading || !user || !userProfile || ['admin', 'formateur'].includes(userProfile.role)) {
+  if (loading || !user || !userProfile || userProfile.role !== 'etudiant') {
     return (
       <div className="flex justify-center items-center h-screen bg-background">
         <Loader2 className="h-8 w-8 animate-spin" />
         <p className="flex items-center gap-2 text-lg ml-4">
-          Chargement de votre espace...
+          Chargement de votre espace étudiant...
         </p>
       </div>
     );

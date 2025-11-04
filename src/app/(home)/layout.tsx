@@ -10,15 +10,20 @@ export default function HomeLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, loading } = useUser();
+  const { user, loading, userProfile } = useUser();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && user) {
-      // If user is logged in, redirect away from public home pages
-      router.replace('/dashboard');
+    if (!loading && user && userProfile) {
+        if (userProfile.role === 'admin') {
+            router.replace('/admin');
+        } else if (userProfile.role === 'formateur') {
+            router.replace('/formateur');
+        } else {
+            router.replace('/dashboard');
+        }
     }
-  }, [user, loading, router]);
+  }, [user, userProfile, loading, router]);
 
   if (loading || user) {
     return (

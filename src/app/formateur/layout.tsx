@@ -17,10 +17,8 @@ import {
 } from 'lucide-react';
 import { Logo } from '@/components/icons/logo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useUser, useAuth, useFirestore } from '@/firebase';
+import { useUser, useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import type { UserProfile } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
@@ -85,54 +83,26 @@ export default function FormateurLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, loading: userLoading } = useUser();
+  const { user, userProfile, loading } = useUser();
   const auth = useAuth();
-  const db = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
-  const [isFormateur, setIsFormateur] = useState(false);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (userLoading) return;
+    if (loading) return;
     if (!user) {
-      router.push('/login');
+      router.replace('/login');
       return;
     }
-    if (!db) return;
-
-    const checkFormateurRole = async () => {
-      try {
-        const userDocRef = doc(db, 'users', user.uid);
-        const userDoc = await getDoc(userDocRef);
-
-        if (userDoc.exists()) {
-          const userData = userDoc.data() as UserProfile;
-          if (userData.role === 'formateur' || userData.role === 'admin') {
-            setIsFormateur(true);
-          } else {
-            toast({
-              variant: 'destructive',
-              title: 'Accès refusé',
-              description: "Vous n'êtes pas un formateur.",
-            });
-            router.push('/dashboard');
-          }
-        } else {
-          toast({ variant: 'destructive', title: 'Accès refusé', description: "Profil non trouvé." });
-          router.push('/');
-        }
-      } catch (error) {
-        console.error("Error checking formateur role:", error);
-        toast({ variant: 'destructive', title: 'Erreur', description: "Impossible de vérifier vos droits." });
-        router.push('/');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkFormateurRole();
-  }, [user, userLoading, db, router, toast]);
+    if (userProfile && userProfile.role !== 'formateur' && userProfile.role !== 'admin') {
+        toast({
+            variant: 'destructive',
+            title: 'Accès refusé',
+            description: "Vous n'êtes pas un formateur.",
+        });
+        router.replace('/dashboard');
+    }
+  }, [user, userProfile, loading, router, toast]);
 
   const handleSignOut = async () => {
     if (!auth) return;
@@ -140,7 +110,7 @@ export default function FormateurLayout({
     router.push('/login');
   };
 
-  if (loading || userLoading || !isFormateur) {
+  if (loading || !userProfile || (userProfile.role !== 'formateur' && userProfile.role !== 'admin')) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin" />

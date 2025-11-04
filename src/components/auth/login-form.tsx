@@ -56,32 +56,31 @@ export default function LoginForm() {
       const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
 
-      // Check user role in Firestore
       const userDocRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
 
+      toast({
+        title: 'Connexion réussie',
+        description: 'Redirection vers votre tableau de bord...',
+      });
+
       if (userDoc.exists()) {
         const userData = userDoc.data() as UserProfile;
-        toast({
-            title: 'Connexion réussie',
-            description: 'Redirection vers votre tableau de bord...',
-        });
         if (userData.role === 'admin') {
-          router.push('/admin');
+          router.replace('/admin');
         } else if (userData.role === 'formateur') {
-            router.push('/formateur');
+          router.replace('/formateur');
         } else {
-          router.push('/dashboard');
+          router.replace('/dashboard');
         }
       } else {
-        // Fallback if user doc doesn't exist, redirect to standard dashboard
-        router.push('/dashboard');
+        router.replace('/dashboard');
       }
 
     } catch (error: any) {
       console.error('Error signing in:', error);
-      let description = "L'email ou le mot de passe est incorrect.";
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+      let description = "Une erreur est survenue. Veuillez réessayer.";
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
           description = "L'email ou le mot de passe est incorrect.";
       } else if (error.code === 'auth/configuration-not-found') {
           description = "L'authentification par email/mot de passe n'est pas activée dans votre projet Firebase.";
