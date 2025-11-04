@@ -82,7 +82,7 @@ export default function AdminDonationsPage() {
 
     donations.forEach(donation => {
         if (donation.statut !== 'succes') return;
-        const date = donation.date.toDate();
+        const date = (donation.date as unknown as Timestamp).toDate();
         const monthName = monthLabels[date.getMonth()];
         monthlyData[monthName] += donation.montant;
     });
@@ -95,6 +95,7 @@ export default function AdminDonationsPage() {
   }, [donations]);
 
   const filteredDonations = useMemo(() => {
+    if (!donations) return [];
     return donations
       .filter(donation => {
         const term = searchTerm.toLowerCase();
@@ -258,7 +259,7 @@ export default function AdminDonationsPage() {
                                         {donation.statut.replace('_', ' ')}
                                     </Badge>
                                 </TableCell>
-                                <TableCell className="hidden md:table-cell text-right">{formatDate(donation.date)}</TableCell>
+                                <TableCell className="hidden md:table-cell text-right">{formatDate(donation.date as unknown as Timestamp)}</TableCell>
                                 <TableCell className="text-right">
                                     <Button variant="ghost" size="icon" onClick={() => setSelectedDonation(donation)}>
                                         <Eye className="h-4 w-4" />
@@ -275,7 +276,7 @@ export default function AdminDonationsPage() {
                     </TableBody>
                  </Table>
              </div>
-             { donations.length === 0 && (
+             { donations.length === 0 && !loading && (
                 <div className="text-center py-12 text-muted-foreground">
                     <p>Aucun don enregistré pour le moment.</p>
                 </div>
@@ -307,7 +308,7 @@ export default function AdminDonationsPage() {
                         </div>
                          <div className="grid grid-cols-2 items-center gap-4">
                            <span className='text-muted-foreground'>Date:</span>
-                           <span className='font-semibold'>{formatDate(selectedDonation.date)}</span>
+                           <span className='font-semibold'>{formatDate(selectedDonation.date as unknown as Timestamp)}</span>
                         </div>
                          <div className="grid grid-cols-2 items-center gap-4">
                            <span className='text-muted-foreground'>Statut:</span>
@@ -336,5 +337,3 @@ export default function AdminDonationsPage() {
     </div>
   );
 }
-
-    
