@@ -1,5 +1,5 @@
 'use client';
-import { useAuth, useFirestore, useUserContext } from './provider';
+import { useAuth, useFirestore, useUserContext, useStorage } from './provider';
 import { UserProvider } from './provider';
 import { useCollection } from './firestore/use-collection';
 import { useDoc } from './firestore/use-doc';
@@ -10,4 +10,4 @@ const useUser = () => {
   return { user, loading };
 };
 
-export { useAuth, useFirestore, useUser, UserProvider, useCollection, useDoc };
+export { useAuth, useFirestore, useUser, UserProvider, useCollection, useDoc, useStorage };

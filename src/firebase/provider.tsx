@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { Auth, User } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
+import type { FirebaseStorage } from 'firebase/storage';
 
 // Auth context
 const AuthContext = createContext<Auth | undefined>(undefined);
@@ -13,6 +14,12 @@ export const useAuth = () => useContext(AuthContext);
 const FirestoreContext = createContext<Firestore | undefined>(undefined);
 export const FirestoreProvider = FirestoreContext.Provider;
 export const useFirestore = () => useContext(FirestoreContext);
+
+// Storage context
+const StorageContext = createContext<FirebaseStorage | undefined>(undefined);
+export const StorageProvider = StorageContext.Provider;
+export const useStorage = () => useContext(StorageContext);
+
 
 // User context
 const UserContext = createContext<{ user: User | null; loading: boolean }>({

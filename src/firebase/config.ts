@@ -1,13 +1,11 @@
-'use client';
 
-// Import the functions you need from the SDKs you need
-import { initializeApp, getApps, getApp, type FirebaseOptions, type FirebaseApp } from 'firebase/app';
-import { getAuth, type Auth } from 'firebase/auth';
-import { getFirestore, type Firestore } from 'firebase/firestore';
-import { getStorage, type FirebaseStorage } from 'firebase/storage';
+"use client";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+import { getStorage } from "firebase/storage";
 
-
-const firebaseConfig: FirebaseOptions = {
+const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
@@ -19,22 +17,14 @@ const firebaseConfig: FirebaseOptions = {
 // A flag to check if the Firebase configuration is provided.
 export const isFirebaseConfigured = !!firebaseConfig.apiKey && !!firebaseConfig.projectId;
 
-let app: FirebaseApp | undefined;
-let auth: Auth | undefined;
-let db: Firestore | undefined;
-let storage: FirebaseStorage | undefined;
 
-if (isFirebaseConfigured) {
-    app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-    if (app) {
-        auth = getAuth(app);
-        db = getFirestore(app);
-        storage = getStorage(app);
-    }
-} else {
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+export const db = getFirestore(app);
+export const auth = getAuth(app);
+export const storage = getStorage(app);
+
+if (!isFirebaseConfigured) {
     if (typeof window !== 'undefined') {
         console.warn("ATTENTION : La configuration de Firebase est manquante. L'authentification et la base de données ne fonctionneront pas. Veuillez créer et configurer votre fichier .env.local.");
     }
 }
-
-export { app, auth, db, storage };

@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
+import { useUser, useFirestore, useDoc, useCollection, useStorage } from '@/firebase';
 import type { UserProfile, CourseProgress } from '@/lib/types';
 import { useEffect, useState, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -24,12 +24,12 @@ import EditProfileDialog from '@/components/dashboard/edit-profile-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { doc, updateDoc } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { updateProfile } from 'firebase/auth';
 
 export default function ProfilePage() {
   const { user, loading: userLoading } = useUser();
-  const { data: userProfile, loading: profileLoading } = useDoc<UserProfile>(user ? 'users' : null, user?.uid || '');
+  const { data: userProfile, loading: profileLoading } = useDoc<UserProfile>(user ? 'users' : '', user?.uid || '');
   const { data: courseProgress, loading: progressLoading } = useCollection<CourseProgress>(user ? `users/${user.uid}/progress` : '');
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -37,6 +37,7 @@ export default function ProfilePage() {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const db = useFirestore();
+  const storage = useStorage();
   const { toast } = useToast();
 
   const handleAvatarClick = () => {
@@ -45,11 +46,10 @@ export default function ProfilePage() {
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !user) return;
+    if (!file || !user || !storage || !db) return;
 
     setIsUploading(true);
     try {
-      const storage = getStorage();
       const storageRef = ref(storage, `avatars/${user.uid}/${file.name}`);
       
       const snapshot = await uploadBytes(storageRef, file);
@@ -60,7 +60,9 @@ export default function ProfilePage() {
       await updateDoc(userDocRef, { photoURL: downloadURL });
 
       // Update Firebase Auth profile
-      await updateProfile(user, { photoURL: downloadURL });
+      if(user) {
+        await updateProfile(user, { photoURL: downloadURL });
+      }
 
       toast({
         title: "Photo de profil mise à jour",
