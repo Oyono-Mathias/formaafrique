@@ -89,7 +89,7 @@ export default function HomePage() {
                 <div className="text-center text-destructive">Erreur de chargement des formations.</div>
               ) : (
                 <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-                  {featuredCourses.map((course) => {
+                  {(featuredCourses || []).map((course) => {
                     const courseImage = PlaceHolderImages.find((img) => img.id === course.image);
                     return (
                       <Card key={course.id} className="flex flex-col overflow-hidden transition-transform duration-300 hover:scale-105 hover:shadow-xl">

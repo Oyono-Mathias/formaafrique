@@ -1,12 +1,10 @@
 import type { Metadata } from 'next';
-import './globals.css';
+import { PT_Sans } from 'next/font/google';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
-import Header from '@/components/layout/header';
-import Footer from '@/components/layout/footer';
 import { FirebaseProvider } from '@/firebase/client-provider';
 import { UserProvider } from '@/firebase';
-import { PT_Sans } from 'next/font/google';
+import { NextLayout } from './next-layout';
 
 const ptSans = PT_Sans({ 
   subsets: ['latin'], 
@@ -34,9 +32,9 @@ export default function RootLayout({
       <body className={cn('antialiased flex flex-col min-h-screen')}>
         <FirebaseProvider>
           <UserProvider>
-            <Header />
-            <main className="flex-grow">{children}</main>
-            <Footer />
+            <NextLayout>
+              {children}
+            </NextLayout>
             <Toaster />
           </UserProvider>
         </FirebaseProvider>

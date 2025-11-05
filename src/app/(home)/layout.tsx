@@ -4,26 +4,22 @@ import { useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
+import Header from '@/components/layout/header';
+import Footer from '@/components/layout/footer';
 
 export default function HomeLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { user, loading, userProfile } = useUser();
+  const { user, loading } = useUser();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && user && userProfile) {
-        if (userProfile.role === 'admin') {
-            router.replace('/admin');
-        } else if (userProfile.role === 'formateur') {
-            router.replace('/formateur');
-        } else {
-            router.replace('/dashboard');
-        }
+    if (!loading && user) {
+      router.replace('/dashboard');
     }
-  }, [user, userProfile, loading, router]);
+  }, [user, loading, router]);
 
   if (loading || user) {
     return (
@@ -34,5 +30,11 @@ export default function HomeLayout({
     );
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      <Header />
+      <main className="flex-grow">{children}</main>
+      <Footer />
+    </>
+  );
 }
