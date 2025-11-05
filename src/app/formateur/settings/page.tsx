@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useUser, useFirestore, useStorage, useAuth } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, KeyRound, User, Phone, Linkedin, Facebook, Camera } from 'lucide-react';
+import { Loader2, KeyRound, User, Phone, Linkedin, Camera } from 'lucide-react';
 import {
   Form,
   FormControl,
@@ -164,7 +164,9 @@ export default function FormateurSettingsPage() {
 
       const userDocRef = doc(db, 'users', user.uid);
       await updateDoc(userDocRef, { photoURL: downloadURL });
-      await updateProfile(user, { photoURL: downloadURL });
+      if (user) {
+        await updateProfile(user, { photoURL: downloadURL });
+      }
 
       toast({ title: "Photo de profil mise à jour" });
     } catch (error) {
