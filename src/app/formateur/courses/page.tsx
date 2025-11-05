@@ -35,9 +35,13 @@ import { useToast } from '@/hooks/use-toast';
 
 export default function FormateurCoursesPage() {
   const { user } = useUser();
-  const { data: courses, loading, error } = useCollection<Course>('courses', {
-    where: user?.uid ? ['instructorId', '==', user.uid] : undefined
-  });
+  const { data: courses, loading, error } = useCollection<Course>(
+    'courses', 
+    // This condition ensures we only fetch courses if the user is loaded and has an ID.
+    // The hook is smart enough to not run the query if the options are undefined.
+    user?.uid ? { where: ['instructorId', '==', user.uid] } : undefined
+  );
+  
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [courseToDelete, setCourseToDelete] = useState<Course | null>(null);
@@ -96,7 +100,7 @@ export default function FormateurCoursesPage() {
        )}
        {!loading && error && <p className="text-destructive">Erreur de chargement des cours.</p>}
        
-       {!loading && courses.length === 0 && (
+       {!loading && courses && courses.length === 0 && (
            <Card className="flex flex-col items-center justify-center p-12 rounded-2xl border-dashed mt-8">
                 <CardTitle>Vous n'avez pas encore de cours</CardTitle>
                 <CardDescription className="mt-2">Commencez par créer votre première formation.</CardDescription>
@@ -106,7 +110,7 @@ export default function FormateurCoursesPage() {
             </Card>
        )}
 
-       {!loading && courses.length > 0 && (
+       {!loading && courses && courses.length > 0 && (
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {courses.map(course => {
                     const courseImage = PlaceHolderImages.find((img) => img.id === course.image);
