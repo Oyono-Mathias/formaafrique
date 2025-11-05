@@ -88,7 +88,7 @@ export default function HomePage() {
               ) : error ? (
                 <div className="text-center text-destructive">Erreur de chargement des formations.</div>
               ) : (
-                <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                   {(featuredCourses || []).map((course) => {
                     const courseImage = PlaceHolderImages.find((img) => img.id === course.image);
                     return (
@@ -180,7 +180,7 @@ export default function HomePage() {
                 Rejoignez des milliers d'étudiants qui transforment leur carrière avec nous.
               </p>
             </div>
-            <div className="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {testimonials.map((testimonial) => {
                 const avatarImage = PlaceHolderImages.find((img) => img.id === testimonial.imageId);
                 return (
