@@ -14,9 +14,9 @@ export default function Footer() {
       title: 'Formations',
       links: [
         { label: 'Toutes les formations', href: '/courses' },
+        { label: 'Nos Formateurs', href: '/instructors' },
         { label: 'Entrepreneuriat', href: '/courses' },
         { label: 'Compétences numériques', href: '/courses' },
-        { label: 'Agriculture', href: '/courses' },
       ],
     },
     {
