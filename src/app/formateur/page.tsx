@@ -34,9 +34,9 @@ export default function FormateurDashboardPage() {
   const stats = [
     {
       label: 'Cours publiés',
-      value: coursesLoading ? '...' : (courses || []).length,
+      value: coursesLoading ? '...' : (courses || []).filter(c => c.publie).length,
       icon: BookOpen,
-      description: 'Nombre total de formations que vous avez créées.',
+      description: 'Nombre de formations visibles par les étudiants.',
     },
     {
       label: 'Étudiants inscrits',
@@ -45,7 +45,7 @@ export default function FormateurDashboardPage() {
       description: 'Nombre total d\'étudiants dans vos cours.',
     },
     {
-      label: 'Revenus Totaux',
+      label: 'Revenus Totaux (Est.)',
       value: `${new Intl.NumberFormat('fr-FR').format(125000)} XAF`, // Mock data
       icon: Wallet,
       description: 'Revenus générés par vos formations.',
@@ -79,15 +79,25 @@ export default function FormateurDashboardPage() {
       <div className="mt-8">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-bold">Mes cours</h2>
-            <Button asChild>
+            <Button asChild variant="link">
                 <Link href="/formateur/courses">
-                    Gérer mes cours
+                    Gérer tous mes cours
                 </Link>
             </Button>
           </div>
           {(courses || []).length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {/* Course cards will be rendered here */}
+              {courses.slice(0, 3).map(course => (
+                  <Card key={course.id}>
+                      <CardHeader>
+                          <CardTitle className='text-lg leading-tight'>{course.titre}</CardTitle>
+                          <CardDescription>{course.categorie}</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                          <p className='text-sm text-muted-foreground'>{course.publie ? 'Publié' : 'Brouillon'}</p>
+                      </CardContent>
+                  </Card>
+              ))}
             </div>
           ) : (
             <Card className="flex flex-col items-center justify-center p-12 rounded-2xl border-dashed">
