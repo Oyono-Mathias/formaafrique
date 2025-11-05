@@ -45,7 +45,7 @@ export default function FormateurStudentsPage() {
     }
     setLoading(true);
 
-    if (courses.length === 0) {
+    if (!courses || courses.length === 0) {
         setLoading(false);
         setEnrollments([]);
         return;
@@ -112,9 +112,10 @@ export default function FormateurStudentsPage() {
 
   }, [db, courses, coursesLoading, user]);
   
-  const formatDate = (timestamp: Timestamp) => {
+  const formatDate = (timestamp: Timestamp | Date) => {
     if (!timestamp) return '-';
-    return timestamp.toDate().toLocaleDateString('fr-FR', {
+    const date = timestamp instanceof Timestamp ? timestamp.toDate() : timestamp;
+    return date.toLocaleDateString('fr-FR', {
         day: '2-digit', month: 'long', year: 'numeric'
     });
   }

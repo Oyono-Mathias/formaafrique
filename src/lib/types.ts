@@ -67,9 +67,9 @@ export interface Enrollment {
     studentName: string;
     courseId: string;
     courseTitle: string;
-    enrollmentDate: Timestamp;
+    enrollmentDate: Timestamp | Date;
     progression?: number;
-    statut?: 'en cours' | 'terminé';
+    statut?: 'En cours' | 'Terminé';
 }
 
 
