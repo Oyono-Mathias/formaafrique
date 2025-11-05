@@ -23,10 +23,9 @@ import {
   ChartTooltipContent,
   ChartConfig,
 } from "@/components/ui/chart";
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Area, AreaChart } from "recharts";
-import { Wallet, TrendingUp, ShoppingCart, DollarSign } from 'lucide-react';
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { Wallet, TrendingUp, ShoppingCart } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 
 // --- MOCK DATA ---
 // Ces données sont fictives et seront remplacées par des données Firestore réelles.
@@ -142,7 +141,7 @@ export default function FormateurRevenuesPage() {
                                 <CartesianGrid vertical={false} />
                                 <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} />
                                 <YAxis tickFormatter={(value) => `${Number(value)/1000}k`} tickLine={false} axisLine={false} />
-                                <ChartTooltip content={<ChartTooltipContent />} />
+                                <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
                                 <defs>
                                     <linearGradient id="fillRevenue" x1="0" y1="0" x2="0" y2="1">
                                         <stop offset="5%" stopColor="var(--color-revenue)" stopOpacity={0.8}/>

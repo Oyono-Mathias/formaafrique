@@ -128,6 +128,8 @@ const ChartTooltipContent = React.forwardRef<
       color,
       nameKey,
       labelKey,
+      cursor = true,
+      ...props
     },
     ref
   ) => {
