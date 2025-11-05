@@ -51,13 +51,34 @@ const slugify = (text: string) => {
         .replace(/-+$/, '');
 }
 
+const getImageIdFromTitle = (title: string): string => {
+    const lowerCaseTitle = title.toLowerCase();
+    const imageKeywords: { [key: string]: string[] } = {
+        'course-dev-web': ['développement', 'web', 'mobile', 'code', 'html', 'css', 'javascript', 'python', 'flutter'],
+        'course-marketing': ['marketing', 'digital', 'commerce', 'vente', 'publicité', 'réseaux sociaux'],
+        'course-entrepreneurship': ['entreprise', 'business', 'entrepreneuriat', 'startup'],
+        'course-data-science': ['agriculture', 'données', 'data', 'science', 'santé', 'transformation'],
+        'course-ai-ml': ['ai', 'intelligence artificielle', 'cybersécurité', 'littératie'],
+        'course-project-management': ['gestion', 'management', 'outils', 'canva', 'artisanat', 'couture', 'comptabilité', 'langues', 'tutoriels'],
+    };
+
+    for (const id in imageKeywords) {
+        for (const keyword of imageKeywords[id]) {
+            if (lowerCaseTitle.includes(keyword)) {
+                return id;
+            }
+        }
+    }
+    return 'course-project-management'; // Fallback image
+};
+
+
 const courseSchema = z.object({
   titre: z.string().min(5, { message: 'Le titre doit avoir au moins 5 caractères.' }),
   description: z.string().min(20, { message: 'La description doit avoir au moins 20 caractères.' }),
   categorie: z.string().min(1, { message: 'Veuillez sélectionner une catégorie.' }),
   niveau: z.enum(['Débutant', 'Intermédiaire', 'Avancé']),
   prix: z.coerce.number().min(0, { message: "Le prix ne peut être négatif." }),
-  image: z.string().min(1, { message: 'Veuillez sélectionner une image.' }),
   publie: z.boolean().default(false),
 });
 
@@ -86,7 +107,6 @@ export default function CourseDialog({
       categorie: '',
       niveau: 'Débutant',
       prix: 0,
-      image: '',
       publie: false,
     },
   });
@@ -99,7 +119,6 @@ export default function CourseDialog({
         categorie: course.categorie,
         niveau: course.niveau,
         prix: course.prix,
-        image: course.image,
         publie: course.publie,
       });
     } else if (isOpen) {
@@ -109,7 +128,6 @@ export default function CourseDialog({
         categorie: '',
         niveau: 'Débutant',
         prix: 0,
-        image: '',
         publie: false,
       });
     }
@@ -122,7 +140,8 @@ export default function CourseDialog({
       if (isEditing && course?.id) {
         // Update existing course
         const courseDocRef = doc(db, 'courses', course.id);
-        await updateDoc(courseDocRef, values);
+        const imageId = getImageIdFromTitle(values.titre);
+        await updateDoc(courseDocRef, {...values, image: imageId});
         toast({
           title: 'Formation mise à jour',
           description: `"${values.titre}" a été modifié avec succès.`,
@@ -130,8 +149,10 @@ export default function CourseDialog({
         setIsOpen(false);
       } else {
         // Create new course
+        const imageId = getImageIdFromTitle(values.titre);
         const docRef = await addDoc(collection(db, 'courses'), {
           ...values,
+          image: imageId,
           slug: slugify(values.titre),
           auteur: user.displayName || 'Admin',
           instructorId: user.uid,
@@ -166,7 +187,7 @@ export default function CourseDialog({
             {isEditing ? 'Modifier la formation' : 'Créer une nouvelle formation'}
           </DialogTitle>
           <DialogDescription>
-            Remplissez les détails ci-dessous. Vous pourrez ajouter les modules et vidéos juste après.
+            Remplissez les détails ci-dessous. L'image sera générée depuis le titre. Vous pourrez ajouter les modules après.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -244,24 +265,7 @@ export default function CourseDialog({
                     )}
                 />
             </div>
-            <FormField
-              control={form.control}
-              name="image"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Image de couverture</FormLabel>
-                   <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Sélectionnez une image..." /></SelectTrigger></FormControl>
-                        <SelectContent>
-                            {PlaceHolderImages.filter(img => img.id.startsWith('course-')).map((img) => (
-                                <SelectItem key={img.id} value={img.id}>{img.description}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            
             <FormField
               control={form.control}
               name="publie"
