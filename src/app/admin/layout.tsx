@@ -96,7 +96,7 @@ export default function AdminLayout({
       toast({
         variant: 'destructive',
         title: 'Accès refusé',
-        description: "Vous n'êtes pas administrateur. Redirection...",
+        description: "Redirection vers votre tableau de bord.",
       });
       if (userProfile.role === 'formateur') {
         router.replace('/formateur');
@@ -116,7 +116,7 @@ export default function AdminLayout({
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin" />
-        <p className='ml-3'>Vérification des droits d'administrateur...</p>
+        <p className='ml-3'>Vérification des droits d'accès...</p>
       </div>
     );
   }

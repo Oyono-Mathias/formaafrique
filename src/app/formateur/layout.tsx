@@ -37,7 +37,7 @@ const formateurNavLinks = [
 
 function NavLink({ href, icon: Icon, label }: { href: string, icon: React.ElementType, label: string }) {
   const pathname = usePathname();
-  const isActive = pathname === href;
+  const isActive = pathname.startsWith(href) && (href !== '/formateur' || pathname === '/formateur');
   return (
     <Link
       href={href}
@@ -100,7 +100,7 @@ export default function FormateurLayout({
         toast({
             variant: 'destructive',
             title: 'Accès refusé',
-            description: "Vous n'êtes pas un formateur. Redirection...",
+            description: "Redirection vers votre tableau de bord.",
         });
         if (userProfile.role === 'admin') {
             router.replace('/admin');
@@ -120,7 +120,7 @@ export default function FormateurLayout({
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin" />
-        <p className='ml-3'>Vérification des droits de formateur...</p>
+        <p className='ml-3'>Vérification des droits d'accès...</p>
       </div>
     );
   }

@@ -12,14 +12,26 @@ export default function HomeLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, loading } = useUser();
+  const { user, userProfile, loading } = useUser();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && user) {
-      router.replace('/dashboard'); // Let the dashboard layout handle role-based redirection
+    if (!loading && user && userProfile) {
+        switch (userProfile.role) {
+            case 'admin':
+                router.replace('/admin');
+                break;
+            case 'formateur':
+                router.replace('/formateur');
+                break;
+            case 'etudiant':
+                router.replace('/dashboard');
+                break;
+            default:
+                 router.replace('/dashboard'); // Fallback to student dashboard
+        }
     }
-  }, [user, loading, router]);
+  }, [user, userProfile, loading, router]);
 
   // If loading, or if the user is logged in, show a loading screen while redirecting.
   if (loading || user) {

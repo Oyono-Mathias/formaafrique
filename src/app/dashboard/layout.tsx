@@ -131,14 +131,15 @@ export default function DashboardLayout({
       toast({
           variant: 'destructive',
           title: 'Accès non autorisé',
-          description: "Vous n'êtes pas un étudiant. Redirection en cours..."
+          description: "Redirection vers votre tableau de bord."
       });
       if (userProfile.role === 'admin') {
           router.replace('/admin');
       } else if (userProfile.role === 'formateur') {
           router.replace('/formateur');
       } else {
-          signOut(auth);
+          // Fallback if role is unknown, sign out and go to login
+          if (auth) signOut(auth);
           router.replace('/login');
       }
     }
@@ -149,7 +150,7 @@ export default function DashboardLayout({
       <div className="flex justify-center items-center h-screen bg-background">
         <Loader2 className="h-8 w-8 animate-spin" />
         <p className="flex items-center gap-2 text-lg ml-4">
-          Vérification de votre accès étudiant...
+          Vérification de votre accès...
         </p>
       </div>
     );
