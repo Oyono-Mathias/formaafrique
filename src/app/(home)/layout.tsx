@@ -17,10 +17,11 @@ export default function HomeLayout({
 
   useEffect(() => {
     if (!loading && user) {
-      router.replace('/dashboard');
+      router.replace('/dashboard'); // Let the dashboard layout handle role-based redirection
     }
   }, [user, loading, router]);
 
+  // If loading, or if the user is logged in, show a loading screen while redirecting.
   if (loading || user) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -30,6 +31,7 @@ export default function HomeLayout({
     );
   }
 
+  // Only show the public layout if the user is not logged in and loading is finished.
   return (
     <>
       <Header />

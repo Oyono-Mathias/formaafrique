@@ -74,6 +74,7 @@ export default function LoginForm() {
           router.replace('/dashboard');
         }
       } else {
+        // Fallback for users who might not have a profile doc yet
         router.replace('/dashboard');
       }
 

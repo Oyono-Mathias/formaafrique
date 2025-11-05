@@ -86,17 +86,23 @@ export default function AdminLayout({
   
   useEffect(() => {
     if (loading) return;
+
     if (!user) {
       router.replace('/login');
       return;
     }
+
     if (userProfile && userProfile.role !== 'admin') {
       toast({
         variant: 'destructive',
         title: 'Accès refusé',
-        description: "Vous n'êtes pas administrateur.",
+        description: "Vous n'êtes pas administrateur. Redirection...",
       });
-      router.replace('/dashboard');
+      if (userProfile.role === 'formateur') {
+        router.replace('/formateur');
+      } else {
+        router.replace('/dashboard');
+      }
     }
   }, [user, userProfile, loading, router, toast]);
 

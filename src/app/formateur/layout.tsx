@@ -90,17 +90,23 @@ export default function FormateurLayout({
 
   useEffect(() => {
     if (loading) return;
+
     if (!user) {
       router.replace('/login');
       return;
     }
-    if (userProfile && userProfile.role !== 'formateur' && userProfile.role !== 'admin') {
+
+    if (userProfile && userProfile.role !== 'formateur') {
         toast({
             variant: 'destructive',
             title: 'Accès refusé',
-            description: "Vous n'êtes pas un formateur.",
+            description: "Vous n'êtes pas un formateur. Redirection...",
         });
-        router.replace('/dashboard');
+        if (userProfile.role === 'admin') {
+            router.replace('/admin');
+        } else {
+            router.replace('/dashboard');
+        }
     }
   }, [user, userProfile, loading, router, toast]);
 
@@ -110,7 +116,7 @@ export default function FormateurLayout({
     router.push('/login');
   };
 
-  if (loading || !userProfile || (userProfile.role !== 'formateur' && userProfile.role !== 'admin')) {
+  if (loading || !userProfile || userProfile.role !== 'formateur') {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin" />

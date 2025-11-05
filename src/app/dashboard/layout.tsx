@@ -73,7 +73,6 @@ function NavLink({
 }
 
 function SidebarContent() {
-  const { user } = useUser();
   const router = useRouter();
   const auth = useAuth();
 
@@ -128,19 +127,19 @@ export default function DashboardLayout({
       return;
     }
 
-    if (userProfile) {
+    if (userProfile && userProfile.role !== 'etudiant') {
+      toast({
+          variant: 'destructive',
+          title: 'Accès non autorisé',
+          description: "Vous n'êtes pas un étudiant. Redirection en cours..."
+      });
       if (userProfile.role === 'admin') {
-        router.replace('/admin');
+          router.replace('/admin');
       } else if (userProfile.role === 'formateur') {
-        router.replace('/formateur');
-      } else if (userProfile.role !== 'etudiant') {
-        toast({
-            variant: 'destructive',
-            title: 'Rôle inconnu',
-            description: "Votre rôle n'est pas reconnu, déconnexion en cours."
-        });
-        signOut(auth);
-        router.replace('/login');
+          router.replace('/formateur');
+      } else {
+          signOut(auth);
+          router.replace('/login');
       }
     }
   }, [user, userProfile, loading, router, auth, toast]);
@@ -150,7 +149,7 @@ export default function DashboardLayout({
       <div className="flex justify-center items-center h-screen bg-background">
         <Loader2 className="h-8 w-8 animate-spin" />
         <p className="flex items-center gap-2 text-lg ml-4">
-          Chargement de votre espace étudiant...
+          Vérification de votre accès étudiant...
         </p>
       </div>
     );
