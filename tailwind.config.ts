@@ -89,7 +89,7 @@ export default {
           },
         },
         'fade-in': {
-          from: { opacity: '0', transform: 'translateY(10px)' },
+          from: { opacity: '0', transform: 'translateY(20px)' },
           to: { opacity: '1', transform: 'translateY(0)' },
         },
         'slide-up': {
