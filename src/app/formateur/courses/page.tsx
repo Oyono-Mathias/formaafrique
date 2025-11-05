@@ -56,6 +56,15 @@ export default function FormateurCoursesPage() {
     },
   });
 
+  const slugify = (text: string) => {
+    return text.toString().toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^\w\-]+/g, '')
+        .replace(/\-\-+/g, '-')
+        .replace(/^-+/, '')
+        .replace(/-+$/, '');
+  }
+
   async function onSubmit(values: z.infer<typeof courseSchema>) {
     if (!user || !db) return;
 
@@ -70,7 +79,7 @@ export default function FormateurCoursesPage() {
         niveau: 'Débutant',
         langue: 'Français',
         modules: [],
-        slug: values.titre.toLowerCase().replace(/\s+/g, '-').slice(0, 50),
+        slug: slugify(values.titre),
       });
       toast({
         title: "Cours ajouté avec succès!",
