@@ -3,12 +3,12 @@
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { notFound } from 'next/navigation';
+import { notFound, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useState, useMemo, useEffect } from 'react';
 import { useDoc, useCollection, useFirestore } from '@/firebase';
 import type { Course, Module, Video } from '@/lib/types';
-import { Loader2, ArrowLeft, PlusCircle, Video as VideoIcon, Trash2, GripVertical } from 'lucide-react';
+import { Loader2, ArrowLeft, PlusCircle, Video as VideoIcon, Trash2, GripVertical, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -39,7 +39,7 @@ const moduleSchema = z.object({
 
 const videoSchema = z.object({
     titre: z.string().min(3, "Titre requis."),
-    url: z.string().url("URL de vidéo valide requise."),
+    url: z.string().url("URL de vidéo valide requise (YouTube ou Google Drive)."),
 });
 
 export default function ManageModulesPage({ params }: { params: { id: string } }) {
@@ -49,21 +49,13 @@ export default function ManageModulesPage({ params }: { params: { id: string } }
   const { toast } = useToast();
   
   const [selectedModule, setSelectedModule] = useState<Module | null>(null);
+  const [editingModule, setEditingModule] = useState<Module | null>(null);
   const [isModuleModalOpen, setIsModuleModalOpen] = useState(false);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
-  
-  // This state will hold the videos for the selected module
-  const { data: videosData, loading: videosLoading } = useCollection<Video>(
-    selectedModule ? `courses/${params.id}/modules/${selectedModule.id}/videos` : null
-  );
 
   const sortedModules = useMemo(() => {
     return (modulesData || []).sort((a, b) => a.ordre - b.ordre);
   }, [modulesData]);
-
-  const sortedVideos = useMemo(() => {
-    return (videosData || []).sort((a,b) => a.ordre - b.ordre);
-  }, [videosData]);
 
   const moduleForm = useForm<z.infer<typeof moduleSchema>>({
     resolver: zodResolver(moduleSchema),
@@ -76,23 +68,25 @@ export default function ManageModulesPage({ params }: { params: { id: string } }
   });
 
   useEffect(() => {
-    if(selectedModule) {
-      moduleForm.reset({
-        titre: selectedModule.titre,
-        description: selectedModule.description,
-      });
-    } else {
-      moduleForm.reset({ titre: '', description: '' });
+    if (isModuleModalOpen) {
+        if(editingModule) {
+            moduleForm.reset({
+                titre: editingModule.titre,
+                description: editingModule.description,
+            });
+        } else {
+            moduleForm.reset({ titre: '', description: '' });
+        }
     }
-  }, [selectedModule, isModuleModalOpen, moduleForm]);
+  }, [editingModule, isModuleModalOpen, moduleForm]);
 
   async function onModuleSubmit(values: z.infer<typeof moduleSchema>) {
     if (!db || !course?.id) return;
     
     try {
-      if (selectedModule) {
+      if (editingModule) {
         // Update existing module
-        const moduleRef = doc(db, `courses/${course.id}/modules`, selectedModule.id!);
+        const moduleRef = doc(db, `courses/${course.id}/modules`, editingModule.id!);
         await updateDoc(moduleRef, values);
         toast({ title: 'Module mis à jour !' });
       } else {
@@ -101,11 +95,11 @@ export default function ManageModulesPage({ params }: { params: { id: string } }
         await addDoc(modulesCollectionRef, {
           ...values,
           ordre: (sortedModules.length || 0) + 1,
-          videos: [] // Videos will be in a subcollection
         });
         toast({ title: 'Module ajouté !' });
       }
       setIsModuleModalOpen(false);
+      setEditingModule(null);
     } catch (error) {
       console.error("Error saving module:", error);
       toast({ variant: 'destructive', title: 'Erreur', description: "Impossible d'enregistrer le module." });
@@ -119,7 +113,7 @@ export default function ManageModulesPage({ params }: { params: { id: string } }
         const videosCollectionRef = collection(db, `courses/${course.id}/modules/${selectedModule.id}/videos`);
         await addDoc(videosCollectionRef, {
             ...values,
-            ordre: (sortedVideos.length || 0) + 1,
+            ordre: 1, // Simplified order for now
         });
         toast({ title: "Vidéo ajoutée !" });
         videoForm.reset();
@@ -133,6 +127,16 @@ export default function ManageModulesPage({ params }: { params: { id: string } }
   const openVideoDialog = (module: Module) => {
     setSelectedModule(module);
     setIsVideoModalOpen(true);
+  }
+  
+  const openEditModuleDialog = (module: Module) => {
+      setEditingModule(module);
+      setIsModuleModalOpen(true);
+  }
+  
+  const openAddModuleDialog = () => {
+      setEditingModule(null);
+      setIsModuleModalOpen(true);
   }
 
   if (courseLoading || modulesLoading) {
@@ -156,7 +160,7 @@ export default function ManageModulesPage({ params }: { params: { id: string } }
       </div>
 
       <div className="flex justify-end">
-        <Button onClick={() => { setSelectedModule(null); setIsModuleModalOpen(true); }}>
+        <Button onClick={openAddModuleDialog}>
           <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un module
         </Button>
       </div>
@@ -170,9 +174,9 @@ export default function ManageModulesPage({ params }: { params: { id: string } }
                         <CardDescription>{module.description}</CardDescription>
                     </div>
                     <div className='flex gap-2'>
-                        <Button variant="outline" onClick={() => {setSelectedModule(module); setIsModuleModalOpen(true)}}>Modifier</Button>
+                        <Button variant="outline" onClick={() => openEditModuleDialog(module)}>Modifier le Module</Button>
                         <Button onClick={() => openVideoDialog(module)}>
-                            <PlusCircle className='mr-2 h-4 w-4'/> Ajouter Vidéo
+                            <PlusCircle className='mr-2 h-4 w-4'/> Ajouter une Vidéo
                         </Button>
                     </div>
                 </CardHeader>
@@ -192,7 +196,7 @@ export default function ManageModulesPage({ params }: { params: { id: string } }
       <Dialog open={isModuleModalOpen} onOpenChange={setIsModuleModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{selectedModule ? 'Modifier le module' : 'Ajouter un nouveau module'}</DialogTitle>
+            <DialogTitle>{editingModule ? 'Modifier le module' : 'Ajouter un nouveau module'}</DialogTitle>
           </DialogHeader>
           <Form {...moduleForm}>
             <form onSubmit={moduleForm.handleSubmit(onModuleSubmit)} className='space-y-4 py-4'>
@@ -286,19 +290,19 @@ function ModuleVideos({ courseId, moduleId }: { courseId: string; moduleId: stri
 
     return (
         <div>
-            <h4 className='font-semibold mb-2'>Vidéos du module ({sortedVideos.length})</h4>
+            <h4 className='font-semibold mb-2 text-muted-foreground'>Vidéos du module ({sortedVideos.length})</h4>
             {sortedVideos.length > 0 ? (
                  <div className="space-y-2">
                   {sortedVideos.map(video => (
                     <div key={video.id} className="flex items-center justify-between rounded-md border bg-muted/50 p-3">
                       <div className="flex items-center gap-3">
-                         <GripVertical className='h-5 w-5 text-muted-foreground cursor-grab'/>
+                         {/* <GripVertical className='h-5 w-5 text-muted-foreground cursor-grab'/> */}
                          <VideoIcon className="h-5 w-5 text-primary"/>
                          <p className="font-medium text-sm">{video.titre}</p>
                       </div>
                       <div className='flex gap-2'>
                         {/* <Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button> */}
-                        <Button variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => handleDeleteVideo(video.id!)}><Trash2 className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" className="text-destructive h-8 w-8 hover:bg-destructive/10" onClick={() => handleDeleteVideo(video.id!)}><Trash2 className="h-4 w-4" /></Button>
                       </div>
                     </div>
                   ))}
@@ -309,3 +313,5 @@ function ModuleVideos({ courseId, moduleId }: { courseId: string; moduleId: stri
         </div>
     )
 }
+
+    

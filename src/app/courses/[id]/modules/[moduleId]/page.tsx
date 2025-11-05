@@ -13,7 +13,7 @@ import { useDoc, useCollection } from '@/firebase';
 import type { Course, Module, Video } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 
 
 type ModulePageProps = {
@@ -26,6 +26,8 @@ type ModulePageProps = {
 export default function ModulePage({ params }: ModulePageProps) {
   const { data: course, loading: courseLoading } = useDoc<Course>('courses', params.id);
   const { data: modulesData, loading: modulesLoading } = useCollection<Module>(`courses/${params.id}/modules`);
+  
+  // Fetch videos for the current module
   const { data: videosData, loading: videosLoading } = useCollection<Video>(`courses/${params.id}/modules/${params.moduleId}/videos`);
 
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
@@ -39,7 +41,8 @@ export default function ModulePage({ params }: ModulePageProps) {
       return { currentModule: currentMod, sortedModules: sortedMods, sortedVideos: sortedVids };
   }, [modulesData, videosData, params.moduleId]);
 
-  useMemo(() => {
+  // Effect to select the first video by default when the page loads or videos change
+  useEffect(() => {
     if(sortedVideos.length > 0 && !selectedVideo) {
       setSelectedVideo(sortedVideos[0]);
     }
@@ -60,6 +63,7 @@ export default function ModulePage({ params }: ModulePageProps) {
   }
 
   const getEmbedUrl = (url: string): string | null => {
+    if (!url) return null;
     try {
       const urlObj = new URL(url);
       if (urlObj.hostname.includes('youtube.com') || urlObj.hostname.includes('youtu.be')) {
@@ -69,11 +73,14 @@ export default function ModulePage({ params }: ModulePageProps) {
         return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
       }
       if (urlObj.hostname.includes('drive.google.com')) {
-        const fileId = urlObj.pathname.split('/')[3];
+        // Correctly handle Google Drive embed URLs
+        const match = url.match(/file\/d\/([a-zA-Z0-9_-]+)/);
+        const fileId = match ? match[1] : null;
         return fileId ? `https://drive.google.com/file/d/${fileId}/preview` : null;
       }
       return url; // fallback for other valid iframe sources
     } catch (error) {
+      console.error("Invalid video URL:", error);
       return null;
     }
   };
@@ -98,6 +105,7 @@ export default function ModulePage({ params }: ModulePageProps) {
           <div className="aspect-video bg-black rounded-lg overflow-hidden mb-6 shadow-lg">
              {embedUrl ? (
                 <iframe
+                    key={selectedVideo?.id} // Add a key to force re-render on video change
                     src={embedUrl}
                     title={selectedVideo?.titre}
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -105,14 +113,9 @@ export default function ModulePage({ params }: ModulePageProps) {
                     className='w-full h-full'
                 ></iframe>
              ) : videoPlaceholder && (
-                <Image 
-                    src={videoPlaceholder.imageUrl} 
-                    alt="Video placeholder"
-                    width={1280}
-                    height={720}
-                    className="w-full h-full object-cover"
-                    data-ai-hint={videoPlaceholder.imageHint}
-                />
+                <div className='w-full h-full bg-muted flex items-center justify-center'>
+                    <p className='text-muted-foreground'>Sélectionnez une vidéo pour commencer.</p>
+                </div>
              )}
           </div>
           <h1 className="text-3xl md:text-4xl font-bold font-headline text-primary mb-2">
@@ -136,7 +139,7 @@ export default function ModulePage({ params }: ModulePageProps) {
             {(sortedModules || []).map((module, index) => {
               const isCurrentModule = module.id === currentModule.id;
               const isCompleted = index < currentModuleIndex;
-              const isLocked = false;
+              const isLocked = false; // Add real logic later
 
               return (
                 <AccordionItem value={`module-${module.id}`} key={module.id}>
@@ -153,23 +156,29 @@ export default function ModulePage({ params }: ModulePageProps) {
                     </AccordionTrigger>
                     <AccordionContent>
                       <ul className="space-y-1 pl-4 list-none">
-                        {module.id === currentModule.id ? sortedVideos.map((video, videoIndex) => (
-                           <li key={videoIndex}>
+                        {isCurrentModule ? (
+                          sortedVideos.length > 0 ? (
+                            sortedVideos.map((video) => (
+                              <li key={video.id}>
                                 <button
-                                onClick={() => setSelectedVideo(video)}
-                                className={cn(
-                                "block w-full text-left p-3 rounded-md transition-colors text-sm hover:bg-background",
-                                selectedVideo?.id === video.id && "bg-primary/10 text-primary font-semibold"
-                                )}
-                            >
-                                <div className="flex items-center">
-                                <PlayCircle className="h-4 w-4 mr-3 text-muted-foreground flex-shrink-0" />
-                                <span className="font-medium">{video.titre}</span>
-                                </div>
-                            </button>
-                           </li>
-                        )) : (
-                           <li className='p-3 text-sm text-muted-foreground'>Chargez le module pour voir les vidéos.</li>
+                                  onClick={() => setSelectedVideo(video)}
+                                  className={cn(
+                                    "block w-full text-left p-3 rounded-md transition-colors text-sm hover:bg-background",
+                                    selectedVideo?.id === video.id && "bg-primary/10 text-primary font-semibold"
+                                  )}
+                                >
+                                  <div className="flex items-center">
+                                    <PlayCircle className="h-4 w-4 mr-3 text-muted-foreground flex-shrink-0" />
+                                    <span className="font-medium">{video.titre}</span>
+                                  </div>
+                                </button>
+                              </li>
+                            ))
+                          ) : (
+                            <li className='p-3 text-sm text-muted-foreground'>Aucune vidéo dans ce module.</li>
+                          )
+                        ) : (
+                          <li className='p-3 text-sm text-muted-foreground'>Chargez le module pour voir les vidéos.</li>
                         )}
                       </ul>
                     </AccordionContent>
@@ -181,3 +190,5 @@ export default function ModulePage({ params }: ModulePageProps) {
     </div>
   );
 }
+
+    

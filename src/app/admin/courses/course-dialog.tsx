@@ -73,7 +73,7 @@ export default function CourseDialog({
   course,
 }: CourseDialogProps) {
   const db = useFirestore();
-  const { user } = useUser();
+  const { user, userProfile } = useUser();
   const { toast } = useToast();
   const router = useRouter();
   const isEditing = !!course;
@@ -144,7 +144,10 @@ export default function CourseDialog({
           description: 'Vous allez être redirigé pour ajouter des modules.',
         });
         setIsOpen(false);
-        router.push(`/formateur/courses/${docRef.id}/modules`);
+        // Redirect only if the current user is a formateur
+        if(userProfile?.role === 'formateur') {
+            router.push(`/formateur/courses/${docRef.id}/modules`);
+        }
       }
     } catch (error) {
       console.error('Error saving course: ', error);
@@ -287,7 +290,7 @@ export default function CourseDialog({
               </DialogClose>
               <Button type="submit" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isEditing ? 'Enregistrer les modifications' : 'Créer et ajouter des modules'}
+                {isEditing ? 'Enregistrer les modifications' : 'Créer et continuer'}
               </Button>
             </DialogFooter>
           </form>
@@ -296,3 +299,5 @@ export default function CourseDialog({
     </Dialog>
   );
 }
+
+    

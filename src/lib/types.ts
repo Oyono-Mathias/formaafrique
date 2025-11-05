@@ -23,6 +23,7 @@ export interface Module {
   titre: string;
   description: string;
   ordre: number;
+  // `videos` is now a subcollection, so this field can be removed or kept for summary purposes
   videos: Video[];
 }
 
@@ -110,3 +111,5 @@ export interface Donation {
   moyenPaiement: 'carte' | 'mobile_money' | 'inconnu';
   paysOrigine: string;
 }
+
+    
