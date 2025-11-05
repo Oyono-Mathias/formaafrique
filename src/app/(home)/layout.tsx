@@ -33,7 +33,7 @@ export default function HomeLayout({
     }
   }, [user, userProfile, loading, router]);
 
-  // If loading, or if the user is logged in, show a loading screen while redirecting.
+  // Si le chargement est en cours ou si l'utilisateur est détecté, afficher un loader pendant la redirection.
   if (loading || user) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -43,7 +43,7 @@ export default function HomeLayout({
     );
   }
 
-  // Only show the public layout if the user is not logged in and loading is finished.
+  // Afficher le contenu public uniquement si l'utilisateur n'est pas connecté et que le chargement est terminé.
   return (
     <>
       <Header />

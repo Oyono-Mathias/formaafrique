@@ -23,6 +23,7 @@ export default function HomePage() {
 
   const featuredCourses = useMemo(() => {
     if (!courses) return [];
+    // Trier les cours par date de création (du plus récent au plus ancien) et prendre les 3 premiers
     return [...courses]
         .sort((a, b) => {
             const dateA = a.date_creation instanceof Timestamp ? a.date_creation.toMillis() : new Date(a.date_creation as string).getTime();
