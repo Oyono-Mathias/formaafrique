@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useUser, useCollection, useFirestore } from '@/firebase';
 import type { Course } from '@/lib/types';
-import { Loader2, Plus, Users, MoreVertical, Edit, Trash2 } from 'lucide-react';
+import { Loader2, Plus, Users, MoreVertical, Edit, Trash2, ExternalLink } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -17,7 +17,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Badge } from '@/components/ui/badge';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import CourseDialog from '@/app/admin/courses/course-dialog';
 import {
   AlertDialog,
@@ -31,14 +31,14 @@ import {
 } from '@/components/ui/alert-dialog';
 import { deleteDoc, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 
 export default function FormateurCoursesPage() {
   const { user } = useUser();
+  const router = useRouter();
   const { data: courses, loading, error } = useCollection<Course>(
     'courses', 
-    // This condition ensures we only fetch courses if the user is loaded and has an ID.
-    // The hook is smart enough to not run the query if the options are undefined.
     user?.uid ? { where: ['instructorId', '==', user.uid] } : undefined
   );
   
@@ -56,6 +56,10 @@ export default function FormateurCoursesPage() {
   const handleEdit = (course: Course) => {
     setSelectedCourse(course);
     setIsDialogOpen(true);
+  }
+
+  const handleManageModules = (courseId: string) => {
+    router.push(`/formateur/courses/${courseId}/modules`);
   }
 
   const handleDelete = async () => {
@@ -89,7 +93,7 @@ export default function FormateurCoursesPage() {
             </p>
         </div>
         <Button onClick={handleAddNew}>
-            <Plus className="mr-2 h-4 w-4" /> Créer un cours
+            <Plus className="mr-2 h-4 w-4" /> Créer une formation
         </Button>
       </div>
 
@@ -105,7 +109,7 @@ export default function FormateurCoursesPage() {
                 <CardTitle>Vous n'avez pas encore de cours</CardTitle>
                 <CardDescription className="mt-2">Commencez par créer votre première formation.</CardDescription>
                 <Button className="mt-4" onClick={handleAddNew}>
-                    <Plus className="mr-2 h-4 w-4" /> Créer un cours
+                    <Plus className="mr-2 h-4 w-4" /> Créer une formation
                 </Button>
             </Card>
        )}
@@ -134,7 +138,8 @@ export default function FormateurCoursesPage() {
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
-                                        <DropdownMenuItem onSelect={() => handleEdit(course)}><Edit className='mr-2 h-4 w-4'/> Modifier</DropdownMenuItem>
+                                        <DropdownMenuItem onSelect={() => handleEdit(course)}><Edit className='mr-2 h-4 w-4'/> Modifier les détails</DropdownMenuItem>
+                                        <DropdownMenuSeparator/>
                                         <DropdownMenuItem onSelect={() => setCourseToDelete(course)} className='text-destructive'><Trash2 className='mr-2 h-4 w-4'/> Supprimer</DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
@@ -146,15 +151,20 @@ export default function FormateurCoursesPage() {
                                 </div>
                                 <h3 className="text-lg font-bold mt-2 leading-tight">{course.titre}</h3>
                             </CardContent>
-                             <CardFooter className="p-4 bg-muted/50 flex justify-between text-sm text-muted-foreground">
-                                <div>
-                                    <span>Prix: </span>
-                                    <span className="font-bold text-foreground">{course.prix === 0 ? 'Gratuit' : `${course.prix} XAF`}</span>
+                            <CardFooter className="p-4 bg-muted/50 flex flex-col items-start gap-4">
+                                <div className="w-full flex justify-between text-sm text-muted-foreground">
+                                    <div>
+                                        <span>Prix: </span>
+                                        <span className="font-bold text-foreground">{course.prix === 0 ? 'Gratuit' : `${course.prix} XAF`}</span>
+                                    </div>
+                                    <div className='flex items-center'>
+                                        <Users className="mr-1.5 h-4 w-4" />
+                                        <span className="font-bold text-foreground">0</span>
+                                    </div>
                                 </div>
-                                <div className='flex items-center'>
-                                    <Users className="mr-1.5 h-4 w-4" />
-                                    <span className="font-bold text-foreground">0</span>
-                                </div>
+                                <Button className="w-full" variant="outline" onClick={() => handleManageModules(course.id!)}>
+                                    Gérer les modules et vidéos
+                                </Button>
                             </CardFooter>
                         </Card>
                     )
@@ -173,7 +183,7 @@ export default function FormateurCoursesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
             <AlertDialogDescription>
-              Êtes-vous sûr de vouloir supprimer la formation "{courseToDelete?.titre}" ? Cette action est irréversible.
+              Êtes-vous sûr de vouloir supprimer la formation "{courseToDelete?.titre}" ? Cette action est irréversible et supprimera également tous les modules et vidéos associés.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -31,12 +31,12 @@ const formateurNavLinks = [
   { href: '/formateur/courses', label: 'Mes cours', icon: BookOpen },
   { href: '/formateur/students', label: 'Étudiants', icon: Users },
   { href: '/formateur/revenues', label: 'Revenus', icon: Wallet },
-  { href: '/formateur/profile', label: 'Profil', icon: UserIcon },
   { href: '/formateur/settings', label: 'Paramètres', icon: Settings },
 ];
 
 function NavLink({ href, icon: Icon, label }: { href: string, icon: React.ElementType, label: string }) {
   const pathname = usePathname();
+  // Ensure that nested routes like /formateur/courses/[id]/modules also activate the /formateur/courses link
   const isActive = pathname.startsWith(href) && (href !== '/formateur' || pathname === '/formateur');
   return (
     <Link
@@ -161,8 +161,7 @@ export default function FormateurLayout({
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Mon Compte</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild><Link href="/formateur/profile">Profil</Link></DropdownMenuItem>
-                <DropdownMenuItem asChild><Link href="/formateur/settings">Paramètres</Link></DropdownMenuItem>
+                <DropdownMenuItem asChild><Link href="/formateur/settings">Paramètres & Profil</Link></DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} className="text-destructive">Déconnexion</DropdownMenuItem>
               </DropdownMenuContent>

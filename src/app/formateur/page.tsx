@@ -11,6 +11,7 @@ import {
   BookOpen,
   Users,
   Wallet,
+  Loader2,
 } from 'lucide-react';
 import { useUser, useCollection } from '@/firebase';
 import type { Course, Enrollment } from '@/lib/types';
@@ -34,7 +35,7 @@ export default function FormateurDashboardPage() {
   const stats = [
     {
       label: 'Cours publiés',
-      value: coursesLoading ? '...' : (courses || []).filter(c => c.publie).length,
+      value: coursesLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : (courses || []).filter(c => c.publie).length,
       icon: BookOpen,
       description: 'Nombre de formations visibles par les étudiants.',
     },
@@ -85,7 +86,11 @@ export default function FormateurDashboardPage() {
                 </Link>
             </Button>
           </div>
-          {(courses || []).length > 0 ? (
+          {coursesLoading ? (
+             <div className="flex justify-center items-center h-40">
+                <Loader2 className="h-8 w-8 animate-spin" />
+             </div>
+          ) : (courses || []).length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {courses.slice(0, 3).map(course => (
                   <Card key={course.id}>
