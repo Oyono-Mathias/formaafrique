@@ -70,6 +70,7 @@ export default function FormateurCoursesPage() {
         niveau: 'Débutant',
         langue: 'Français',
         modules: [],
+        slug: values.titre.toLowerCase().replace(/\s+/g, '-').slice(0, 50),
       });
       toast({
         title: "Cours ajouté avec succès!",
