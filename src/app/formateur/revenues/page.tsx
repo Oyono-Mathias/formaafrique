@@ -50,7 +50,6 @@ const chartConfig = {
 export default function FormateurRevenuesPage() {
     const { user } = useUser();
 
-    // --- MOCK DATA LOGIC ---
     const { totalRevenue, monthlyRevenue, totalSales, salesByMonth, topCourses } = useMemo(() => {
         const totalRevenue = mockSales.reduce((acc, sale) => acc + sale.amount, 0);
         const now = new Date();
@@ -77,7 +76,6 @@ export default function FormateurRevenuesPage() {
 
         return { totalRevenue, monthlyRevenue, totalSales: mockSales.length, salesByMonth, topCourses };
     }, []);
-    // --- END MOCK DATA LOGIC ---
 
     const formatCurrency = (amount: number, currency: string = 'XAF') => {
         return new Intl.NumberFormat('fr-FR', { style: 'currency', currency }).format(amount);
@@ -206,3 +204,5 @@ export default function FormateurRevenuesPage() {
         </div>
     );
 }
+
+    

@@ -2,7 +2,6 @@
 
 import { notFound, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { PlayCircle, CheckCircle, Lock, Loader2, ArrowLeft } from 'lucide-react';
 
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -12,7 +11,6 @@ import { Separator } from '@/components/ui/separator';
 import { useDoc, useCollection } from '@/firebase';
 import type { Course, Module, Video } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { useMemo, useState, useEffect } from 'react';
 
 
@@ -190,3 +188,5 @@ export default function ModulePage({ params }: ModulePageProps) {
     </div>
   );
 }
+
+    

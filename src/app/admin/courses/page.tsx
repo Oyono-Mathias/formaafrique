@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { useCollection, useFirestore, useUser } from '@/firebase';
+import { useCollection, useFirestore } from '@/firebase';
 import type { Course } from '@/lib/types';
 import { Loader2, PlusCircle, Search, Trash2, Edit, MoreVertical, BookCopy, Tag, DollarSign, Eye } from 'lucide-react';
 import {
@@ -29,7 +29,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Timestamp, deleteDoc, doc } from 'firebase/firestore';
+import { deleteDoc, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -40,12 +40,10 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import CourseDialog from './course-dialog';
-import { categories } from '@/lib/categories';
 
 export default function AdminCoursesPage() {
   const { data: courses, loading, error } = useCollection<Course>('courses');
@@ -65,6 +63,15 @@ export default function AdminCoursesPage() {
       course.categorie.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [courses, searchTerm]);
+
+  const { totalCourses, uniqueCategories, totalRevenue } = useMemo(() => {
+    if (!courses) return { totalCourses: 0, uniqueCategories: 0, totalRevenue: 0 };
+    return {
+      totalCourses: courses.length,
+      uniqueCategories: new Set(courses.map(c => c.categorie)).size,
+      totalRevenue: courses.reduce((sum, course) => sum + (course.prix > 0 ? 5 * course.prix : 0), 0) // Mock: 5 inscriptions par cours payant
+    };
+  }, [courses]);
 
   const handleEdit = (course: Course) => {
     setSelectedCourse(course);
@@ -95,10 +102,6 @@ export default function AdminCoursesPage() {
       setCourseToDelete(null);
     }
   };
-  
-  const totalCourses = courses.length;
-  const uniqueCategories = new Set(courses.map(c => c.categorie)).size;
-  const totalRevenue = courses.reduce((sum, course) => sum + (course.prix > 0 ? 5 * course.prix : 0), 0); // Mock: 5 inscriptions par cours payant
 
   return (
     <div className="space-y-8">
@@ -289,3 +292,5 @@ export default function AdminCoursesPage() {
     </div>
   );
 }
+
+    
