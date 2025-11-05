@@ -141,16 +141,18 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
               <div className="space-y-4">
                 {(sortedModules || []).map((module) => (
                   <Link href={`/courses/${course.id}/modules/${module.id}`} key={module.id} className="block">
-                    <Card className="hover:bg-muted/50 transition-colors">
+                    <Card className="hover:bg-muted/50 transition-colors shadow-sm hover:shadow-md">
                       <CardContent className="p-4 flex items-center justify-between">
                         <div className="flex items-center">
-                          <PlayCircle className="h-6 w-6 text-primary mr-4" />
+                          <div className="p-3 bg-primary/10 rounded-full mr-4">
+                            <PlayCircle className="h-6 w-6 text-primary" />
+                          </div>
                           <div>
-                            <p className="font-semibold">{module.titre}</p>
+                            <p className="font-semibold text-lg">{module.titre}</p>
                             <p className="text-sm text-muted-foreground">{module.videos.length} vidéo(s)</p>
                           </div>
                         </div>
-                        <Button variant="ghost" size="sm">Voir</Button>
+                        <Button variant="ghost" size="sm">Voir le module</Button>
                       </CardContent>
                     </Card>
                   </Link>

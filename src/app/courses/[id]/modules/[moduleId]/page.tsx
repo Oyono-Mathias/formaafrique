@@ -97,7 +97,10 @@ export default function ModulePage({ params }: ModulePageProps) {
                     <Card className="hover:bg-muted transition-colors hover:shadow-md">
                         <CardContent className='p-4 flex items-center gap-4'>
                             <PlayCircle className="h-6 w-6 text-primary flex-shrink-0" />
-                            <span className="font-medium flex-grow">{video.titre}</span>
+                            <div className='flex-grow'>
+                                <p className="font-medium">{video.titre}</p>
+                                {/* We can add video duration here later */}
+                            </div>
                             <Button variant="ghost" size="sm">Regarder</Button>
                         </CardContent>
                     </Card>
@@ -121,33 +124,34 @@ export default function ModulePage({ params }: ModulePageProps) {
               return (
                 <AccordionItem value={`module-${module.id}`} key={module.id}>
                     <AccordionTrigger 
-                      className={cn('font-semibold', isCurrentModule && 'text-primary')}
+                      className={cn('font-semibold hover:no-underline', isCurrentModule && 'text-primary')}
                       disabled={isLocked}
                     >
                        <Link href={`/courses/${course.id}/modules/${module.id}`} className='w-full text-left'>
                          <div className="flex items-center gap-3">
-                          {isCompleted ? <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" /> : <PlayCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />}
+                          {isCompleted ? <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" /> : isLocked ? <Lock className='h-5 w-5 text-muted-foreground flex-shrink-0' /> : <PlayCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />}
                           <span>{module.titre}</span>
                         </div>
                        </Link>
                     </AccordionTrigger>
                     <AccordionContent>
-                      <div className="space-y-2 pl-4">
+                      <ul className="space-y-2 pl-4 list-none">
                         {(module.videos || []).sort((a,b) => a.ordre - b.ordre).map((video, videoIndex) => (
-                           <Link
-                            key={videoIndex}
-                            href="#" // Link to the actual video player view in the future
-                            className={cn(
-                              "block p-3 rounded-md transition-colors text-sm hover:bg-muted"
-                            )}
-                          >
-                            <div className="flex items-center">
-                              <PlayCircle className="h-4 w-4 mr-3 text-muted-foreground flex-shrink-0" />
-                              <span className="font-medium">{video.titre}</span>
-                            </div>
-                          </Link>
+                           <li key={videoIndex}>
+                                <Link
+                                href="#" // Link to the actual video player view in the future
+                                className={cn(
+                                "block p-3 rounded-md transition-colors text-sm hover:bg-background"
+                                )}
+                            >
+                                <div className="flex items-center">
+                                <PlayCircle className="h-4 w-4 mr-3 text-muted-foreground flex-shrink-0" />
+                                <span className="font-medium">{video.titre}</span>
+                                </div>
+                            </Link>
+                           </li>
                         ))}
-                      </div>
+                      </ul>
                     </AccordionContent>
                 </AccordionItem>
               );
