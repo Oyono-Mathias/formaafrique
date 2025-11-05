@@ -40,6 +40,16 @@ import {
 } from '@/components/ui/select';
 import { categories } from '@/lib/categories';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { useRouter } from 'next/navigation';
+
+const slugify = (text: string) => {
+    return text.toString().toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^\w\-]+/g, '')
+        .replace(/\-\-+/g, '-')
+        .replace(/^-+/, '')
+        .replace(/-+$/, '');
+}
 
 const courseSchema = z.object({
   titre: z.string().min(5, { message: 'Le titre doit avoir au moins 5 caractères.' }),
@@ -65,6 +75,7 @@ export default function CourseDialog({
   const db = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
+  const router = useRouter();
   const isEditing = !!course;
 
   const form = useForm<z.infer<typeof courseSchema>>({
@@ -116,10 +127,12 @@ export default function CourseDialog({
           title: 'Formation mise à jour',
           description: `"${values.titre}" a été modifié avec succès.`,
         });
+        setIsOpen(false);
       } else {
         // Create new course
-        await addDoc(collection(db, 'courses'), {
+        const docRef = await addDoc(collection(db, 'courses'), {
           ...values,
+          slug: slugify(values.titre),
           auteur: user.displayName || 'Admin',
           instructorId: user.uid,
           date_creation: serverTimestamp(),
@@ -127,11 +140,12 @@ export default function CourseDialog({
           modules: [],
         });
         toast({
-          title: 'Formation créée',
-          description: `"${values.titre}" a été ajouté en tant que brouillon.`,
+          title: 'Formation créée avec succès !',
+          description: 'Vous allez être redirigé pour ajouter des modules.',
         });
+        setIsOpen(false);
+        router.push(`/formateur/courses/${docRef.id}/modules`);
       }
-      setIsOpen(false);
     } catch (error) {
       console.error('Error saving course: ', error);
       toast({
@@ -150,7 +164,7 @@ export default function CourseDialog({
             {isEditing ? 'Modifier la formation' : 'Créer une nouvelle formation'}
           </DialogTitle>
           <DialogDescription>
-            Remplissez les détails ci-dessous. Vous pourrez ajouter les modules et vidéos plus tard.
+            Remplissez les détails ci-dessous. Vous pourrez ajouter les modules et vidéos juste après.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -273,7 +287,7 @@ export default function CourseDialog({
               </DialogClose>
               <Button type="submit" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isEditing ? 'Enregistrer les modifications' : 'Créer la formation'}
+                {isEditing ? 'Enregistrer les modifications' : 'Créer et ajouter des modules'}
               </Button>
             </DialogFooter>
           </form>
