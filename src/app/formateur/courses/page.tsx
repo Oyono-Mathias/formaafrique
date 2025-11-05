@@ -18,84 +18,62 @@ import { Button } from '@/components/ui/button';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import CourseDialog from '@/app/admin/courses/course-dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { deleteDoc, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { categories } from '@/lib/categories';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-const courseSchema = z.object({
-  titre: z.string().min(5, { message: "Le titre doit avoir au moins 5 caractères." }),
-  description: z.string().min(20, { message: "La description doit avoir au moins 20 caractères." }),
-  categorie: z.string().min(1, { message: "Veuillez sélectionner une catégorie." }),
-  prix: z.coerce.number().min(0, { message: "Le prix ne peut pas être négatif." }),
-});
 
 export default function FormateurCoursesPage() {
   const { user } = useUser();
   const { data: courses, loading, error } = useCollection<Course>('courses', {
-    where: ['instructorId', '==', user?.uid || '']
+    where: user?.uid ? ['instructorId', '==', user.uid] : undefined
   });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [courseToDelete, setCourseToDelete] = useState<Course | null>(null);
   const db = useFirestore();
   const { toast } = useToast();
 
-  const form = useForm<z.infer<typeof courseSchema>>({
-    resolver: zodResolver(courseSchema),
-    defaultValues: {
-      titre: '',
-      description: '',
-      categorie: '',
-      prix: 0,
-    },
-  });
-
-  const slugify = (text: string) => {
-    return text.toString().toLowerCase()
-        .replace(/\s+/g, '-')
-        .replace(/[^\w\-]+/g, '')
-        .replace(/\-\-+/g, '-')
-        .replace(/^-+/, '')
-        .replace(/-+$/, '');
+  const handleAddNew = () => {
+    setSelectedCourse(null);
+    setIsDialogOpen(true);
+  };
+  
+  const handleEdit = (course: Course) => {
+    setSelectedCourse(course);
+    setIsDialogOpen(true);
   }
 
-  async function onSubmit(values: z.infer<typeof courseSchema>) {
-    if (!user || !db) return;
-
+  const handleDelete = async () => {
+    if (!courseToDelete || !db) return;
     try {
-      await addDoc(collection(db, 'courses'), {
-        ...values,
-        instructorId: user.uid,
-        auteur: user.displayName,
-        date_creation: serverTimestamp(),
-        publie: false, // Draft by default
-        image: 'course-project-management', // Default placeholder
-        niveau: 'Débutant',
-        langue: 'Français',
-        modules: [],
-        slug: slugify(values.titre),
-      });
+      await deleteDoc(doc(db, 'courses', courseToDelete.id!));
       toast({
-        title: "Cours ajouté avec succès!",
-        description: "Votre cours a été créé en tant que brouillon.",
+        title: 'Cours supprimé',
+        description: `La formation "${courseToDelete.titre}" a été supprimée.`,
       });
-      setIsDialogOpen(false);
-      form.reset();
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      console.error(error);
       toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Impossible de créer le cours.",
+        variant: 'destructive',
+        title: 'Erreur',
+        description: 'La suppression de la formation a échoué.',
       });
+    } finally {
+      setCourseToDelete(null);
     }
-  }
+  };
+
 
   return (
     <div className="space-y-8">
@@ -106,7 +84,7 @@ export default function FormateurCoursesPage() {
             Gérez, modifiez et publiez vos formations.
             </p>
         </div>
-        <Button onClick={() => setIsDialogOpen(true)}>
+        <Button onClick={handleAddNew}>
             <Plus className="mr-2 h-4 w-4" /> Créer un cours
         </Button>
       </div>
@@ -122,7 +100,7 @@ export default function FormateurCoursesPage() {
            <Card className="flex flex-col items-center justify-center p-12 rounded-2xl border-dashed mt-8">
                 <CardTitle>Vous n'avez pas encore de cours</CardTitle>
                 <CardDescription className="mt-2">Commencez par créer votre première formation.</CardDescription>
-                <Button className="mt-4" onClick={() => setIsDialogOpen(true)}>
+                <Button className="mt-4" onClick={handleAddNew}>
                     <Plus className="mr-2 h-4 w-4" /> Créer un cours
                 </Button>
             </Card>
@@ -152,8 +130,8 @@ export default function FormateurCoursesPage() {
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
-                                        <DropdownMenuItem><Edit className='mr-2 h-4 w-4'/> Modifier</DropdownMenuItem>
-                                        <DropdownMenuItem className='text-destructive'><Trash2 className='mr-2 h-4 w-4'/> Supprimer</DropdownMenuItem>
+                                        <DropdownMenuItem onSelect={() => handleEdit(course)}><Edit className='mr-2 h-4 w-4'/> Modifier</DropdownMenuItem>
+                                        <DropdownMenuItem onSelect={() => setCourseToDelete(course)} className='text-destructive'><Trash2 className='mr-2 h-4 w-4'/> Supprimer</DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                                 </div>
@@ -180,78 +158,31 @@ export default function FormateurCoursesPage() {
            </div>
        )}
 
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogContent className="sm:max-w-2xl">
-                 <DialogHeader>
-                    <DialogTitle className="text-2xl font-headline">Créer un nouveau cours</DialogTitle>
-                    <DialogDescription>
-                        Remplissez les informations de base de votre cours. Vous pourrez ajouter les modules et vidéos plus tard.
-                    </DialogDescription>
-                </DialogHeader>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-                        <FormField
-                            control={form.control}
-                            name="titre"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Titre du cours</FormLabel>
-                                    <FormControl><Input placeholder="Ex: Introduction à la comptabilité" {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                         <FormField
-                            control={form.control}
-                            name="description"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Description</FormLabel>
-                                    <FormControl><Textarea placeholder="Décrivez votre cours en quelques mots..." {...field} rows={4} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <div className="grid grid-cols-2 gap-4">
-                           <FormField
-                                control={form.control}
-                                name="categorie"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Catégorie</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                            <FormControl><SelectTrigger><SelectValue placeholder="Sélectionnez..." /></SelectTrigger></FormControl>
-                                            <SelectContent>
-                                                {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                             <FormField
-                                control={form.control}
-                                name="prix"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Prix (XAF)</FormLabel>
-                                        <FormControl><Input type="number" placeholder="0 pour un cours gratuit" {...field} /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
-                        <DialogFooter className="pt-4">
-                            <DialogClose asChild><Button type="button" variant="secondary">Annuler</Button></DialogClose>
-                            <Button type="submit" disabled={form.formState.isSubmitting}>
-                                {form.formState.isSubmitting ? <Loader2 className='animate-spin mr-2'/> : null}
-                                Créer le brouillon
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                </Form>
-            </DialogContent>
-        </Dialog>
+      <CourseDialog
+        isOpen={isDialogOpen}
+        setIsOpen={setIsDialogOpen}
+        course={selectedCourse}
+      />
+      
+      <AlertDialog open={!!courseToDelete} onOpenChange={() => setCourseToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer la formation "{courseToDelete?.titre}" ? Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className='bg-destructive hover:bg-destructive/90'
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
