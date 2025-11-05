@@ -68,6 +68,8 @@ export interface Enrollment {
     courseId: string;
     courseTitle: string;
     enrollmentDate: Timestamp;
+    progression?: number;
+    statut?: 'en cours' | 'terminé';
 }
 
 
