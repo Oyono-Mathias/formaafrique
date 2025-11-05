@@ -56,7 +56,6 @@ export default {
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
         'yellow-custom': '#ffc107',
-        'dark-grey-custom': '#343a40',
         chart: {
           '1': 'hsl(var(--chart-1))',
           '2': 'hsl(var(--chart-2))',
