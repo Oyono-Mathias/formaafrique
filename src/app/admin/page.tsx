@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import SecurityBanner from '@/components/SecurityBanner';
 
 export default function AdminDashboardPage() {
   const { data: usersData, loading: usersLoading } = useCollection<UserProfile>('users');
@@ -41,7 +42,7 @@ export default function AdminDashboardPage() {
       label: 'Utilisateurs Inscrits',
       value: usersLoading ? '...' : users.length,
       icon: Users,
-      description: 'Nombre total d\'utilisateurs.',
+      description: "Nombre total d'utilisateurs.",
     },
     {
       label: 'Formations Disponibles',
@@ -65,6 +66,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-8">
+      <SecurityBanner />
       <div>
         <h1 className="text-3xl font-bold font-headline">Tableau de Bord</h1>
         <p className="text-muted-foreground">
