@@ -313,5 +313,3 @@ function ModuleVideos({ courseId, moduleId }: { courseId: string; moduleId: stri
         </div>
     )
 }
-
-    

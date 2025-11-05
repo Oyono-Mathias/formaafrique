@@ -137,7 +137,6 @@ export default function CourseDialog({
           instructorId: user.uid,
           date_creation: serverTimestamp(),
           langue: 'Français',
-          modules: [],
         });
         toast({
           title: 'Formation créée avec succès !',

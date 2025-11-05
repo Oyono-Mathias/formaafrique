@@ -190,5 +190,3 @@ export default function ModulePage({ params }: ModulePageProps) {
     </div>
   );
 }
-
-    
