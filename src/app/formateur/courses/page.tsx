@@ -59,12 +59,12 @@ export default function FormateurCoursesPage() {
     setIsDialogOpen(true);
   }
 
-  const handleManageModules = (courseId: string) => {
+  const handleManageModules = (courseId: string | undefined) => {
     if (!courseId) {
         toast({
             variant: "destructive",
-            title: "Erreur",
-            description: "ID de cours introuvable.",
+            title: "Erreur de navigation",
+            description: "ID de cours introuvable. Impossible d'ouvrir la page des modules.",
         });
         return;
     }
@@ -172,7 +172,7 @@ export default function FormateurCoursesPage() {
                                         <span className="font-bold text-foreground">0</span>
                                     </div>
                                 </div>
-                                <Button className="w-full" variant="outline" onClick={() => handleManageModules(course.id!)}>
+                                <Button className="w-full" variant="outline" onClick={() => handleManageModules(course.id)}>
                                     Gérer les modules et vidéos
                                 </Button>
                             </CardFooter>
