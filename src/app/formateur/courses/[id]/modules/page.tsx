@@ -71,15 +71,8 @@ const videoSchema = z.object({
 });
 
 async function isValidVideoUrl(url: string) {
-    if (!url.startsWith('http')) {
-        return false;
-    }
-    try {
-        await fetch(url, { method: 'HEAD', mode: 'no-cors' });
-        return true;
-    } catch (e) {
-        return false;
-    }
+    // Basic check for now, can be expanded
+    return url.startsWith('http');
 }
 
 
@@ -432,6 +425,9 @@ function VideoDialog({ isOpen, setIsOpen, form, onSubmit, isEditing, moduleTitle
             videoId = urlObj.searchParams.get('v');
         } else if (urlObj.hostname.includes('youtu.be')) {
             videoId = urlObj.pathname.slice(1);
+        } else if (urlObj.hostname.includes('drive.google.com')) {
+            const match = url.match(/file\/d\/([a-zA-Z0-9_-]+)/);
+            return match ? `https://drive.google.com/file/d/${match[1]}/preview` : null;
         }
         
         return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
@@ -453,7 +449,7 @@ function VideoDialog({ isOpen, setIsOpen, form, onSubmit, isEditing, moduleTitle
               : `Ajouter une vidéo à "${moduleTitle}"`}
           </DialogTitle>
           <DialogDescription>
-            Entrez les détails de la vidéo ci-dessous. Collez un lien YouTube pour voir un aperçu.
+            Entrez les détails de la vidéo ci-dessous. Collez un lien YouTube ou Google Drive pour voir un aperçu.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -479,7 +475,7 @@ function VideoDialog({ isOpen, setIsOpen, form, onSubmit, isEditing, moduleTitle
               name="url"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>URL de la vidéo (YouTube)</FormLabel>
+                  <FormLabel>URL de la vidéo (YouTube, G-Drive)</FormLabel>
                   <FormControl>
                     <Input {...field} placeholder="https://www.youtube.com/watch?v=..." />
                   </FormControl>
@@ -495,7 +491,7 @@ function VideoDialog({ isOpen, setIsOpen, form, onSubmit, isEditing, moduleTitle
                   <iframe
                     className="w-full h-full"
                     src={embedUrl}
-                    title="Prévisualisation de la vidéo YouTube"
+                    title="Prévisualisation de la vidéo"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                   ></iframe>
@@ -546,7 +542,7 @@ function ModuleVideos({
   }, [videosData]);
 
   const handleDeleteVideo = async (videoId: string) => {
-    if (!db) return;
+    if (!db || !courseId || !moduleId) return;
     const confirmed = window.confirm(
       'Voulez-vous vraiment supprimer cette vidéo ?'
     );
