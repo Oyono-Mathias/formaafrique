@@ -3,7 +3,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { notFound, useRouter } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { useState, useMemo, useEffect } from 'react';
 import { useDoc, useCollection, useFirestore } from '@/firebase';

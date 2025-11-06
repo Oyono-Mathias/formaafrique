@@ -22,7 +22,6 @@ export interface Module {
   titre: string;
   description: string;
   ordre: number;
-  videos?: Video[]; // Videos will be handled as a subcollection
 }
 
 export interface Course {
@@ -35,7 +34,6 @@ export interface Course {
   niveau: 'Débutant' | 'Intermédiaire' | 'Avancé';
   langue: string;
   prix: number;
-  modules?: Module[]; // This can be used for summary or if not using subcollections
   date_creation: Timestamp | string; // Can be a Timestamp from Firestore
   publie: boolean;
   auteur: string;
