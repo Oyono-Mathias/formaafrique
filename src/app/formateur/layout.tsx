@@ -107,14 +107,17 @@ export default function FormateurLayout({
         } else {
             router.replace('/dashboard');
         }
+    } else if (!userProfile) {
+        // If loading is done, user exists, but no profile, it's an error state.
+        toast({
+            variant: 'destructive',
+            title: 'Profil introuvable',
+            description: "Votre profil n'a pas pu être chargé. Veuillez vous reconnecter.",
+        });
+        if (auth) signOut(auth);
+        router.replace('/login');
     }
-  }, [user, userProfile, loading, router, toast]);
-
-  const handleSignOut = async () => {
-    if (!auth) return;
-    await signOut(auth);
-    router.push('/login');
-  };
+  }, [user, userProfile, loading, router, toast, auth]);
 
   if (loading || !userProfile || userProfile.role !== 'formateur') {
     return (
@@ -124,6 +127,13 @@ export default function FormateurLayout({
       </div>
     );
   }
+
+  const handleSignOut = async () => {
+    if (!auth) return;
+    await signOut(auth);
+    router.push('/login');
+  };
+
 
   return (
     <div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr]">
