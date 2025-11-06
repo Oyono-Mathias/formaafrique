@@ -49,13 +49,13 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export default function AdminDonationsPage() {
-  const { data: donations, loading, error } = useCollection<Donation>('donations');
+  const { data: donationsData, loading, error } = useCollection<Donation>('donations');
+  const donations = donationsData || [];
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<Statut>('tous');
   const [selectedDonation, setSelectedDonation] = useState<Donation | null>(null);
 
   const donationsByCountry = useMemo(() => {
-    if (!donations) return [];
     const countryData = donations.reduce((acc, donation) => {
       if (donation.statut !== 'succes') return acc;
       const country = donation.paysOrigine || 'Inconnu';
@@ -72,7 +72,6 @@ export default function AdminDonationsPage() {
   }, [donations]);
 
   const donationsByMonth = useMemo(() => {
-    if (!donations) return [];
     const monthlyData: Record<string, number> = {};
     const monthLabels = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
 
@@ -95,7 +94,6 @@ export default function AdminDonationsPage() {
   }, [donations]);
 
   const filteredDonations = useMemo(() => {
-    if (!donations) return [];
     return donations
       .filter(donation => {
         const term = searchTerm.toLowerCase();
@@ -337,5 +335,4 @@ export default function AdminDonationsPage() {
     </div>
   );
 }
-
     

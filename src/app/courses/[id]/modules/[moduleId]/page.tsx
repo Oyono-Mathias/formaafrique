@@ -33,9 +33,11 @@ export default function ModulePage({ params }: ModulePageProps) {
   const loading = courseLoading || modulesLoading || videosLoading;
 
   const { currentModule, sortedModules, sortedVideos } = useMemo(() => {
-      const sortedMods = (modulesData || []).sort((a,b) => a.ordre - b.ordre);
+      const allModules = modulesData || [];
+      const allVideos = videosData || [];
+      const sortedMods = [...allModules].sort((a,b) => a.ordre - b.ordre);
       const currentMod = sortedMods.find(m => m.id === params.moduleId);
-      const sortedVids = (videosData || []).sort((a,b) => a.ordre - b.ordre);
+      const sortedVids = [...allVideos].sort((a,b) => a.ordre - b.ordre);
       return { currentModule: currentMod, sortedModules: sortedMods, sortedVideos: sortedVids };
   }, [modulesData, videosData, params.moduleId]);
 
@@ -84,7 +86,7 @@ export default function ModulePage({ params }: ModulePageProps) {
   };
   
   const videoPlaceholder = PlaceHolderImages.find((img) => img.id === 'video-placeholder');
-  const currentModuleIndex = (sortedModules || []).findIndex(m => m.id === currentModule.id);
+  const currentModuleIndex = sortedModules.findIndex(m => m.id === currentModule.id);
   const embedUrl = selectedVideo ? getEmbedUrl(selectedVideo.url) : null;
 
   return (
@@ -134,7 +136,7 @@ export default function ModulePage({ params }: ModulePageProps) {
       <aside className="w-full lg:w-1/4 bg-primary/5 border-l p-4 lg:p-6 overflow-y-auto">
         <h2 className="text-xl font-bold font-headline mb-4">Contenu du cours</h2>
         <Accordion type="single" collapsible defaultValue={`module-${currentModule.id}`} className="w-full">
-            {(sortedModules || []).map((module, index) => {
+            {sortedModules.map((module, index) => {
               const isCurrentModule = module.id === currentModule.id;
               const isCompleted = index < currentModuleIndex;
               const isLocked = false; // Add real logic later
@@ -188,5 +190,4 @@ export default function ModulePage({ params }: ModulePageProps) {
     </div>
   );
 }
-
     

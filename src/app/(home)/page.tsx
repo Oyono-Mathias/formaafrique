@@ -17,12 +17,12 @@ import { Timestamp } from 'firebase/firestore';
 
 export default function HomePage() {
   const heroImage = PlaceHolderImages.find((img) => img.id === 'hero');
-  const { data: courses, loading, error } = useCollection<Course>('courses', {
+  const { data: coursesData, loading, error } = useCollection<Course>('courses', {
       where: ['publie', '==', true]
   });
+  const courses = coursesData || [];
 
   const featuredCourses = useMemo(() => {
-    if (!courses) return [];
     // Trier les cours par date de création (du plus récent au plus ancien) et prendre les 3 premiers
     return [...courses]
         .sort((a, b) => {
@@ -112,7 +112,7 @@ export default function HomePage() {
                           <CardTitle className="text-xl font-headline leading-tight hover:text-primary">
                             <Link href={`/courses/${course.id}`}>{course.titre}</Link>
                           </CardTitle>
-                          <p className="mt-2 text-sm text-muted-foreground">{course.description}</p>
+                          <p className="mt-2 text-sm text-muted-foreground line-clamp-3">{course.description}</p>
                         </CardContent>
                         <CardFooter className="p-6 pt-0 flex justify-between items-center">
                           <Button asChild variant="link">
@@ -214,5 +214,4 @@ export default function HomePage() {
     </div>
   );
 }
-
     

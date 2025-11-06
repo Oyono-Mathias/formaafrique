@@ -30,7 +30,8 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
 export default function AdminUsersPage() {
-  const { data: users, loading, error } = useCollection<UserProfile & { id: string }>('users');
+  const { data: usersData, loading, error } = useCollection<UserProfile & { id: string }>('users');
+  const users = usersData || [];
   const db = useFirestore();
   const { toast } = useToast();
 
@@ -134,3 +135,4 @@ export default function AdminUsersPage() {
     </div>
   );
 }
+    

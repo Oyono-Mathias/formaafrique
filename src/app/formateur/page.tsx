@@ -27,7 +27,7 @@ export default function FormateurDashboardPage() {
   const courses = coursesData || [];
 
   // This is a simplified query. For a real app, you'd query each course's subcollection.
-  const { data: enrollments, loading: enrollmentsLoading } = useCollection<Enrollment>(`courses/${courses[0]?.id}/enrollments`);
+  const { data: enrollments, loading: enrollmentsLoading } = useCollection<Enrollment>(courses.length > 0 ? `courses/${courses[0].id}/enrollments` : '');
 
   const totalStudents = (courses || []).reduce((acc, course) => acc + (course.modules?.length || 0), 0); // Mock, needs real enrollment count per course
   const totalRevenue = (courses || []).reduce((acc, course) => acc + course.prix, 0) * totalStudents; // Highly simplified mock revenue
@@ -90,7 +90,7 @@ export default function FormateurDashboardPage() {
              <div className="flex justify-center items-center h-40">
                 <Loader2 className="h-8 w-8 animate-spin" />
              </div>
-          ) : (courses || []).length > 0 ? (
+          ) : courses.length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {courses.slice(0, 3).map(course => (
                   <Card key={course.id}>
@@ -118,3 +118,4 @@ export default function FormateurDashboardPage() {
     </div>
   );
 }
+    

@@ -28,7 +28,6 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
   const modules = modulesData || [];
   
   const sortedModules = useMemo(() => {
-      if (!modules) return [];
       return [...modules].sort((a, b) => a.ordre - b.ordre);
   }, [modules]);
 
@@ -61,8 +60,8 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
         <div className="container mx-auto px-4 md:px-6 py-12 md:py-20">
           <div className="grid md:grid-cols-3 gap-8 items-center">
             <div className="md:col-span-2 space-y-4">
-              <h1 className="text-4xl lg:text-5xl font-bold font-headline">{course.titre}</h1>
               <Badge variant="secondary">{course.categorie}</Badge>
+              <h1 className="text-4xl lg:text-5xl font-bold font-headline">{course.titre}</h1>
               <p className="text-lg text-primary-foreground/80">{course.description}</p>
               <div className="flex items-center space-x-4">
                 <div className="flex items-center">
@@ -93,7 +92,7 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
                 </CardHeader>
                 <CardContent className="p-6 space-y-4">
                     <div className="text-3xl font-bold text-center">
-                      {isFree ? 'Gratuit' : `${course.prix} €`}
+                      {isFree ? 'Gratuit' : `${course.prix} XAF`}
                     </div>
                     <div className="flex justify-between items-center text-sm">
                       <span className="flex items-center gap-2 text-muted-foreground"><Clock size={16} /> Durée</span>
@@ -139,7 +138,7 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
             <div>
               <h2 className="font-headline text-2xl text-primary mb-4">Contenu du cours</h2>
               <div className="space-y-4">
-                {(sortedModules || []).map((module) => (
+                {sortedModules.map((module) => (
                   <Link href={`/courses/${course.id}/modules/${module.id}`} key={module.id} className="block">
                     <Card className="hover:bg-muted/50 transition-colors shadow-sm hover:shadow-md">
                       <CardContent className="p-4 flex items-center justify-between">
@@ -149,7 +148,8 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
                           </div>
                           <div>
                             <p className="font-semibold text-lg">{module.titre}</p>
-                            <p className="text-sm text-muted-foreground">{module.videos.length} vidéo(s)</p>
+                            {/* This needs to be updated to fetch video count from subcollection */}
+                            <p className="text-sm text-muted-foreground">Vidéos à venir</p>
                           </div>
                         </div>
                         <Button variant="ghost" size="sm">Voir le module</Button>
@@ -191,3 +191,4 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
     </div>
   );
 }
+    

@@ -31,9 +31,10 @@ interface EnrichedEnrollment extends Enrollment {
 export default function FormateurStudentsPage() {
   const { user } = useUser();
   const db = useFirestore();
-  const { data: courses, loading: coursesLoading } = useCollection<Course>('courses', {
+  const { data: coursesData, loading: coursesLoading } = useCollection<Course>('courses', {
     where: user?.uid ? ['instructorId', '==', user.uid] : undefined,
   });
+  const courses = coursesData || [];
 
   const [enrollments, setEnrollments] = useState<EnrichedEnrollment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,11 +42,11 @@ export default function FormateurStudentsPage() {
 
   useEffect(() => {
     if (!db || coursesLoading || !user) {
+      if (!coursesLoading && !user) setLoading(false);
       return;
     }
-    setLoading(true);
-
-    if (!courses || courses.length === 0) {
+    
+    if (courses.length === 0) {
         setLoading(false);
         setEnrollments([]);
         return;
@@ -112,10 +113,10 @@ export default function FormateurStudentsPage() {
 
   }, [db, courses, coursesLoading, user]);
   
-  const formatDate = (timestamp: Timestamp | Date) => {
-    if (!timestamp) return '-';
-    const date = timestamp instanceof Timestamp ? timestamp.toDate() : timestamp;
-    return date.toLocaleDateString('fr-FR', {
+  const formatDate = (date: any) => {
+    if (!date) return '-';
+    const d = date instanceof Timestamp ? date.toDate() : date;
+    return d.toLocaleDateString('fr-FR', {
         day: '2-digit', month: 'long', year: 'numeric'
     });
   }
@@ -190,7 +191,7 @@ export default function FormateurStudentsPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-right text-sm text-muted-foreground">
-                        {enrollment.enrollmentDate ? formatDate(enrollment.enrollmentDate) : '-'}
+                        {formatDate(enrollment.enrollmentDate)}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -203,3 +204,4 @@ export default function FormateurStudentsPage() {
     </div>
   );
 }
+    

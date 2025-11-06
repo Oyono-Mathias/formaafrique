@@ -51,10 +51,10 @@ export default function FormateurRevenuesPage() {
     const { user } = useUser();
 
     const { totalRevenue, monthlyRevenue, totalSales, salesByMonth, topCourses } = useMemo(() => {
-        const totalRevenue = mockSales.reduce((acc, sale) => acc + sale.amount, 0);
+        const total = mockSales.reduce((acc, sale) => acc + sale.amount, 0);
         const now = new Date();
         const currentMonthSales = mockSales.filter(s => s.date.getMonth() === now.getMonth() && s.date.getFullYear() === now.getFullYear());
-        const monthlyRevenue = currentMonthSales.reduce((acc, sale) => acc + sale.amount, 0);
+        const monthly = currentMonthSales.reduce((acc, sale) => acc + sale.amount, 0);
 
         const salesByMonthData: Record<string, number> = {};
         const monthLabels = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
@@ -63,7 +63,7 @@ export default function FormateurRevenuesPage() {
             const monthName = monthLabels[sale.date.getMonth()];
             salesByMonthData[monthName] += sale.amount;
         });
-        const salesByMonth = Object.keys(salesByMonthData).map(month => ({ month, revenue: salesByMonthData[month] }));
+        const salesData = Object.keys(salesByMonthData).map(month => ({ month, revenue: salesByMonthData[month] }));
 
         const courseSales = mockSales.reduce((acc, sale) => {
             if (!acc[sale.courseName]) {
@@ -72,9 +72,9 @@ export default function FormateurRevenuesPage() {
             acc[sale.courseName]++;
             return acc;
         }, {} as Record<string, number>);
-        const topCourses = Object.entries(courseSales).map(([name, sales]) => ({ name, sales })).sort((a,b) => b.sales - a.sales).slice(0, 5);
+        const top = Object.entries(courseSales).map(([name, sales]) => ({ name, sales })).sort((a,b) => b.sales - a.sales).slice(0, 5);
 
-        return { totalRevenue, monthlyRevenue, totalSales: mockSales.length, salesByMonth, topCourses };
+        return { totalRevenue: total, monthlyRevenue: monthly, totalSales: mockSales.length, salesByMonth: salesData, topCourses: top };
     }, []);
 
     const formatCurrency = (amount: number, currency: string = 'XAF') => {
@@ -204,5 +204,4 @@ export default function FormateurRevenuesPage() {
         </div>
     );
 }
-
     

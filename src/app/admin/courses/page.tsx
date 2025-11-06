@@ -46,7 +46,8 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import CourseDialog from './course-dialog';
 
 export default function AdminCoursesPage() {
-  const { data: courses, loading, error } = useCollection<Course>('courses');
+  const { data: coursesData, loading, error } = useCollection<Course>('courses');
+  const courses = coursesData || [];
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -56,7 +57,6 @@ export default function AdminCoursesPage() {
   const { toast } = useToast();
 
   const filteredCourses = useMemo(() => {
-    if (!courses) return [];
     return courses.filter(course =>
       course.titre.toLowerCase().includes(searchTerm.toLowerCase()) ||
       course.auteur.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -65,7 +65,6 @@ export default function AdminCoursesPage() {
   }, [courses, searchTerm]);
 
   const { totalCourses, uniqueCategories, totalRevenue } = useMemo(() => {
-    if (!courses) return { totalCourses: 0, uniqueCategories: 0, totalRevenue: 0 };
     return {
       totalCourses: courses.length,
       uniqueCategories: new Set(courses.map(c => c.categorie)).size,
@@ -292,5 +291,4 @@ export default function AdminCoursesPage() {
     </div>
   );
 }
-
     

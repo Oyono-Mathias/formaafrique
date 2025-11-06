@@ -8,7 +8,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
 
 export default function InstructorsPage() {
-    const { data: instructors, loading, error } = useCollection<InstructorProfile>('instructors');
+    const { data: instructorsData, loading, error } = useCollection<InstructorProfile>('instructors');
+    const instructors = instructorsData || [];
 
     return (
         <div className="container mx-auto px-4 md:px-6 py-12">
@@ -30,7 +31,7 @@ export default function InstructorsPage() {
 
             {error && <p className="text-center text-destructive">Impossible de charger les formateurs pour le moment.</p>}
 
-            {!loading && instructors && (
+            {!loading && instructors.length > 0 && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
                     {instructors.map(instructor => (
                         <Link key={instructor.id} href={`/instructors/${instructor.id}`} className="group">
@@ -49,6 +50,12 @@ export default function InstructorsPage() {
                     ))}
                 </div>
             )}
+             {!loading && instructors.length === 0 && (
+                <div className="text-center py-12 text-muted-foreground">
+                    <p>Aucun formateur disponible pour le moment.</p>
+                </div>
+             )}
         </div>
     );
 }
+    

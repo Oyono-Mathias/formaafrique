@@ -1,4 +1,3 @@
-
 'use client';
 
 import Image from 'next/image';
@@ -28,12 +27,12 @@ import { Timestamp } from 'firebase/firestore';
 export default function CoursesPage() {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<string>('all');
-  const { data: courses, loading, error } = useCollection<Course>('courses', {
+  const { data: coursesData, loading, error } = useCollection<Course>('courses', {
       where: ['publie', '==', true]
   });
+  const courses = coursesData || [];
 
   const sortedCourses = useMemo(() => {
-    if (!courses) return [];
     return [...courses].sort((a, b) => {
         const dateA = a.date_creation instanceof Timestamp ? a.date_creation.toMillis() : new Date(a.date_creation as string).getTime();
         const dateB = b.date_creation instanceof Timestamp ? b.date_creation.toMillis() : new Date(b.date_creation as string).getTime();
@@ -130,7 +129,7 @@ export default function CoursesPage() {
                 <CardTitle className="text-xl font-headline leading-tight hover:text-primary">
                   <Link href={`/courses/${course.id}`}>{course.titre}</Link>
                 </CardTitle>
-                <p className="mt-2 text-sm text-muted-foreground">{course.description}</p>
+                <p className="mt-2 text-sm text-muted-foreground line-clamp-3">{course.description}</p>
               </CardContent>
               <CardFooter className="p-6 pt-0 flex justify-between items-center">
                  <Button asChild variant="link" size="sm">
@@ -149,9 +148,4 @@ export default function CoursesPage() {
     </div>
   );
 }
-
-
-
-
-
     

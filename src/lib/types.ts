@@ -36,7 +36,7 @@ export interface Course {
   niveau: 'Débutant' | 'Intermédiaire' | 'Avancé';
   langue: string;
   prix: number;
-  modules: Module[]; // This can be used for summary or if not using subcollections
+  modules?: Module[]; // This can be used for summary or if not using subcollections
   date_creation: Timestamp | string; // Can be a Timestamp from Firestore
   publie: boolean;
   auteur: string;
@@ -110,3 +110,4 @@ export interface Donation {
   moyenPaiement: 'carte' | 'mobile_money' | 'inconnu';
   paysOrigine: string;
 }
+    

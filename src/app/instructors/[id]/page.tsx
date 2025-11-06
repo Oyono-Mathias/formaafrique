@@ -11,15 +11,17 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import Image from 'next/image';
 import Link from 'next/link';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { useMemo } from 'react';
 
 export default function InstructorProfilePage({ params }: { params: { id: string } }) {
     const { data: instructor, loading: instructorLoading, error: instructorError } = useDoc<InstructorProfile>('instructors', params.id);
-    const { data: courses, loading: coursesLoading, error: coursesError } = useCollection<Course>(
+    const { data: coursesData, loading: coursesLoading, error: coursesError } = useCollection<Course>(
         'courses',
         { where: ['instructorId', '==', params.id] }
     );
+    const courses = coursesData || [];
 
-    const publishedCourses = (courses || []).filter(c => c.publie);
+    const publishedCourses = useMemo(() => courses.filter(c => c.publie), [courses]);
 
     if (instructorLoading || coursesLoading) {
         return (
@@ -75,10 +77,10 @@ export default function InstructorProfilePage({ params }: { params: { id: string
                             Formations proposées par {instructor.name}
                         </h2>
                         
-                        {coursesLoading && <Loader2 className="animate-spin" />}
+                        {coursesLoading && <div className="flex justify-center items-center h-40"><Loader2 className="animate-spin h-8 w-8" /></div>}
                         {coursesError && <p className="text-destructive">Impossible de charger les formations.</p>}
 
-                        {publishedCourses.length > 0 ? (
+                        {!coursesLoading && publishedCourses.length > 0 ? (
                             <div className="space-y-6">
                                 {publishedCourses.map(course => {
                                     const courseImage = PlaceHolderImages.find(img => img.id === course.image);
@@ -114,7 +116,7 @@ export default function InstructorProfilePage({ params }: { params: { id: string
                                     )
                                 })}
                             </div>
-                        ) : (
+                        ) : !coursesLoading && (
                             <div className="text-center py-12 border-2 border-dashed rounded-lg">
                                 <p className="text-muted-foreground">Aucune formation publiée pour le moment.</p>
                             </div>
@@ -125,3 +127,4 @@ export default function InstructorProfilePage({ params }: { params: { id: string
         </div>
     );
 }
+    
