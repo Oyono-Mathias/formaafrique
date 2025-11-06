@@ -42,6 +42,25 @@ const videoSchema = z.object({
     url: z.string().url("URL de vidéo valide requise (YouTube ou Google Drive)."),
 });
 
+// Helper function to check if a URL is accessible
+async function isValidVideoUrl(url: string): Promise<boolean> {
+  try {
+    // We use 'no-cors' mode to avoid CORS errors when checking external resources like YouTube.
+    // This won't give us the full response, but it will tell us if the resource is reachable.
+    const response = await fetch(url, { method: 'HEAD', mode: 'no-cors' });
+    // For 'no-cors', a response type of 'opaque' indicates a successful cross-origin request.
+    // This is sufficient to validate that the URL is likely valid and accessible.
+    if (response.type === 'opaque' || response.ok) {
+        return true;
+    }
+    return false;
+  } catch (error) {
+    // Network errors (e.g., DNS issues, server down) will be caught here.
+    console.error("URL validation failed:", error);
+    return false;
+  }
+}
+
 
 export default function ManageModulesPage({ params }: { params: { id: string } }) {
   const { data: course, loading: courseLoading } = useDoc<Course>('courses', params.id);
@@ -124,6 +143,16 @@ export default function ManageModulesPage({ params }: { params: { id: string } }
 
   async function onVideoSubmit(values: z.infer<typeof videoSchema>) {
     if (!db || !course?.id || !selectedModule?.id) return;
+    
+    const isUrlValid = await isValidVideoUrl(values.url);
+    if (!isUrlValid) {
+        toast({
+            variant: 'destructive',
+            title: 'URL Invalide',
+            description: "Le lien de la vidéo est invalide ou inaccessible. Veuillez vérifier et réessayer.",
+        });
+        return;
+    }
 
     try {
         const videosCollectionRef = collection(db, `courses/${course.id}/modules/${selectedModule.id}/videos`);
