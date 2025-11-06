@@ -17,41 +17,52 @@ import { useUser, useCollection } from '@/firebase';
 import type { Course, Enrollment } from '@/lib/types';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { useMemo } from 'react';
 
 export default function FormateurDashboardPage() {
-  const { user } = useUser();
-  const { data: coursesData, loading: coursesLoading } = useCollection<Course>('courses', {
-    where: user?.uid ? ['instructorId', '==', user.uid] : undefined
-  });
+  const { user, loading: userLoading } = useUser();
   
-  const courses = coursesData || [];
+  // Conditionally fetch courses only when user.uid is available
+  const { data: coursesData, loading: coursesLoading } = useCollection<Course>(
+    'courses',
+    user?.uid ? { where: ['instructorId', '==', user.uid] } : undefined
+  );
+  
+  const courses = useMemo(() => coursesData || [], [coursesData]);
 
-  // This is a simplified query. For a real app, you'd query each course's subcollection.
-  const { data: enrollments, loading: enrollmentsLoading } = useCollection<Enrollment>(courses.length > 0 ? `courses/${courses[0].id}/enrollments` : '');
-
-  const totalStudents = (courses || []).reduce((acc, course) => acc + (course.modules?.length || 0), 0); // Mock, needs real enrollment count per course
-  const totalRevenue = (courses || []).reduce((acc, course) => acc + course.prix, 0) * totalStudents; // Highly simplified mock revenue
+  // This is a mock value and should be replaced with real data logic
+  const totalStudents = '125'; // Mock data
+  const totalRevenue = '125 000 XAF'; // Mock data
 
   const stats = [
     {
       label: 'Cours publiés',
-      value: coursesLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : (courses || []).filter(c => c.publie).length,
+      value: coursesLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : courses.filter(c => c.publie).length,
       icon: BookOpen,
       description: 'Nombre de formations visibles par les étudiants.',
     },
     {
       label: 'Étudiants inscrits',
-      value: '125', // Mock data
+      value: totalStudents, // Using mock data
       icon: Users,
       description: 'Nombre total d\'étudiants dans vos cours.',
     },
     {
       label: 'Revenus Totaux (Est.)',
-      value: `${new Intl.NumberFormat('fr-FR').format(125000)} XAF`, // Mock data
+      value: totalRevenue, // Using mock data
       icon: Wallet,
       description: 'Revenus générés par vos formations.',
     },
   ];
+
+  if (userLoading) {
+    return (
+        <div className="flex justify-center items-center h-full">
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <p className='ml-2'>Chargement du tableau de bord...</p>
+        </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -118,4 +129,3 @@ export default function FormateurDashboardPage() {
     </div>
   );
 }
-    
