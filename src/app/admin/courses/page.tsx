@@ -42,6 +42,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import Image from 'next/image';
+import Link from 'next/link';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import CourseDialog from './course-dialog';
 
@@ -232,9 +233,11 @@ export default function AdminCoursesPage() {
                                 <Edit className="mr-2 h-4 w-4" />
                                 Modifier
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Eye className="mr-2 h-4 w-4" />
-                                Voir la page
+                              <DropdownMenuItem asChild>
+                                <Link href={`/courses/${course.id}`} target="_blank" rel="noopener noreferrer">
+                                    <Eye className="mr-2 h-4 w-4" />
+                                    Voir la page
+                                </Link>
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
