@@ -14,7 +14,6 @@ export interface Video {
   id?: string;
   titre: string;
   url: string;
-  duree?: number | null;
   ordre: number;
 }
 
@@ -23,7 +22,7 @@ export interface Module {
   titre: string;
   description: string;
   ordre: number;
-  videos?: Video[]; // Videos can be a subcollection
+  videos?: Video[]; // Videos will be handled as a subcollection
 }
 
 export interface Course {
