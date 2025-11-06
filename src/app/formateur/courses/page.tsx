@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useUser, useCollection, useFirestore } from '@/firebase';
 import type { Course } from '@/lib/types';
-import { Loader2, Plus, Users, MoreVertical, Edit, Trash2, ExternalLink } from 'lucide-react';
+import { Loader2, Plus, Users, MoreVertical, Edit, Trash2, Eye } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -140,6 +140,7 @@ export default function FormateurCoursesPage() {
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
                                         <DropdownMenuItem onSelect={() => handleEdit(course)}><Edit className='mr-2 h-4 w-4'/> Modifier les détails</DropdownMenuItem>
+                                        <DropdownMenuItem asChild><Link href={`/apercu/${course.id}`}><Eye className='mr-2 h-4 w-4'/> Voir comme étudiant</Link></DropdownMenuItem>
                                         <DropdownMenuSeparator/>
                                         <DropdownMenuItem onSelect={() => setCourseToDelete(course)} className='text-destructive'><Trash2 className='mr-2 h-4 w-4'/> Supprimer</DropdownMenuItem>
                                     </DropdownMenuContent>
