@@ -41,12 +41,9 @@ export default function FormateurStudentsPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!db || coursesLoading || !user) {
-      if (!coursesLoading && !user) setLoading(false);
-      return;
-    }
+    if (!db || coursesLoading) return;
     
-    if (courses.length === 0) {
+    if (!user || courses.length === 0) {
         setLoading(false);
         setEnrollments([]);
         return;
@@ -204,4 +201,3 @@ export default function FormateurStudentsPage() {
     </div>
   );
 }
-    
