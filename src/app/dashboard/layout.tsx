@@ -128,20 +128,19 @@ export default function DashboardLayout({
     }
 
     if (userProfile && userProfile.role !== 'etudiant') {
-      toast({
-          variant: 'destructive',
-          title: 'Accès non autorisé',
-          description: "Redirection vers votre tableau de bord."
-      });
-      if (userProfile.role === 'admin') {
-          router.replace('/admin');
-      } else if (userProfile.role === 'formateur') {
-          router.replace('/formateur');
-      } else {
-          // Fallback if role is unknown, sign out and go to login
-          if (auth) signOut(auth);
-          router.replace('/login');
-      }
+        toast({
+            title: 'Redirection en cours...',
+            description: "Vous n'êtes pas un étudiant. Redirection vers votre tableau de bord."
+        });
+        if (userProfile.role === 'admin') {
+            router.replace('/admin');
+        } else if (userProfile.role === 'formateur') {
+            router.replace('/formateur');
+        } else {
+            // Fallback if role is unknown, sign out and go to login
+            if (auth) signOut(auth);
+            router.replace('/login');
+        }
     }
   }, [user, userProfile, loading, router, auth, toast]);
 

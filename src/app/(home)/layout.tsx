@@ -16,6 +16,7 @@ export default function HomeLayout({
   const router = useRouter();
 
   useEffect(() => {
+    // We only redirect if loading is complete and we have a user and their profile
     if (!loading && user && userProfile) {
         switch (userProfile.role) {
             case 'admin':
@@ -33,7 +34,8 @@ export default function HomeLayout({
     }
   }, [user, userProfile, loading, router]);
 
-  // Si le chargement est en cours ou si l'utilisateur est détecté, afficher un loader pendant la redirection.
+  // While loading, or if a user is logged in but their profile is not yet loaded,
+  // show a loading screen. This prevents the public content from flashing before redirection.
   if (loading || user) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -43,12 +45,12 @@ export default function HomeLayout({
     );
   }
 
-  // Afficher le contenu public uniquement si l'utilisateur n'est pas connecté et que le chargement est terminé.
+  // Only show public content if not loading and no user is logged in.
   return (
-    <>
+    <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-grow">{children}</main>
       <Footer />
-    </>
+    </div>
   );
 }
