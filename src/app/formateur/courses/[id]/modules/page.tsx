@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { useState, useMemo, useEffect } from 'react';
 import { useDoc, useCollection, useFirestore } from '@/firebase';
 import type { Course, Module, Video } from '@/lib/types';
-import { Loader2, ArrowLeft, PlusCircle, Video as VideoIcon, Trash2, Edit } from 'lucide-react';
+import { Loader2, ArrowLeft, PlusCircle, Video as VideoIcon, Trash2, Edit, PlaySquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -30,6 +30,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { collection, addDoc, doc, updateDoc, deleteDoc, writeBatch, getDocs } from 'firebase/firestore';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import Image from 'next/image';
 
 const moduleSchema = z.object({
   titre: z.string().min(3, { message: 'Le titre doit avoir au moins 3 caractères.' }),
@@ -40,6 +41,7 @@ const videoSchema = z.object({
     titre: z.string().min(3, "Titre requis."),
     url: z.string().url("URL de vidéo valide requise (YouTube ou Google Drive)."),
 });
+
 
 export default function ManageModulesPage({ params }: { params: { id: string } }) {
   const { data: course, loading: courseLoading } = useDoc<Course>('courses', params.id);
@@ -271,52 +273,164 @@ export default function ManageModulesPage({ params }: { params: { id: string } }
       </Dialog>
       
       {/* Video Dialog */}
-       <Dialog open={isVideoModalOpen} onOpenChange={setIsVideoModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingVideo ? 'Modifier la vidéo' : `Ajouter une vidéo à "${selectedModule?.titre}"`}</DialogTitle>
-             <DialogDescription>Entrez les détails de la vidéo ci-dessous.</DialogDescription>
-          </DialogHeader>
-          <Form {...videoForm}>
-            <form onSubmit={videoForm.handleSubmit(onVideoSubmit)} className='space-y-4 py-4'>
-               <FormField control={videoForm.control} name="titre" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Titre de la vidéo</FormLabel>
-                    <FormControl><Input {...field} placeholder="Ex: Les bases du bilan" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}/>
-                <FormField control={videoForm.control} name="url" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>URL de la vidéo (YouTube/Google Drive)</FormLabel>
-                    <FormControl><Input {...field} placeholder="https://www.youtube.com/watch?v=..." /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}/>
-                <DialogFooter>
-                  <DialogClose asChild><Button type="button" variant="secondary">Annuler</Button></DialogClose>
-                  <Button type="submit" disabled={videoForm.formState.isSubmitting}>
-                    {videoForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {editingVideo ? 'Enregistrer les modifications' : 'Ajouter la vidéo'}
-                  </Button>
-                </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
+      <VideoDialog
+          isOpen={isVideoModalOpen}
+          setIsOpen={setIsVideoModalOpen}
+          form={videoForm}
+          onSubmit={onVideoSubmit}
+          isEditing={!!editingVideo}
+          moduleTitle={selectedModule?.titre || ''}
+        />
     </div>
+  );
+}
+
+// Sub-component for adding/editing a video
+function VideoDialog({ isOpen, setIsOpen, form, onSubmit, isEditing, moduleTitle }: any) {
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [videoUrlToTest, setVideoUrlToTest] = useState('');
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+
+  const getYouTubeThumbnail = (url: string) => {
+    try {
+      const urlObj = new URL(url);
+      let videoId = '';
+      if (urlObj.hostname.includes('youtu.be')) {
+        videoId = urlObj.pathname.slice(1);
+      } else if (urlObj.hostname.includes('youtube.com')) {
+        videoId = urlObj.searchParams.get('v') || '';
+      }
+
+      if (videoId) {
+        return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+      }
+    } catch (e) {
+      // Invalid URL
+    }
+    return '';
+  };
+
+  const getEmbedUrl = (url: string): string => {
+    try {
+        const urlObj = new URL(url);
+        if (urlObj.hostname.includes('youtu.be')) {
+            const videoId = urlObj.pathname.slice(1);
+            return `https://www.youtube.com/embed/${videoId}`;
+        }
+        if (urlObj.hostname.includes('youtube.com')) {
+            const videoId = urlObj.searchParams.get('v');
+            if (videoId) return `https://www.youtube.com/embed/${videoId}`;
+        }
+    } catch (e) { /* Invalid URL */ }
+    return ''; // Return empty string for invalid or non-YouTube URLs
+  }
+
+  const urlValue = form.watch('url');
+
+  useEffect(() => {
+    if (urlValue) {
+      setPreviewUrl(getYouTubeThumbnail(urlValue));
+    } else {
+      setPreviewUrl('');
+    }
+  }, [urlValue]);
+
+  const handlePreviewClick = () => {
+    const embedUrl = getEmbedUrl(urlValue);
+    if(embedUrl) {
+      setVideoUrlToTest(embedUrl);
+      setIsPreviewModalOpen(true);
+    } else {
+      alert("Lien YouTube invalide ou non supporté pour la prévisualisation.");
+    }
+  }
+
+  return (
+    <>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{isEditing ? 'Modifier la vidéo' : `Ajouter une vidéo à "${moduleTitle}"`}</DialogTitle>
+          <DialogDescription>Entrez les détails de la vidéo ci-dessous.</DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4 py-4'>
+            <FormField control={form.control} name="titre" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Titre de la vidéo</FormLabel>
+                <FormControl><Input {...field} placeholder="Ex: Les bases du bilan" /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="url" render={({ field }) => (
+              <FormItem>
+                <FormLabel>URL de la vidéo (YouTube/Google Drive)</FormLabel>
+                <FormControl><Input {...field} placeholder="https://www.youtube.com/watch?v=..." /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            {previewUrl && (
+              <div className="space-y-2">
+                  <Label>Prévisualisation</Label>
+                  <div className='relative aspect-video w-full overflow-hidden rounded-md'>
+                    <Image src={previewUrl} alt="Aperçu de la vidéo" layout="fill" objectFit="cover" />
+                  </div>
+                  <Button type="button" variant="outline" size="sm" onClick={handlePreviewClick}>
+                      <PlaySquare className='mr-2 h-4 w-4' />
+                      Tester la vidéo
+                  </Button>
+              </div>
+            )}
+
+            <DialogFooter>
+              <DialogClose asChild><Button type="button" variant="secondary">Annuler</Button></DialogClose>
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isEditing ? 'Enregistrer les modifications' : 'Ajouter la vidéo'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+
+    {/* Video Preview Modal */}
+    <Dialog open={isPreviewModalOpen} onOpenChange={setIsPreviewModalOpen}>
+        <DialogContent className="max-w-3xl">
+            <DialogHeader>
+                <DialogTitle>Aperçu de la vidéo</DialogTitle>
+            </DialogHeader>
+            <div className="aspect-video">
+                {videoUrlToTest && (
+                    <iframe
+                        src={videoUrlToTest}
+                        title="Aperçu Vidéo"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        className="w-full h-full"
+                    ></iframe>
+                )}
+            </div>
+             <DialogFooter>
+                <Button onClick={() => setIsPreviewModalOpen(false)}>Fermer</Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+    </>
   );
 }
 
 
 function ModuleVideos({ courseId, moduleId, onEditVideo }: { courseId: string; moduleId: string; onEditVideo: (video: Video) => void; }) {
-    const { data: videos, loading, error } = useCollection<Video>(`courses/${courseId}/modules/${moduleId}/videos`);
+    const { data: videosData, loading, error } = useCollection<Video>(`courses/${courseId}/modules/${moduleId}/videos`);
     const db = useFirestore();
     const {toast} = useToast();
 
     const sortedVideos = useMemo(() => {
-        return (videos || []).sort((a,b) => a.ordre - b.ordre);
-    }, [videos]);
+        const videos = videosData || [];
+        return videos.sort((a,b) => a.ordre - b.ordre);
+    }, [videosData]);
 
     const handleDeleteVideo = async (videoId: string) => {
         if(!db) return;
