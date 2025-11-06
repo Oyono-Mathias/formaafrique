@@ -76,18 +76,37 @@ const videoSchema = z.object({
   url: z.string().url('URL de vidéo valide requise.'),
 });
 
+async function isValidVideoUrl(url: string) {
+    // Basic validation for URL format
+    if (!url.startsWith('http')) {
+        return false;
+    }
+    // no-cors is used to check reachability without running into CORS issues
+    try {
+        await fetch(url, { method: 'HEAD', mode: 'no-cors' });
+        // Request succeeded, which means the URL is likely valid and reachable
+        return true;
+    } catch (e) {
+        // Network error, etc.
+        return false;
+    }
+}
+
+
 export default function ManageModulesPage({
   params,
 }: {
   params: { id: string };
 }) {
-  const courseId = use(params).id;
+  const resolvedParams = use(params);
+  const courseId = resolvedParams?.id;
+  
   const { data: course, loading: courseLoading } = useDoc<Course>(
     'courses',
     courseId
   );
   const { data: modulesData, loading: modulesLoading } = useCollection<Module>(
-    `courses/${courseId}/modules`
+    courseId ? `courses/${courseId}/modules` : null
   );
   const db = useFirestore();
   const { toast } = useToast();
@@ -170,16 +189,17 @@ export default function ManageModulesPage({
 
   async function onVideoSubmit(values: z.infer<typeof videoSchema>) {
     if (!db || !courseId || !selectedModule?.id) return;
-
-    // This is a simplified validation. A more robust one would check the URL format more strictly.
-    if (!values.url.startsWith('https://')) {
+    
+    const isUrlValid = await isValidVideoUrl(values.url);
+    if (!isUrlValid) {
         toast({
             variant: 'destructive',
-            title: 'URL Invalide',
-            description: "Le lien de la vidéo est invalide. Veuillez vérifier et réessayer.",
+            title: 'URL de vidéo invalide',
+            description: "Le lien de la vidéo est invalide ou inaccessible. Veuillez vérifier et réessayer.",
         });
         return;
     }
+
 
     try {
       const videosCollectionRef = collection(
@@ -187,12 +207,15 @@ export default function ManageModulesPage({
         `courses/${courseId}/modules/${selectedModule.id}/videos`
       );
       
+      const { data: videosInModule } = await getDocs(videosCollectionRef);
+      const nextOrder = (videosInModule?.length || 0) + 1;
+
+
       if (editingVideo) {
         const videoRef = doc(db, `courses/${courseId}/modules/${selectedModule.id}/videos`, editingVideo.id!);
         await updateDoc(videoRef, values);
         toast({ title: 'Vidéo mise à jour !' });
       } else {
-        const nextOrder = (sortedModules.find(m => m.id === selectedModule.id)?.videos?.length || 0) + 1;
         await addDoc(videosCollectionRef, {
           ...values,
           ordre: nextOrder,
@@ -242,7 +265,7 @@ export default function ManageModulesPage({
     setIsModuleModalOpen(true);
   };
 
-  if (courseLoading || modulesLoading) {
+  if (!courseId || courseLoading || modulesLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="mr-2 h-8 w-8 animate-spin" /> Chargement...
@@ -272,7 +295,6 @@ export default function ManageModulesPage({
       </div>
 
        <div className="flex justify-between items-center">
-        {/* Espace réservé pour une future fonctionnalité "Prévisualiser comme étudiant" */}
         <Link href={`/apercu/${courseId}`} className='text-sm'>
             <Button variant="outline">
                 <PlaySquare className="mr-2 h-4 w-4" />
@@ -416,16 +438,17 @@ function VideoDialog({ isOpen, setIsOpen, form, onSubmit, isEditing, moduleTitle
   const getEmbedUrl = (url: string): string | null => {
     if (!url) return null;
     try {
-      const urlObj = new URL(url);
-      if (urlObj.hostname.includes('youtube.com') || urlObj.hostname.includes('youtu.be')) {
-        const videoId = urlObj.hostname.includes('youtu.be')
-          ? urlObj.pathname.slice(1)
-          : urlObj.searchParams.get('v');
+        const urlObj = new URL(url);
+        let videoId = null;
+        if (urlObj.hostname.includes('youtube.com')) {
+            videoId = urlObj.searchParams.get('v');
+        } else if (urlObj.hostname.includes('youtu.be')) {
+            videoId = urlObj.pathname.slice(1);
+        }
+        
         return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
-      }
-      return null;
     } catch (error) {
-      return null;
+        return null;
     }
   };
 
@@ -442,7 +465,7 @@ function VideoDialog({ isOpen, setIsOpen, form, onSubmit, isEditing, moduleTitle
               : `Ajouter une vidéo à "${moduleTitle}"`}
           </DialogTitle>
           <DialogDescription>
-            Entrez les détails de la vidéo ci-dessous.
+            Entrez les détails de la vidéo ci-dessous. Seuls les liens YouTube sont actuellement supportés.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
