@@ -23,7 +23,7 @@ export interface Module {
   titre: string;
   description: string;
   ordre: number;
-  videos: Video[];
+  videos?: Video[]; // Videos can be a subcollection
 }
 
 export interface Course {

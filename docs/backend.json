@@ -110,35 +110,6 @@
         "prix": {
           "type": "number"
         },
-        "modules": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string"
-              },
-              "titre": {
-                "type": "string"
-              },
-              "videos": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "titre": {
-                      "type": "string"
-                    },
-                    "url": {
-                      "type": "string",
-                      "format": "uri"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
         "date_creation": {
           "type": "string",
           "format": "date-time"
@@ -162,8 +133,29 @@
         "prix",
         "date_creation",
         "publie",
-        "auteur"
+        "auteur",
+        "instructorId"
       ]
+    },
+    "Module": {
+        "title": "Module",
+        "description": "Represents a module within a course.",
+        "type": "object",
+        "properties": {
+            "titre": { "type": "string" },
+            "description": { "type": "string" },
+            "ordre": { "type": "number" }
+        }
+    },
+    "Video": {
+        "title": "Video",
+        "description": "Represents a video within a module.",
+        "type": "object",
+        "properties": {
+            "titre": { "type": "string" },
+            "url": { "type": "string", "format": "uri" },
+            "ordre": { "type": "number" }
+        }
     },
     "CourseProgress": {
       "title": "Course Progress",
@@ -299,6 +291,14 @@
         "$ref": "#/entities/Course"
       },
       "description": "Stores all the available courses on the platform."
+    },
+     "/courses/{courseId}/modules/{moduleId}": {
+      "schema": { "$ref": "#/entities/Module" },
+      "description": "Stores all modules for a specific course."
+    },
+    "/courses/{courseId}/modules/{moduleId}/videos/{videoId}": {
+      "schema": { "$ref": "#/entities/Video" },
+      "description": "Stores all videos for a specific module."
     },
     "/users/{userId}/progress/{progressId}": {
       "schema": {
