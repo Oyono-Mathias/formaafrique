@@ -80,6 +80,7 @@ const courseSchema = z.object({
   niveau: z.enum(['Débutant', 'Intermédiaire', 'Avancé']),
   prix: z.coerce.number().min(0, { message: "Le prix ne peut être négatif." }),
   publie: z.boolean().default(false),
+  statut: z.enum(['en_attente', 'approuvee', 'rejetee']).default('en_attente'),
 });
 
 type CourseDialogProps = {
@@ -98,6 +99,7 @@ export default function CourseDialog({
   const { toast } = useToast();
   const router = useRouter();
   const isEditing = !!course;
+  const isAdmin = userProfile?.role === 'admin';
 
   const form = useForm<z.infer<typeof courseSchema>>({
     resolver: zodResolver(courseSchema),
@@ -108,6 +110,7 @@ export default function CourseDialog({
       niveau: 'Débutant',
       prix: 0,
       publie: false,
+      statut: 'en_attente',
     },
   });
 
@@ -120,6 +123,7 @@ export default function CourseDialog({
         niveau: course.niveau,
         prix: course.prix,
         publie: course.publie,
+        statut: course.statut || 'en_attente',
       });
     } else if (isOpen) {
       form.reset({
@@ -129,6 +133,7 @@ export default function CourseDialog({
         niveau: 'Débutant',
         prix: 0,
         publie: false,
+        statut: 'en_attente',
       });
     }
   }, [isOpen, course, form]);
@@ -137,11 +142,20 @@ export default function CourseDialog({
     if (!db || !user) return;
 
     try {
+      const imageId = getImageIdFromTitle(values.titre);
+      
+      const dataPayload = {
+          ...values,
+          image: imageId,
+          // Uniquement l'admin peut changer le statut. Un formateur qui édite repasse en attente.
+          statut: isAdmin ? values.statut : 'en_attente',
+          publie: isAdmin ? (values.statut === 'approuvee') : false,
+      };
+
       if (isEditing && course?.id) {
         // Update existing course
         const courseDocRef = doc(db, 'courses', course.id);
-        const imageId = getImageIdFromTitle(values.titre);
-        await updateDoc(courseDocRef, {...values, image: imageId});
+        await updateDoc(courseDocRef, dataPayload);
         toast({
           title: 'Formation mise à jour',
           description: `"${values.titre}" a été modifié avec succès.`,
@@ -149,10 +163,8 @@ export default function CourseDialog({
         setIsOpen(false);
       } else {
         // Create new course
-        const imageId = getImageIdFromTitle(values.titre);
         const docRef = await addDoc(collection(db, 'courses'), {
-          ...values,
-          image: imageId,
+          ...dataPayload,
           slug: slugify(values.titre),
           auteur: user.displayName || 'Admin',
           instructorId: user.uid,
@@ -161,7 +173,7 @@ export default function CourseDialog({
         });
         toast({
           title: 'Formation créée avec succès !',
-          description: 'Vous allez être redirigé pour ajouter des modules.',
+          description: 'Votre formation est en attente de validation par un administrateur.',
         });
         setIsOpen(false);
         // Redirect only if the current user is a formateur
@@ -265,6 +277,28 @@ export default function CourseDialog({
                     )}
                 />
             </div>
+
+            {isAdmin && (
+               <FormField
+                  control={form.control}
+                  name="statut"
+                  render={({ field }) => (
+                      <FormItem>
+                          <FormLabel>Statut de la formation</FormLabel>
+                           <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl><SelectTrigger><SelectValue placeholder="Sélectionnez..." /></SelectTrigger></FormControl>
+                              <SelectContent>
+                                  <SelectItem value="en_attente">En attente</SelectItem>
+                                  <SelectItem value="approuvee">Approuvée</SelectItem>
+                                  <SelectItem value="rejetee">Rejetée</SelectItem>
+                              </SelectContent>
+                          </Select>
+                           <FormDescription>Le statut 'Approuvée' rendra la formation publique.</FormDescription>
+                          <FormMessage />
+                      </FormItem>
+                  )}
+              />
+            )}
             
             <FormField
               control={form.control}
@@ -274,13 +308,14 @@ export default function CourseDialog({
                   <div className="space-y-0.5">
                     <FormLabel>Publier la formation</FormLabel>
                     <FormDescription>
-                      Rendre cette formation visible et accessible à tous les utilisateurs.
+                       {isAdmin ? "Forcer la publication manuelle (remplace le statut)." : "La publication est gérée par l'admin."}
                     </FormDescription>
                   </div>
                   <FormControl>
                     <Switch
                       checked={field.value}
                       onCheckedChange={field.onChange}
+                      disabled={!isAdmin}
                     />
                   </FormControl>
                 </FormItem>

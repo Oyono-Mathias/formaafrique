@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useUser, useCollection, useFirestore } from '@/firebase';
 import type { Course } from '@/lib/types';
-import { Loader2, Plus, Users, MoreVertical, Edit, Trash2, Eye } from 'lucide-react';
+import { Loader2, Plus, Users, MoreVertical, Edit, Trash2, Eye, ShieldCheck, Clock, XCircle, AlertCircle } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -32,6 +32,8 @@ import {
 import { deleteDoc, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 
 export default function FormateurCoursesPage() {
@@ -91,14 +93,27 @@ export default function FormateurCoursesPage() {
     }
   };
 
+  const getStatusBadge = (status: Course['statut']) => {
+    switch (status) {
+      case 'approuvee':
+        return <Badge variant="default" className="bg-green-500 hover:bg-green-600"><ShieldCheck className="mr-1 h-3 w-3" /> Approuvée</Badge>;
+      case 'rejetee':
+        return <Badge variant="destructive"><XCircle className="mr-1 h-3 w-3" /> Rejetée</Badge>;
+      case 'en_attente':
+      default:
+        return <Badge variant="secondary"><Clock className="mr-1 h-3 w-3" /> En attente</Badge>;
+    }
+  }
+
 
   return (
+    <TooltipProvider>
     <div className="space-y-8">
        <div className='flex justify-between items-center'>
         <div>
             <h1 className="text-3xl font-bold font-headline">Mes cours</h1>
             <p className="text-muted-foreground">
-            Gérez, modifiez et publiez vos formations.
+            Gérez, modifiez et soumettez vos formations pour validation.
             </p>
         </div>
         <Button onClick={handleAddNew}>
@@ -127,8 +142,9 @@ export default function FormateurCoursesPage() {
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {courses.map(course => {
                     const courseImage = PlaceHolderImages.find((img) => img.id === course.image);
+                    const isRejected = course.statut === 'rejetee';
                     return (
-                        <Card key={course.id} className="flex flex-col rounded-2xl overflow-hidden shadow-md transition-transform hover:scale-105">
+                        <Card key={course.id} className={cn("flex flex-col rounded-2xl overflow-hidden shadow-md transition-transform hover:scale-105", isRejected && "border-destructive")}>
                             <CardHeader className="p-0 relative">
                                 {courseImage && (
                                     <Image
@@ -157,9 +173,22 @@ export default function FormateurCoursesPage() {
                             </CardHeader>
                             <CardContent className="p-4 flex-grow">
                                 <div className='flex justify-between items-start'>
-                                    <Badge variant={course.publie ? "default" : "secondary"}>{course.publie ? 'Publié' : 'Brouillon'}</Badge>
+                                    {getStatusBadge(course.statut)}
                                 </div>
                                 <h3 className="text-lg font-bold mt-2 leading-tight">{course.titre}</h3>
+                                {isRejected && course.motifRejet && (
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <div className="mt-2 flex items-start gap-2 text-destructive">
+                                                <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                                                <p className="text-xs font-semibold line-clamp-2">Motif du rejet : {course.motifRejet}</p>
+                                            </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="bottom" className="max-w-xs">
+                                            <p className="text-sm">{course.motifRejet}</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                )}
                             </CardContent>
                             <CardFooter className="p-4 bg-muted/50 flex flex-col items-start gap-4">
                                 <div className="w-full flex justify-between text-sm text-muted-foreground">
@@ -208,5 +237,6 @@ export default function FormateurCoursesPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </TooltipProvider>
   );
 }

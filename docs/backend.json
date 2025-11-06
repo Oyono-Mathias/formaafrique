@@ -123,6 +123,20 @@
         "instructorId": {
             "type": "string",
             "description": "The UID of the instructor who created the course."
+        },
+        "statut": {
+            "type": "string",
+            "enum": ["en_attente", "approuvee", "rejetee"],
+            "description": "The validation status of the course."
+        },
+        "dateValidation": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The timestamp when the course was validated."
+        },
+        "motifRejet": {
+            "type": "string",
+            "description": "The reason why the course was rejected."
         }
       },
       "required": [
@@ -134,7 +148,8 @@
         "date_creation",
         "publie",
         "auteur",
-        "instructorId"
+        "instructorId",
+        "statut"
       ]
     },
     "Module": {

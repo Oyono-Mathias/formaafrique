@@ -39,6 +39,9 @@ export interface Course {
   publie: boolean;
   auteur: string;
   instructorId: string; // ID of the instructor (formateur)
+  statut: 'en_attente' | 'approuvee' | 'rejetee';
+  dateValidation?: Timestamp;
+  motifRejet?: string;
 }
 
 
