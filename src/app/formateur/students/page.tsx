@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useUser, useFirestore, useCollection } from '@/firebase';
 import type { Course, Enrollment, UserProfile } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
@@ -20,7 +21,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Timestamp, collection, getDocs, doc, getDoc, onSnapshot, query, Unsubscribe } from 'firebase/firestore';
+import { Timestamp, collection, getDocs, doc, getDoc, onSnapshot, query, Unsubscribe, where } from 'firebase/firestore';
 import { Progress } from '@/components/ui/progress';
 
 interface EnrichedEnrollment extends Enrollment {
@@ -31,19 +32,19 @@ interface EnrichedEnrollment extends Enrollment {
 export default function FormateurStudentsPage() {
   const { user } = useUser();
   const db = useFirestore();
-  const { data: coursesData, loading: coursesLoading } = useCollection<Course>('courses', {
-    where: user?.uid ? ['instructorId', '==', user.uid] : undefined,
-  });
-  const courses = coursesData || [];
-
+  const { data: coursesData, loading: coursesLoading } = useCollection<Course>(
+    'courses',
+    user?.uid ? { where: ['instructorId', '==', user.uid] } : undefined
+  );
+  
   const [enrollments, setEnrollments] = useState<EnrichedEnrollment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!db || coursesLoading) return;
-    
-    if (!user || courses.length === 0) {
+    if (!db || coursesLoading || !user) return;
+
+    if (coursesData.length === 0) {
         setLoading(false);
         setEnrollments([]);
         return;
@@ -52,7 +53,7 @@ export default function FormateurStudentsPage() {
     const unsubscribes: Unsubscribe[] = [];
     const userProfilesCache = new Map<string, UserProfile>();
 
-    courses.forEach(course => {
+    coursesData.forEach(course => {
         if (course.id) {
             const enrollmentsQuery = query(collection(db, `courses/${course.id}/enrollments`));
             
@@ -66,10 +67,14 @@ export default function FormateurStudentsPage() {
 
                     if (!studentProfile) {
                         const userDocRef = doc(db, 'users', enrollmentData.studentId);
-                        const userDocSnap = await getDoc(userDocRef);
-                        if (userDocSnap.exists()) {
-                            studentProfile = userDocSnap.data() as UserProfile;
-                            userProfilesCache.set(enrollmentData.studentId, studentProfile);
+                        try {
+                            const userDocSnap = await getDoc(userDocRef);
+                            if (userDocSnap.exists()) {
+                                studentProfile = userDocSnap.data() as UserProfile;
+                                userProfilesCache.set(enrollmentData.studentId, studentProfile);
+                            }
+                        } catch (e) {
+                             console.error(`Failed to fetch profile for student ${enrollmentData.studentId}`, e);
                         }
                     }
 
@@ -80,7 +85,6 @@ export default function FormateurStudentsPage() {
                     });
                 }
                 
-                // Update state with all enrollments from all courses
                 setEnrollments(prev => {
                     const otherCourseEnrollments = prev.filter(e => e.courseId !== course.id);
                     const newEnrollments = [...otherCourseEnrollments, ...fetchedEnrollments];
@@ -104,11 +108,16 @@ export default function FormateurStudentsPage() {
         }
     });
 
+    // This handles the case where a formateur might have courses but no enrollments yet.
+    if (unsubscribes.length === 0) {
+        setLoading(false);
+    }
+
     return () => {
         unsubscribes.forEach(unsub => unsub());
     }
 
-  }, [db, courses, coursesLoading, user]);
+  }, [db, coursesData, coursesLoading, user]);
   
   const formatDate = (date: any) => {
     if (!date) return '-';
@@ -146,7 +155,7 @@ export default function FormateurStudentsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {(loading || coursesLoading) ? (
+          {loading ? (
             <div className="flex justify-center items-center h-40">
               <Loader2 className="h-8 w-8 animate-spin" />
               <p className="ml-2">Chargement en cours...</p>
