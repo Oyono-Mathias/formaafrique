@@ -31,6 +31,7 @@ import { useToast } from '@/hooks/use-toast';
 import { collection, addDoc, doc, updateDoc, deleteDoc, writeBatch, getDocs } from 'firebase/firestore';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import Image from 'next/image';
+import { Label } from '@/components/ui/label';
 
 const moduleSchema = z.object({
   titre: z.string().min(3, { message: 'Le titre doit avoir au moins 3 caractères.' }),
@@ -316,66 +317,27 @@ export default function ManageModulesPage({ params }: { params: { id: string } }
 
 // Sub-component for adding/editing a video
 function VideoDialog({ isOpen, setIsOpen, form, onSubmit, isEditing, moduleTitle }: any) {
-  const [previewUrl, setPreviewUrl] = useState('');
-  const [videoUrlToTest, setVideoUrlToTest] = useState('');
-  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
-
-  const getYouTubeThumbnail = (url: string) => {
+  
+  const getEmbedUrl = (url: string): string => {
+    if (!url) return '';
     try {
       const urlObj = new URL(url);
-      let videoId = '';
-      if (urlObj.hostname.includes('youtu.be')) {
-        videoId = urlObj.pathname.slice(1);
-      } else if (urlObj.hostname.includes('youtube.com')) {
-        videoId = urlObj.searchParams.get('v') || '';
+      if (urlObj.hostname.includes('youtube.com') || urlObj.hostname.includes('youtu.be')) {
+        const videoId = urlObj.hostname.includes('youtu.be')
+          ? urlObj.pathname.slice(1)
+          : urlObj.searchParams.get('v');
+        return videoId ? `https://www.youtube.com/embed/${videoId}` : '';
       }
-
-      if (videoId) {
-        return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
-      }
-    } catch (e) {
-      // Invalid URL
+      return '';
+    } catch (error) {
+      return '';
     }
-    return '';
   };
 
-  const getEmbedUrl = (url: string): string => {
-    try {
-        const urlObj = new URL(url);
-        if (urlObj.hostname.includes('youtu.be')) {
-            const videoId = urlObj.pathname.slice(1);
-            return `https://www.youtube.com/embed/${videoId}`;
-        }
-        if (urlObj.hostname.includes('youtube.com')) {
-            const videoId = urlObj.searchParams.get('v');
-            if (videoId) return `https://www.youtube.com/embed/${videoId}`;
-        }
-    } catch (e) { /* Invalid URL */ }
-    return ''; // Return empty string for invalid or non-YouTube URLs
-  }
-
   const urlValue = form.watch('url');
-
-  useEffect(() => {
-    if (urlValue) {
-      setPreviewUrl(getYouTubeThumbnail(urlValue));
-    } else {
-      setPreviewUrl('');
-    }
-  }, [urlValue]);
-
-  const handlePreviewClick = () => {
-    const embedUrl = getEmbedUrl(urlValue);
-    if(embedUrl) {
-      setVideoUrlToTest(embedUrl);
-      setIsPreviewModalOpen(true);
-    } else {
-      alert("Lien YouTube invalide ou non supporté pour la prévisualisation.");
-    }
-  }
+  const embedUrl = getEmbedUrl(urlValue);
 
   return (
-    <>
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent>
         <DialogHeader>
@@ -399,16 +361,18 @@ function VideoDialog({ isOpen, setIsOpen, form, onSubmit, isEditing, moduleTitle
               </FormItem>
             )} />
 
-            {previewUrl && (
+            {embedUrl && (
               <div className="space-y-2">
                   <Label>Prévisualisation</Label>
-                  <div className='relative aspect-video w-full overflow-hidden rounded-md'>
-                    <Image src={previewUrl} alt="Aperçu de la vidéo" layout="fill" objectFit="cover" />
+                  <div className='relative aspect-video w-full overflow-hidden rounded-md border'>
+                    <iframe
+                        className="w-full h-full"
+                        src={embedUrl}
+                        title="Prévisualisation de la vidéo YouTube"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                    ></iframe>
                   </div>
-                  <Button type="button" variant="outline" size="sm" onClick={handlePreviewClick}>
-                      <PlaySquare className='mr-2 h-4 w-4' />
-                      Tester la vidéo
-                  </Button>
               </div>
             )}
 
@@ -423,30 +387,6 @@ function VideoDialog({ isOpen, setIsOpen, form, onSubmit, isEditing, moduleTitle
         </Form>
       </DialogContent>
     </Dialog>
-
-    {/* Video Preview Modal */}
-    <Dialog open={isPreviewModalOpen} onOpenChange={setIsPreviewModalOpen}>
-        <DialogContent className="max-w-3xl">
-            <DialogHeader>
-                <DialogTitle>Aperçu de la vidéo</DialogTitle>
-            </DialogHeader>
-            <div className="aspect-video">
-                {videoUrlToTest && (
-                    <iframe
-                        src={videoUrlToTest}
-                        title="Aperçu Vidéo"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                        className="w-full h-full"
-                    ></iframe>
-                )}
-            </div>
-             <DialogFooter>
-                <Button onClick={() => setIsPreviewModalOpen(false)}>Fermer</Button>
-            </DialogFooter>
-        </DialogContent>
-    </Dialog>
-    </>
   );
 }
 
