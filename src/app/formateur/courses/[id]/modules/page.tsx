@@ -91,7 +91,7 @@ export default function ManageModulesPage({
   const courseId = resolvedParams?.id;
   
   const { data: course, loading: courseLoading } = useDoc<Course>(
-    'courses',
+    courseId,
     courseId
   );
   const { data: modulesData, loading: modulesLoading } = useCollection<Module>(
