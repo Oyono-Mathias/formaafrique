@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, use } from 'react';
 import Link from 'next/link';
 import { useRouter, notFound } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -71,8 +71,14 @@ const videoSchema = z.object({
 });
 
 async function isValidVideoUrl(url: string) {
-    // Basic check for now, can be expanded
-    return url.startsWith('http');
+    try {
+        const response = await fetch(url, { method: 'HEAD', mode: 'no-cors' });
+        // no-cors returns an opaque response, but a successfull fetch means the URL is likely reachable
+        return true;
+    } catch (error) {
+        console.warn("URL validation failed:", error);
+        return false;
+    }
 }
 
 
@@ -246,7 +252,19 @@ export default function ManageModulesPage({
     setIsModuleModalOpen(true);
   };
 
-  if (!courseId || courseLoading || modulesLoading) {
+  if (!courseId) {
+    return (
+        <div className="p-8 text-center text-destructive">
+            <h1 className='text-2xl font-bold'>Erreur : ID de formation manquant</h1>
+            <p className='mt-2'>Impossible de charger les modules car l'identifiant de la formation n'a pas été trouvé dans l'URL.</p>
+             <Button asChild className='mt-4'>
+                <Link href="/formateur/courses">Retour à mes formations</Link>
+            </Button>
+        </div>
+    );
+  }
+
+  if (courseLoading || modulesLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="mr-2 h-8 w-8 animate-spin" /> Chargement...

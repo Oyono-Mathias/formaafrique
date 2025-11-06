@@ -60,6 +60,14 @@ export default function FormateurCoursesPage() {
   }
 
   const handleManageModules = (courseId: string) => {
+    if (!courseId) {
+        toast({
+            variant: "destructive",
+            title: "Erreur",
+            description: "ID de cours introuvable.",
+        });
+        return;
+    }
     router.push(`/formateur/courses/${courseId}/modules`);
   }
 
@@ -202,4 +210,3 @@ export default function FormateurCoursesPage() {
     </div>
   );
 }
-    
