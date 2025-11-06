@@ -26,7 +26,7 @@ export default function ModulePage({ params }: ModulePageProps) {
   const moduleId = params?.moduleId;
 
   const { data: course, loading: courseLoading } = useDoc<Course>(
-    'courses',
+    courseId ? 'courses' : null,
     courseId
   );
   const { data: modulesData, loading: modulesLoading } = useCollection<Module>(
