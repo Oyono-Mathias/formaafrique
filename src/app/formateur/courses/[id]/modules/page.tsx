@@ -1,14 +1,38 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { use, useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
+import { useRouter, notFound } from 'next/navigation';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { notFound } from 'next/navigation';
-import Link from 'next/link';
-import { useState, useMemo, useEffect } from 'react';
-import { useDoc, useCollection, useFirestore } from '@/firebase';
+import {
+  collection,
+  addDoc,
+  doc,
+  Timestamp,
+  deleteDoc,
+  updateDoc,
+} from 'firebase/firestore';
+import {
+  ref,
+  uploadBytesResumable,
+  getDownloadURL,
+  deleteObject,
+} from 'firebase/storage';
+
+import { useFirestore, useStorage, useCollection, useDoc } from '@/firebase';
 import type { Course, Module, Video } from '@/lib/types';
-import { Loader2, ArrowLeft, PlusCircle, Video as VideoIcon, Trash2, Edit, PlaySquare } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import {
+  ArrowLeft,
+  Loader2,
+  PlusCircle,
+  Video as VideoIcon,
+  Trash2,
+  Edit,
+  PlaySquare,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -27,54 +51,52 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
-import { collection, addDoc, doc, updateDoc, deleteDoc, writeBatch, getDocs } from 'firebase/firestore';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import Image from 'next/image';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 
 const moduleSchema = z.object({
-  titre: z.string().min(3, { message: 'Le titre doit avoir au moins 3 caractères.' }),
-  description: z.string().min(10, { message: 'La description doit avoir au moins 10 caractères.' }),
+  titre: z
+    .string()
+    .min(3, { message: 'Le titre doit avoir au moins 3 caractères.' }),
+  description: z
+    .string()
+    .min(10, { message: 'La description doit avoir au moins 10 caractères.' }),
 });
 
 const videoSchema = z.object({
-    titre: z.string().min(3, "Titre requis."),
-    url: z.string().url("URL de vidéo valide requise (YouTube ou Google Drive)."),
+  titre: z.string().min(3, 'Titre requis.'),
+  url: z.string().url('URL de vidéo valide requise.'),
 });
 
-// Helper function to check if a URL is accessible
-async function isValidVideoUrl(url: string): Promise<boolean> {
-  try {
-    // We use 'no-cors' mode to avoid CORS errors when checking external resources like YouTube.
-    // This won't give us the full response, but it will tell us if the resource is reachable.
-    const response = await fetch(url, { method: 'HEAD', mode: 'no-cors' });
-    // For 'no-cors', a response type of 'opaque' indicates a successful cross-origin request.
-    // This is sufficient to validate that the URL is likely valid and accessible.
-    if (response.type === 'opaque' || response.ok) {
-        return true;
-    }
-    return false;
-  } catch (error) {
-    // Network errors (e.g., DNS issues, server down) will be caught here.
-    console.error("URL validation failed:", error);
-    return false;
-  }
-}
-
-
-export default function ManageModulesPage({ params }: { params: { id: string } }) {
-  const { data: course, loading: courseLoading } = useDoc<Course>('courses', params.id);
-  const { data: modulesData, loading: modulesLoading } = useCollection<Module>(`courses/${params.id}/modules`);
+export default function ManageModulesPage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  const courseId = use(params).id;
+  const { data: course, loading: courseLoading } = useDoc<Course>(
+    'courses',
+    courseId
+  );
+  const { data: modulesData, loading: modulesLoading } = useCollection<Module>(
+    `courses/${courseId}/modules`
+  );
   const db = useFirestore();
   const { toast } = useToast();
-  
+
   const [selectedModule, setSelectedModule] = useState<Module | null>(null);
   const [editingModule, setEditingModule] = useState<Module | null>(null);
   const [isModuleModalOpen, setIsModuleModalOpen] = useState(false);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const [editingVideo, setEditingVideo] = useState<Video | null>(null);
-
 
   const sortedModules = useMemo(() => {
     return (modulesData || []).sort((a, b) => a.ordre - b.ordre);
@@ -92,42 +114,42 @@ export default function ManageModulesPage({ params }: { params: { id: string } }
 
   useEffect(() => {
     if (isModuleModalOpen) {
-        if(editingModule) {
-            moduleForm.reset({
-                titre: editingModule.titre,
-                description: editingModule.description,
-            });
-        } else {
-            moduleForm.reset({ titre: '', description: '' });
-        }
+      if (editingModule) {
+        moduleForm.reset({
+          titre: editingModule.titre,
+          description: editingModule.description,
+        });
+      } else {
+        moduleForm.reset({ titre: '', description: '' });
+      }
     }
   }, [editingModule, isModuleModalOpen, moduleForm]);
 
   useEffect(() => {
     if (isVideoModalOpen) {
-        if(editingVideo) {
-            videoForm.reset({
-                titre: editingVideo.titre,
-                url: editingVideo.url,
-            });
-        } else {
-            videoForm.reset({ titre: '', url: '' });
-        }
+      if (editingVideo) {
+        videoForm.reset({
+          titre: editingVideo.titre,
+          url: editingVideo.url,
+        });
+      } else {
+        videoForm.reset({ titre: '', url: '' });
+      }
     }
   }, [editingVideo, isVideoModalOpen, videoForm]);
 
   async function onModuleSubmit(values: z.infer<typeof moduleSchema>) {
-    if (!db || !course?.id) return;
-    
+    if (!db || !courseId) return;
+
     try {
       if (editingModule) {
         // Update existing module
-        const moduleRef = doc(db, `courses/${course.id}/modules`, editingModule.id!);
+        const moduleRef = doc(db, `courses/${courseId}/modules`, editingModule.id!);
         await updateDoc(moduleRef, values);
         toast({ title: 'Module mis à jour !' });
       } else {
         // Create new module
-        const modulesCollectionRef = collection(db, 'courses', course.id, 'modules');
+        const modulesCollectionRef = collection(db, 'courses', courseId, 'modules');
         await addDoc(modulesCollectionRef, {
           ...values,
           ordre: (sortedModules.length || 0) + 1,
@@ -137,134 +159,177 @@ export default function ManageModulesPage({ params }: { params: { id: string } }
       setIsModuleModalOpen(false);
       setEditingModule(null);
     } catch (error) {
-      console.error("Error saving module:", error);
-      toast({ variant: 'destructive', title: 'Erreur', description: "Impossible d'enregistrer le module." });
+      console.error('Error saving module:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Erreur',
+        description: "Impossible d'enregistrer le module.",
+      });
     }
   }
 
   async function onVideoSubmit(values: z.infer<typeof videoSchema>) {
-    if (!db || !course?.id || !selectedModule?.id) return;
-    
-    const isUrlValid = await isValidVideoUrl(values.url);
-    if (!isUrlValid) {
+    if (!db || !courseId || !selectedModule?.id) return;
+
+    // This is a simplified validation. A more robust one would check the URL format more strictly.
+    if (!values.url.startsWith('https://')) {
         toast({
             variant: 'destructive',
             title: 'URL Invalide',
-            description: "Le lien de la vidéo est invalide ou inaccessible. Veuillez vérifier et réessayer.",
+            description: "Le lien de la vidéo est invalide. Veuillez vérifier et réessayer.",
         });
         return;
     }
 
     try {
-        const videosCollectionRef = collection(db, `courses/${course.id}/modules/${selectedModule.id}/videos`);
-        const videosSnapshot = await getDocs(videosCollectionRef);
-        const nextOrder = (videosSnapshot.docs.length || 0) + 1;
-
-        if (editingVideo) {
-            const videoRef = doc(db, `courses/${course.id}/modules/${selectedModule.id}/videos`, editingVideo.id!);
-            await updateDoc(videoRef, values);
-            toast({ title: "Vidéo mise à jour !" });
-        } else {
-            await addDoc(videosCollectionRef, {
-                ...values,
-                ordre: nextOrder,
-            });
-            toast({ title: "Vidéo ajoutée !" });
-        }
-        videoForm.reset();
-        setIsVideoModalOpen(false);
-        setEditingVideo(null);
-    } catch(error) {
-         console.error("Error adding video:", error);
-         toast({ variant: 'destructive', title: 'Erreur', description: "Impossible d'ajouter la vidéo." });
+      const videosCollectionRef = collection(
+        db,
+        `courses/${courseId}/modules/${selectedModule.id}/videos`
+      );
+      
+      if (editingVideo) {
+        const videoRef = doc(db, `courses/${courseId}/modules/${selectedModule.id}/videos`, editingVideo.id!);
+        await updateDoc(videoRef, values);
+        toast({ title: 'Vidéo mise à jour !' });
+      } else {
+        const nextOrder = (sortedModules.find(m => m.id === selectedModule.id)?.videos?.length || 0) + 1;
+        await addDoc(videosCollectionRef, {
+          ...values,
+          ordre: nextOrder,
+        });
+        toast({ title: 'Vidéo ajoutée !' });
+      }
+      videoForm.reset();
+      setIsVideoModalOpen(false);
+      setEditingVideo(null);
+    } catch (error) {
+      console.error('Error adding video:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Erreur',
+        description: "Impossible d'ajouter la vidéo.",
+      });
     }
   }
 
   const handleDeleteModule = async (moduleId: string) => {
-    if (!db || !course?.id) return;
-    const confirmed = window.confirm("Voulez-vous vraiment supprimer ce module et toutes ses vidéos ?");
+    if (!db || !courseId) return;
+    const confirmed = window.confirm(
+      'Voulez-vous vraiment supprimer ce module et toutes ses vidéos ?'
+    );
     if (!confirmed) return;
 
-    const moduleRef = doc(db, `courses/${course.id}/modules`, moduleId);
-    const videosRef = collection(db, `courses/${course.id}/modules/${moduleId}/videos`);
-
+    const moduleRef = doc(db, `courses/${courseId}/modules`, moduleId);
+    // Note: Deleting a document does not delete its subcollections.
+    // For a production app, you would need a Cloud Function to handle cascading deletes.
     try {
-        const batch = writeBatch(db);
-        const videosSnapshot = await getDocs(videosRef);
-        videosSnapshot.forEach(videoDoc => {
-            batch.delete(videoDoc.ref);
-        });
-        batch.delete(moduleRef);
-        await batch.commit();
-        toast({ title: "Module supprimé" });
+      await deleteDoc(moduleRef);
+      toast({ title: 'Module supprimé' });
     } catch (error) {
-        console.error("Error deleting module:", error);
-        toast({ variant: 'destructive', title: "Erreur de suppression" });
+      console.error('Error deleting module:', error);
+      toast({ variant: 'destructive', title: 'Erreur de suppression' });
     }
   };
-  
+
   const openVideoDialog = (module: Module, video: Video | null = null) => {
     setSelectedModule(module);
     setEditingVideo(video);
     setIsVideoModalOpen(true);
-  }
-  
+  };
+
   const openModuleDialog = (module: Module | null = null) => {
-      setEditingModule(module);
-      setIsModuleModalOpen(true);
-  }
+    setEditingModule(module);
+    setIsModuleModalOpen(true);
+  };
 
   if (courseLoading || modulesLoading) {
-    return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="mr-2 h-8 w-8 animate-spin" /> Chargement...</div>;
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <Loader2 className="mr-2 h-8 w-8 animate-spin" /> Chargement...
+      </div>
+    );
   }
 
   if (!course) {
-    notFound();
+    return notFound();
   }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-8">
-      <Link href="/formateur/courses" className="flex items-center text-sm text-muted-foreground hover:text-primary">
+      <Link
+        href="/formateur/courses"
+        className="flex items-center text-sm text-muted-foreground hover:text-primary"
+      >
         <ArrowLeft className="mr-2 h-4 w-4" />
         Retour à mes formations
       </Link>
 
       <div>
         <h1 className="text-3xl font-bold font-headline">{course.titre}</h1>
-        <p className="text-muted-foreground">Gérez les modules et les vidéos de votre formation.</p>
+        <p className="text-muted-foreground">
+          Gérez les modules et les vidéos de votre formation.
+        </p>
       </div>
 
-      <div className="flex justify-end">
+       <div className="flex justify-between items-center">
+        {/* Espace réservé pour une future fonctionnalité "Prévisualiser comme étudiant" */}
+        <Link href={`/apercu/${courseId}`} className='text-sm'>
+            <Button variant="outline">
+                <PlaySquare className="mr-2 h-4 w-4" />
+                Prévisualiser comme étudiant
+            </Button>
+        </Link>
+
         <Button onClick={() => openModuleDialog()}>
           <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un module
         </Button>
       </div>
-      
+
       <div className="space-y-6">
-        {sortedModules.length > 0 ? sortedModules.map(module => (
+        {sortedModules.length > 0 ? (
+          sortedModules.map((module) => (
             <Card key={module.id}>
-                <CardHeader className='flex-row justify-between items-start'>
-                    <div>
-                        <CardTitle>{module.titre}</CardTitle>
-                        <CardDescription>{module.description}</CardDescription>
-                    </div>
-                    <div className='flex items-center gap-2'>
-                        <Button variant="outline" size="sm" onClick={() => openModuleDialog(module)}><Edit className='mr-2 h-4 w-4'/> Modifier</Button>
-                        <Button variant="destructive" size="sm" onClick={() => handleDeleteModule(module.id!)}><Trash2 className='mr-2 h-4 w-4'/> Supprimer</Button>
-                        <Button size="sm" onClick={() => openVideoDialog(module)}>
-                            <VideoIcon className='mr-2 h-4 w-4'/> Ajouter une Vidéo
-                        </Button>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                  <ModuleVideos courseId={params.id} moduleId={module.id!} onEditVideo={(video) => openVideoDialog(module, video)}/>
-                </CardContent>
+              <CardHeader className="flex-row justify-between items-start">
+                <div>
+                  <CardTitle>{module.titre}</CardTitle>
+                  <CardDescription>{module.description}</CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openModuleDialog(module)}
+                  >
+                    <Edit className="mr-2 h-4 w-4" /> Modifier
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleDeleteModule(module.id!)}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" /> Supprimer
+                  </Button>
+                  <Button size="sm" onClick={() => openVideoDialog(module)}>
+                    <VideoIcon className="mr-2 h-4 w-4" /> Ajouter une Vidéo
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <ModuleVideos
+                  courseId={courseId}
+                  moduleId={module.id!}
+                  onEditVideo={(video) => openVideoDialog(module, video)}
+                />
+              </CardContent>
             </Card>
-        )) : (
-             <div className="text-center text-muted-foreground py-12 border-2 border-dashed rounded-lg">
-                <p className='font-semibold'>Aucun module pour cette formation.</p>
-                <p className="text-sm">Cliquez sur "Ajouter un module" pour commencer.</p>
-            </div>
+          ))
+        ) : (
+          <div className="text-center text-muted-foreground py-12 border-2 border-dashed rounded-lg">
+            <p className="font-semibold">Aucun module pour cette formation.</p>
+            <p className="text-sm">
+              Cliquez sur "Ajouter un module" pour commencer.
+            </p>
+          </div>
         )}
       </div>
 
@@ -272,65 +337,95 @@ export default function ManageModulesPage({ params }: { params: { id: string } }
       <Dialog open={isModuleModalOpen} onOpenChange={setIsModuleModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingModule ? 'Modifier le module' : 'Ajouter un nouveau module'}</DialogTitle>
+            <DialogTitle>
+              {editingModule ? 'Modifier le module' : 'Ajouter un nouveau module'}
+            </DialogTitle>
           </DialogHeader>
           <Form {...moduleForm}>
-            <form onSubmit={moduleForm.handleSubmit(onModuleSubmit)} className='space-y-4 py-4'>
-               <FormField control={moduleForm.control} name="titre" render={({ field }) => (
+            <form
+              onSubmit={moduleForm.handleSubmit(onModuleSubmit)}
+              className="space-y-4 py-4"
+            >
+              <FormField
+                control={moduleForm.control}
+                name="titre"
+                render={({ field }) => (
                   <FormItem>
                     <FormLabel>Titre du module</FormLabel>
-                    <FormControl><Input {...field} placeholder="Ex: Introduction à la comptabilité" /></FormControl>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="Ex: Introduction à la comptabilité"
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
-                )}/>
-                <FormField control={moduleForm.control} name="description" render={({ field }) => (
+                )}
+              />
+              <FormField
+                control={moduleForm.control}
+                name="description"
+                render={({ field }) => (
                   <FormItem>
                     <FormLabel>Description</FormLabel>
-                    <FormControl><Textarea {...field} placeholder="Que vont apprendre les étudiants ?" /></FormControl>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="Que vont apprendre les étudiants ?"
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
-                )}/>
-                <DialogFooter>
-                  <DialogClose asChild><Button type="button" variant="secondary">Annuler</Button></DialogClose>
-                  <Button type="submit" disabled={moduleForm.formState.isSubmitting}>
-                    {moduleForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Enregistrer
+                )}
+              />
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button type="button" variant="secondary">
+                    Annuler
                   </Button>
-                </DialogFooter>
+                </DialogClose>
+                <Button
+                  type="submit"
+                  disabled={moduleForm.formState.isSubmitting}
+                >
+                  {moduleForm.formState.isSubmitting && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Enregistrer
+                </Button>
+              </DialogFooter>
             </form>
           </Form>
         </DialogContent>
       </Dialog>
-      
+
       {/* Video Dialog */}
       <VideoDialog
-          isOpen={isVideoModalOpen}
-          setIsOpen={setIsVideoModalOpen}
-          form={videoForm}
-          onSubmit={onVideoSubmit}
-          isEditing={!!editingVideo}
-          moduleTitle={selectedModule?.titre || ''}
-        />
+        isOpen={isVideoModalOpen}
+        setIsOpen={setIsVideoModalOpen}
+        form={videoForm}
+        onSubmit={onVideoSubmit}
+        isEditing={!!editingVideo}
+        moduleTitle={selectedModule?.titre || ''}
+      />
     </div>
   );
 }
 
-// Sub-component for adding/editing a video
 function VideoDialog({ isOpen, setIsOpen, form, onSubmit, isEditing, moduleTitle }: any) {
-  
-  const getEmbedUrl = (url: string): string => {
-    if (!url) return '';
+  const getEmbedUrl = (url: string): string | null => {
+    if (!url) return null;
     try {
       const urlObj = new URL(url);
       if (urlObj.hostname.includes('youtube.com') || urlObj.hostname.includes('youtu.be')) {
         const videoId = urlObj.hostname.includes('youtu.be')
           ? urlObj.pathname.slice(1)
           : urlObj.searchParams.get('v');
-        return videoId ? `https://www.youtube.com/embed/${videoId}` : '';
+        return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
       }
-      return '';
+      return null;
     } catch (error) {
-      return '';
+      return null;
     }
   };
 
@@ -341,45 +436,73 @@ function VideoDialog({ isOpen, setIsOpen, form, onSubmit, isEditing, moduleTitle
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Modifier la vidéo' : `Ajouter une vidéo à "${moduleTitle}"`}</DialogTitle>
-          <DialogDescription>Entrez les détails de la vidéo ci-dessous.</DialogDescription>
+          <DialogTitle>
+            {isEditing
+              ? 'Modifier la vidéo'
+              : `Ajouter une vidéo à "${moduleTitle}"`}
+          </DialogTitle>
+          <DialogDescription>
+            Entrez les détails de la vidéo ci-dessous.
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4 py-4'>
-            <FormField control={form.control} name="titre" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Titre de la vidéo</FormLabel>
-                <FormControl><Input {...field} placeholder="Ex: Les bases du bilan" /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <FormField control={form.control} name="url" render={({ field }) => (
-              <FormItem>
-                <FormLabel>URL de la vidéo (YouTube/Google Drive)</FormLabel>
-                <FormControl><Input {...field} placeholder="https://www.youtube.com/watch?v=..." /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-4 py-4"
+          >
+            <FormField
+              control={form.control}
+              name="titre"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Titre de la vidéo</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Ex: Les bases du bilan" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="url"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>URL de la vidéo (YouTube)</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="https://www.youtube.com/watch?v=..." />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
             {embedUrl && (
               <div className="space-y-2">
-                  <Label>Prévisualisation</Label>
-                  <div className='relative aspect-video w-full overflow-hidden rounded-md border'>
-                    <iframe
-                        className="w-full h-full"
-                        src={embedUrl}
-                        title="Prévisualisation de la vidéo YouTube"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                    ></iframe>
-                  </div>
+                <Label>Prévisualisation</Label>
+                <div className="relative aspect-video w-full overflow-hidden rounded-md border">
+                  <iframe
+                    className="w-full h-full"
+                    src={embedUrl}
+                    title="Prévisualisation de la vidéo YouTube"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  ></iframe>
+                </div>
               </div>
             )}
 
+
             <DialogFooter>
-              <DialogClose asChild><Button type="button" variant="secondary">Annuler</Button></DialogClose>
+              <DialogClose asChild>
+                <Button type="button" variant="secondary">
+                  Annuler
+                </Button>
+              </DialogClose>
               <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {form.formState.isSubmitting && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
                 {isEditing ? 'Enregistrer les modifications' : 'Ajouter la vidéo'}
               </Button>
             </DialogFooter>
@@ -391,53 +514,105 @@ function VideoDialog({ isOpen, setIsOpen, form, onSubmit, isEditing, moduleTitle
 }
 
 
-function ModuleVideos({ courseId, moduleId, onEditVideo }: { courseId: string; moduleId: string; onEditVideo: (video: Video) => void; }) {
-    const { data: videosData, loading, error } = useCollection<Video>(`courses/${courseId}/modules/${moduleId}/videos`);
-    const db = useFirestore();
-    const {toast} = useToast();
+function ModuleVideos({
+  courseId,
+  moduleId,
+  onEditVideo,
+}: {
+  courseId: string;
+  moduleId: string;
+  onEditVideo: (video: Video) => void;
+}) {
+  const { data: videosData, loading, error } = useCollection<Video>(
+    `courses/${courseId}/modules/${moduleId}/videos`
+  );
+  const db = useFirestore();
+  const { toast } = useToast();
 
-    const sortedVideos = useMemo(() => {
-        const videos = videosData || [];
-        return videos.sort((a,b) => a.ordre - b.ordre);
-    }, [videosData]);
+  const sortedVideos = useMemo(() => {
+    const videos = videosData || [];
+    return videos.sort((a, b) => a.ordre - b.ordre);
+  }, [videosData]);
 
-    const handleDeleteVideo = async (videoId: string) => {
-        if(!db) return;
-        const confirmed = window.confirm("Voulez-vous vraiment supprimer cette vidéo ?");
-        if (!confirmed) return;
-        const videoRef = doc(db, `courses/${courseId}/modules/${moduleId}/videos`, videoId);
-        try {
-            await deleteDoc(videoRef);
-            toast({title: "Vidéo supprimée !"})
-        } catch(e) {
-            toast({variant: 'destructive', title: "Erreur", description: "Impossible de supprimer la vidéo."})
-        }
+  const handleDeleteVideo = async (videoId: string) => {
+    if (!db) return;
+    const confirmed = window.confirm(
+      'Voulez-vous vraiment supprimer cette vidéo ?'
+    );
+    if (!confirmed) return;
+    const videoRef = doc(
+      db,
+      `courses/${courseId}/modules/${moduleId}/videos`,
+      videoId
+    );
+    try {
+      await deleteDoc(videoRef);
+      toast({ title: 'Vidéo supprimée !' });
+    } catch (e) {
+      toast({
+        variant: 'destructive',
+        title: 'Erreur',
+        description: "Impossible de supprimer la vidéo.",
+      });
     }
+  };
 
-    if (loading) return <div className='flex items-center text-sm text-muted-foreground'><Loader2 className='mr-2 h-4 w-4 animate-spin'/>Chargement des vidéos...</div>
-    if (error) return <div className='text-destructive text-sm'>Erreur de chargement des vidéos.</div>
-
+  if (loading)
     return (
-        <div>
-            <h4 className='font-semibold mb-2 text-muted-foreground'>Vidéos du module ({sortedVideos.length})</h4>
-            {sortedVideos.length > 0 ? (
-                 <div className="space-y-2">
-                  {sortedVideos.map(video => (
-                    <div key={video.id} className="flex items-center justify-between rounded-md border bg-muted/50 p-3">
-                      <div className="flex items-center gap-3">
-                         <VideoIcon className="h-5 w-5 text-primary"/>
-                         <p className="font-medium text-sm">{video.titre}</p>
-                      </div>
-                      <div className='flex gap-2'>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEditVideo(video)}><Edit className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="icon" className="text-destructive h-8 w-8 hover:bg-destructive/10 hover:text-destructive" onClick={() => handleDeleteVideo(video.id!)}><Trash2 className="h-4 w-4" /></Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-            ): (
-                <p className='text-sm text-muted-foreground'>Aucune vidéo dans ce module.</p>
-            )}
+      <div className="flex items-center text-sm text-muted-foreground">
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        Chargement des vidéos...
+      </div>
+    );
+  if (error)
+    return (
+      <div className="text-destructive text-sm">
+        Erreur de chargement des vidéos.
+      </div>
+    );
+
+  return (
+    <div>
+      <h4 className="font-semibold mb-2 text-muted-foreground">
+        Vidéos du module ({sortedVideos.length})
+      </h4>
+      {sortedVideos.length > 0 ? (
+        <div className="space-y-2">
+          {sortedVideos.map((video) => (
+            <div
+              key={video.id}
+              className="flex items-center justify-between rounded-md border bg-muted/50 p-3"
+            >
+              <div className="flex items-center gap-3">
+                <VideoIcon className="h-5 w-5 text-primary" />
+                <p className="font-medium text-sm">{video.titre}</p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => onEditVideo(video)}
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-destructive h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+                  onClick={() => handleDeleteVideo(video.id!)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          ))}
         </div>
-    )
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          Aucune vidéo dans ce module.
+        </p>
+      )}
+    </div>
+  );
 }
