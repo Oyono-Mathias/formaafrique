@@ -3,25 +3,19 @@
 import { use, useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter, notFound } from 'next/navigation';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import {
   collection,
   addDoc,
   doc,
-  Timestamp,
   deleteDoc,
   updateDoc,
+  getDocs,
 } from 'firebase/firestore';
-import {
-  ref,
-  uploadBytesResumable,
-  getDownloadURL,
-  deleteObject,
-} from 'firebase/storage';
 
-import { useFirestore, useStorage, useCollection, useDoc } from '@/firebase';
+import { useFirestore, useCollection, useDoc } from '@/firebase';
 import type { Course, Module, Video } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -77,17 +71,13 @@ const videoSchema = z.object({
 });
 
 async function isValidVideoUrl(url: string) {
-    // Basic validation for URL format
     if (!url.startsWith('http')) {
         return false;
     }
-    // no-cors is used to check reachability without running into CORS issues
     try {
         await fetch(url, { method: 'HEAD', mode: 'no-cors' });
-        // Request succeeded, which means the URL is likely valid and reachable
         return true;
     } catch (e) {
-        // Network error, etc.
         return false;
     }
 }
@@ -207,8 +197,8 @@ export default function ManageModulesPage({
         `courses/${courseId}/modules/${selectedModule.id}/videos`
       );
       
-      const { data: videosInModule } = await getDocs(videosCollectionRef);
-      const nextOrder = (videosInModule?.length || 0) + 1;
+      const videosSnapshot = await getDocs(videosCollectionRef);
+      const nextOrder = (videosSnapshot.docs.length || 0) + 1;
 
 
       if (editingVideo) {
@@ -243,8 +233,6 @@ export default function ManageModulesPage({
     if (!confirmed) return;
 
     const moduleRef = doc(db, `courses/${courseId}/modules`, moduleId);
-    // Note: Deleting a document does not delete its subcollections.
-    // For a production app, you would need a Cloud Function to handle cascading deletes.
     try {
       await deleteDoc(moduleRef);
       toast({ title: 'Module supprimé' });
@@ -465,7 +453,7 @@ function VideoDialog({ isOpen, setIsOpen, form, onSubmit, isEditing, moduleTitle
               : `Ajouter une vidéo à "${moduleTitle}"`}
           </DialogTitle>
           <DialogDescription>
-            Entrez les détails de la vidéo ci-dessous. Seuls les liens YouTube sont actuellement supportés.
+            Entrez les détails de la vidéo ci-dessous. Collez un lien YouTube pour voir un aperçu.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -547,7 +535,7 @@ function ModuleVideos({
   onEditVideo: (video: Video) => void;
 }) {
   const { data: videosData, loading, error } = useCollection<Video>(
-    `courses/${courseId}/modules/${moduleId}/videos`
+    courseId && moduleId ? `courses/${courseId}/modules/${moduleId}/videos` : null
   );
   const db = useFirestore();
   const { toast } = useToast();
