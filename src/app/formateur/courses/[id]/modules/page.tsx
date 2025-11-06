@@ -55,6 +55,7 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 
 const moduleSchema = z.object({
   titre: z
@@ -208,6 +209,7 @@ export default function ManageModulesPage({
         await addDoc(videosCollectionRef, {
           ...values,
           ordre: nextOrder,
+          publie: false,
         });
         toast({ title: 'Vidéo ajoutée !' });
       }
@@ -582,6 +584,25 @@ function ModuleVideos({
     }
   };
 
+  const handlePublishToggle = async (video: Video) => {
+    if (!db || !courseId || !moduleId) return;
+    const videoRef = doc(db, `courses/${courseId}/modules/${moduleId}/videos`, video.id!);
+    try {
+      await updateDoc(videoRef, { publie: !video.publie });
+      toast({
+        title: `Vidéo ${video.publie ? 'dépubliée' : 'publiée'}`,
+        description: `Le statut de la vidéo "${video.titre}" a été mis à jour.`
+      });
+    } catch (e) {
+      toast({
+        variant: 'destructive',
+        title: 'Erreur',
+        description: "Impossible de changer le statut de la vidéo.",
+      });
+    }
+  };
+
+
   if (loading)
     return (
       <div className="flex items-center text-sm text-muted-foreground">
@@ -611,8 +632,19 @@ function ModuleVideos({
               <div className="flex items-center gap-3">
                 <VideoIcon className="h-5 w-5 text-primary" />
                 <p className="font-medium text-sm">{video.titre}</p>
+                 <Badge variant={video.publie ? 'default' : 'secondary'}>
+                  {video.publie ? 'Publiée' : 'Brouillon'}
+                </Badge>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
+                 <div className="flex items-center space-x-2">
+                    <Switch
+                        id={`publish-${video.id}`}
+                        checked={video.publie}
+                        onCheckedChange={() => handlePublishToggle(video)}
+                    />
+                    <Label htmlFor={`publish-${video.id}`} className="text-sm">Publier</Label>
+                </div>
                 <Button
                   variant="ghost"
                   size="icon"

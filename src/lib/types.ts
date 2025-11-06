@@ -15,6 +15,7 @@ export interface Video {
   titre: string;
   url: string;
   ordre: number;
+  publie: boolean;
 }
 
 export interface Module {

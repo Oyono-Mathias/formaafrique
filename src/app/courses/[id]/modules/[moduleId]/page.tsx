@@ -26,7 +26,9 @@ export default function ModulePage({ params }: ModulePageProps) {
   const { data: modulesData, loading: modulesLoading } = useCollection<Module>(`courses/${params.id}/modules`);
   
   // Fetch videos for the current module
-  const { data: videosData, loading: videosLoading } = useCollection<Video>(`courses/${params.id}/modules/${params.moduleId}/videos`);
+  const { data: videosData, loading: videosLoading } = useCollection<Video>(`courses/${params.id}/modules/${params.moduleId}`, {
+    where: ['publie', '==', true]
+  });
 
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   
@@ -112,9 +114,13 @@ export default function ModulePage({ params }: ModulePageProps) {
                     allowFullScreen
                     className='w-full h-full'
                 ></iframe>
-             ) : videoPlaceholder && (
-                <div className='w-full h-full bg-muted flex items-center justify-center'>
-                    <p className='text-muted-foreground'>Sélectionnez une vidéo pour commencer.</p>
+             ) : (
+                <div className='w-full h-full bg-muted flex items-center justify-center text-center p-4'>
+                    {sortedVideos.length === 0 ? (
+                      <p className='text-muted-foreground'>Ce module ne contient aucune vidéo publiée pour le moment.</p>
+                    ) : (
+                      <p className='text-muted-foreground'>Sélectionnez une vidéo pour commencer.</p>
+                    )}
                 </div>
              )}
           </div>
@@ -175,7 +181,7 @@ export default function ModulePage({ params }: ModulePageProps) {
                               </li>
                             ))
                           ) : (
-                            <li className='p-3 text-sm text-muted-foreground'>Aucune vidéo dans ce module.</li>
+                            <li className='p-3 text-sm text-muted-foreground'>Aucune vidéo publiée dans ce module.</li>
                           )
                         ) : (
                           <li className='p-3 text-sm text-muted-foreground'>Chargez le module pour voir les vidéos.</li>
