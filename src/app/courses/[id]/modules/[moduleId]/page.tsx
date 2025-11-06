@@ -22,13 +22,22 @@ type ModulePageProps = {
 };
 
 export default function ModulePage({ params }: ModulePageProps) {
-  const { data: course, loading: courseLoading } = useDoc<Course>('courses', params.id);
-  const { data: modulesData, loading: modulesLoading } = useCollection<Module>(`courses/${params.id}/modules`);
+  const courseId = params?.id;
+  const moduleId = params?.moduleId;
+
+  const { data: course, loading: courseLoading } = useDoc<Course>(
+    'courses',
+    courseId
+  );
+  const { data: modulesData, loading: modulesLoading } = useCollection<Module>(
+    courseId ? `courses/${courseId}/modules` : null
+  );
   
-  // Fetch videos for the current module
-  const { data: videosData, loading: videosLoading } = useCollection<Video>(`courses/${params.id}/modules/${params.moduleId}`, {
-    where: ['publie', '==', true]
-  });
+  // Fetch videos for the current module, only if IDs are available
+  const { data: videosData, loading: videosLoading } = useCollection<Video>(
+    courseId && moduleId ? `courses/${courseId}/modules/${moduleId}`: null,
+    { where: ['publie', '==', true] }
+  );
 
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   
@@ -38,10 +47,10 @@ export default function ModulePage({ params }: ModulePageProps) {
       const allModules = modulesData || [];
       const allVideos = videosData || [];
       const sortedMods = [...allModules].sort((a,b) => a.ordre - b.ordre);
-      const currentMod = sortedMods.find(m => m.id === params.moduleId);
+      const currentMod = sortedMods.find(m => m.id === moduleId);
       const sortedVids = [...allVideos].sort((a,b) => a.ordre - b.ordre);
       return { currentModule: currentMod, sortedModules: sortedMods, sortedVideos: sortedVids };
-  }, [modulesData, videosData, params.moduleId]);
+  }, [modulesData, videosData, moduleId]);
 
   // Effect to select the first video by default when the page loads or videos change
   useEffect(() => {
@@ -60,7 +69,7 @@ export default function ModulePage({ params }: ModulePageProps) {
     );
   }
   
-  if (!course || !currentModule) {
+  if (!courseId || !moduleId || !course || !currentModule) {
     notFound();
   }
 
@@ -148,12 +157,12 @@ export default function ModulePage({ params }: ModulePageProps) {
               const isLocked = false; // Add real logic later
 
               return (
-                <AccordionItem value={`module-${module.id}`} key={module.id}>
+                <AccordionItem value={`module-${module.id!}`} key={module.id}>
                     <AccordionTrigger 
                       className={cn('font-semibold hover:no-underline', isCurrentModule && 'text-primary')}
                       disabled={isLocked}
                     >
-                       <Link href={`/courses/${course.id}/modules/${module.id}`} className='w-full text-left'>
+                       <Link href={`/courses/${courseId}/modules/${module.id}`} className='w-full text-left'>
                          <div className="flex items-center gap-3">
                           {isCompleted ? <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" /> : isLocked ? <Lock className='h-5 w-5 text-muted-foreground flex-shrink-0' /> : <PlayCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />}
                           <span>{module.titre}</span>
