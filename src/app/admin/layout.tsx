@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   Tag,
   Activity,
+  Bell,
 } from 'lucide-react';
 import { Logo } from '@/components/icons/logo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -25,6 +26,14 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const adminNavLinks = [
   { href: '/admin', label: 'Tableau de bord', icon: LayoutDashboard },
@@ -33,6 +42,7 @@ const adminNavLinks = [
   { href: '/admin/validation', label: 'Validation', icon: ShieldCheck },
   { href: '/admin/users', label: 'Utilisateurs', icon: Users },
   { href: '/admin/donations', label: 'Transactions', icon: CreditCard },
+  { href: '/admin/notifications', label: 'Notifications', icon: Bell },
   { href: '/admin/behavior', label: 'Comportements & Sécurité', icon: Activity },
   { href: '/admin/settings', label: 'Paramètres', icon: Settings },
 ];
@@ -149,12 +159,31 @@ export default function AdminLayout({
             </SheetContent>
           </Sheet>
           <div className="flex-1">
-            <h1 className="text-lg font-semibold">FormAfrique Admin Dashboard</h1>
+            {/* Can be used for a search bar later */}
           </div>
-          <Avatar>
-            <AvatarImage src={user?.photoURL || ''} alt="Admin" />
-            <AvatarFallback>{user?.displayName?.charAt(0) || 'A'}</AvatarFallback>
-          </Avatar>
+          <div className="flex items-center gap-4">
+             <Button variant="ghost" size="icon">
+                <Bell className="h-5 w-5" />
+                <span className="sr-only">Notifications</span>
+              </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <Avatar>
+                        <AvatarImage src={user?.photoURL || ''} alt="Admin" />
+                        <AvatarFallback>{user?.displayName?.charAt(0) || 'A'}</AvatarFallback>
+                    </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Mon Compte</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild><Link href="/admin/settings">Paramètres</Link></DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut} className='text-destructive'>Déconnexion</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </header>
         <main className="flex-1 bg-background p-4 sm:p-6 lg:p-8 animate-fade-in">
           {children}

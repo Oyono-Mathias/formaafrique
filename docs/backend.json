@@ -320,6 +320,24 @@
             "status": { "type": "string", "enum": ["succes", "echec"], "description": "The outcome of the action." }
         },
         "required": ["userId", "name", "role", "action", "timestamp", "status"]
+    },
+    "AdminNotification": {
+        "title": "Admin Notification",
+        "description": "Represents a notification for platform administrators.",
+        "type": "object",
+        "properties": {
+            "type": {
+                "type": "string",
+                "enum": ["nouveau_cours", "nouveau_paiement", "nouvelle_inscription", "modification_profil", "demande_validation"],
+                "description": "The type of event that triggered the notification."
+            },
+            "title": { "type": "string", "description": "A short, descriptive title for the notification." },
+            "message": { "type": "string", "description": "A detailed message explaining the event." },
+            "createdAt": { "type": "string", "format": "date-time" },
+            "read": { "type": "boolean", "description": "Whether the notification has been read by an admin." },
+            "link": { "type": "string", "format": "uri", "description": "A direct link to the relevant resource (e.g., a course or a user profile)." }
+        },
+        "required": ["type", "title", "message", "createdAt", "read"]
     }
   },
   "auth": {
@@ -373,6 +391,10 @@
     "/user_activity_logs/{logId}": {
         "schema": { "$ref": "#/entities/UserActivityLog" },
         "description": "Stores a chronological log of all important user actions."
+    },
+    "/admin_notifications/{notificationId}": {
+        "schema": { "$ref": "#/entities/AdminNotification" },
+        "description": "Stores notifications intended for platform administrators."
     }
   }
 }

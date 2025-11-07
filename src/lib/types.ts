@@ -47,6 +47,7 @@ export interface UserProfile {
   createdAt: Timestamp;
   photoURL: string | null;
   role: 'admin' | 'etudiant' | 'formateur';
+  status: 'actif' | 'suspendu';
   paysOrigine: string;
   paysActuel: string;
   bio?: string;
@@ -106,5 +107,26 @@ export interface Donation {
   statut: 'succes' | 'en_attente' | 'echec';
   moyenPaiement: 'carte' | 'mobile_money' | 'inconnu';
   paysOrigine: string;
+}
+
+export interface UserActivityLog {
+    id?: string;
+    userId: string;
+    name: string;
+    role: string;
+    action: string;
+    details: string;
+    timestamp: Timestamp;
+    status: 'succes' | 'echec';
+}
+
+export interface AdminNotification {
+    id?: string;
+    type: 'nouveau_cours' | 'nouveau_paiement' | 'nouvelle_inscription' | 'modification_profil' | 'demande_validation';
+    title: string;
+    message: string;
+    createdAt: Timestamp;
+    read: boolean;
+    link?: string;
 }
     
