@@ -4,8 +4,6 @@ import { useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
-import Header from '@/components/layout/header';
-import Footer from '@/components/layout/footer';
 
 export default function HomeLayout({
   children,
@@ -46,11 +44,5 @@ export default function HomeLayout({
   }
 
   // Only show public content if not loading and no user is logged in.
-  return (
-    <div className="flex flex-col min-h-screen">
-      <Header />
-      <main className="flex-grow">{children}</main>
-      <Footer />
-    </div>
-  );
+  return <>{children}</>;
 }
