@@ -6,6 +6,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { FirebaseProvider } from '@/firebase/client-provider';
 import { UserProvider } from '@/firebase';
 import { NextLayout } from './next-layout';
+import { LanguageProvider } from '@/contexts/language-context';
 
 const ptSans = PT_Sans({ 
   subsets: ['latin'], 
@@ -33,10 +34,12 @@ export default function RootLayout({
       <body className={cn('antialiased flex flex-col min-h-screen')}>
         <FirebaseProvider>
           <UserProvider>
-            <NextLayout>
-              {children}
-            </NextLayout>
-            <Toaster />
+            <LanguageProvider>
+              <NextLayout>
+                {children}
+              </NextLayout>
+              <Toaster />
+            </LanguageProvider>
           </UserProvider>
         </FirebaseProvider>
       </body>

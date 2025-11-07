@@ -10,20 +10,22 @@ import { cn } from '@/lib/utils';
 import { Logo } from '@/components/icons/logo';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useUser } from '@/firebase';
-
-const navLinks = [
-  { href: '/', label: 'Accueil' },
-  { href: '/courses', label: 'Formations' },
-  { href: '/instructors', label: 'Nos Formateurs' },
-  { href: '/community', label: 'Communauté' },
-  { href: '/about', label: 'À propos' },
-  { href: '/contact', label: 'Contact' },
-  { href: '/donate', label: 'Faire un don' },
-];
+import { useLanguage } from '@/contexts/language-context';
 
 export default function Header() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { t } = useLanguage();
+  
+  const navLinks = [
+    { href: '/', label: t('nav_home') },
+    { href: '/courses', label: t('nav_courses') },
+    { href: '/instructors', label: t('nav_instructors') },
+    { href: '/community', label: t('nav_community') },
+    { href: '/about', label: t('nav_about') },
+    { href: '/contact', label: t('nav_contact') },
+    { href: '/donate', label: t('nav_donate') },
+  ];
   
   // Conditionally call the hook
   const isPublicPage = navLinks.some(link => link.href === pathname);
@@ -101,17 +103,17 @@ export default function Header() {
                        pathname === '/search' ? 'text-foreground font-bold' : 'text-foreground/80'
                     )}
                   >
-                    Rechercher
+                    {t('search')}
                   </Link>
               </nav>
               <div className="mt-auto pt-4">
                 {isAuthenticated ? (
                   <Button asChild variant="default" className="w-full" onClick={closeMobileMenu}>
-                    <Link href="/dashboard">Tableau de bord</Link>
+                    <Link href="/dashboard">{t('dashboard')}</Link>
                   </Button>
                 ) : (
                   <Button asChild variant="default" className="w-full" onClick={closeMobileMenu}>
-                    <Link href="/login">Connexion / Inscription</Link>
+                    <Link href="/login">{t('login_signup')}</Link>
                   </Button>
                 )}
               </div>
@@ -130,22 +132,22 @@ export default function Header() {
           <nav className="hidden md:flex items-center space-x-4">
             <Link href="/search" className="text-foreground/60 hover:text-foreground/80 p-2">
                 <Search />
-                <span className="sr-only">Rechercher</span>
+                <span className="sr-only">{t('search')}</span>
             </Link>
             {loading ? null : isAuthenticated ? (
               <Button asChild variant="default">
-                <Link href="/dashboard">Tableau de bord</Link>
+                <Link href="/dashboard">{t('dashboard')}</Link>
               </Button>
             ) : (
               <Button asChild variant="outline" className="hidden md:inline-flex">
-                <Link href="/login">Connexion / Inscription</Link>
+                <Link href="/login">{t('login_signup')}</Link>
               </Button>
             )}
           </nav>
            <div className="flex items-center md:hidden">
              <Link href="/search" className="text-foreground/60 hover:text-foreground/80 p-2">
                 <Search />
-                <span className="sr-only">Rechercher</span>
+                <span className="sr-only">{t('search')}</span>
             </Link>
           </div>
         </div>

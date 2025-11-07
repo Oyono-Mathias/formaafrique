@@ -12,58 +12,46 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-
-const languages = [
-    { code: 'en', name: 'English' },
-    { code: 'es', name: 'Español' },
-    { code: 'fr', name: 'Français' },
-    { code: 'de', name: 'Deutsch' },
-    { code: 'pt', name: 'Português' },
-    { code: 'ja', name: '日本語' },
-    { code: 'ko', name: '한국어' },
-];
-
+import { useLanguage } from '@/contexts/language-context';
 
 export default function Footer() {
   const [isLangDialogOpen, setIsLangDialogOpen] = useState(false);
-  const [currentLang, setCurrentLang] = useState('fr');
+  const { language, setLanguage, t, supportedLanguages } = useLanguage();
 
   const handleLanguageChange = (langCode: string) => {
-    setCurrentLang(langCode);
+    setLanguage(langCode);
     setIsLangDialogOpen(false);
-    // In a real app, you would also trigger the language change logic here
-    // e.g., router.push(pathname, { locale: langCode });
   };
 
   const footerLinkGroups = [
     {
-      title: 'FormaAfrique Business',
+      title: t('footer_business_title'),
       links: [
-        { label: 'Enseigner sur FormaAfrique', href: '/devenir-formateur' },
-        { label: 'À propos de nous', href: '/about' },
-        { label: 'Nous contacter', href: '/contact' },
+        { label: t('footer_business_teach'), href: '/devenir-formateur' },
+        { label: t('footer_business_about'), href: '/about' },
+        { label: t('footer_business_contact'), href: '/contact' },
       ],
     },
     {
-      title: 'Carrières',
+      title: t('footer_careers_title'),
       links: [
-        { label: 'Blog', href: '#' },
-        { label: 'Aide et support', href: '#' },
-        { label: 'Affilié', href: '#' },
-        { label: 'Investisseurs', href: '#' },
+        { label: t('footer_careers_blog'), href: '#' },
+        { label: t('footer_careers_help'), href: '#' },
+        { label: t('footer_careers_affiliate'), href: '#' },
+        { label: t('footer_careers_investors'), href: '#' },
       ],
     },
     {
-      title: 'Conditions',
+      title: t('footer_terms_title'),
       links: [
-        { label: 'Conditions d\'utilisation', href: '/privacy' },
-        { label: 'Politique de confidentialité', href: '/privacy' },
-        { label: 'Plan du site', href: '#' },
+        { label: t('footer_terms_terms'), href: '/privacy' },
+        { label: t('footer_terms_privacy'), href: '/privacy' },
+        { label: t('footer_terms_sitemap'), href: '#' },
       ],
     },
   ];
   
-  const currentLanguageName = languages.find(l => l.code === currentLang)?.name || 'Français';
+  const currentLanguageName = supportedLanguages.find(l => l.code === language)?.name || 'Français';
 
   return (
     <footer className="bg-[#1c1d1f] text-white">
@@ -95,14 +83,14 @@ export default function Footer() {
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[425px] bg-white text-black">
                     <DialogHeader>
-                        <DialogTitle>LANGUES</DialogTitle>
+                        <DialogTitle>{t('languages_title')}</DialogTitle>
                     </DialogHeader>
                     <ul className="space-y-1 py-4">
-                        {languages.map(lang => (
+                        {supportedLanguages.map(lang => (
                             <li key={lang.code}>
                                 <button
                                   onClick={() => handleLanguageChange(lang.code)}
-                                  className={`w-full text-left p-3 rounded-md text-lg ${currentLang === lang.code ? 'font-bold text-primary bg-primary/10' : 'hover:bg-muted'}`}
+                                  className={`w-full text-left p-3 rounded-md text-lg ${language === lang.code ? 'font-bold text-primary bg-primary/10' : 'hover:bg-muted'}`}
                                 >
                                     {lang.name}
                                 </button>
