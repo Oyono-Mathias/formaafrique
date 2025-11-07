@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Lightbulb, Rocket, Award, Users, Languages, Star, Globe, TrendingUp, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Lightbulb, Rocket, Award, Users, Languages, Star, Globe, TrendingUp, Loader2, CheckCircle, AlertCircle, ListPlus, Send, Video, ShieldCheckIcon } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useLanguage } from '@/contexts/language-context';
 import { useUser, useFirestore, useCollection } from '@/firebase';
@@ -166,45 +166,53 @@ export default function BecomeInstructorPage() {
                     </div>
                 </div>
             </section>
-
-            {/* Reasons to start */}
+            
+            {/* How it works */}
             <section className="py-16 sm:py-24">
                 <div className="container px-4">
                     <div className="text-center max-w-3xl mx-auto">
-                        <h2 className="text-3xl font-bold font-headline">{t('instructor_reasons_title')}</h2>
+                        <h2 className="text-3xl font-bold font-headline">Comment ça marche ?</h2>
+                        <p className="mt-4 text-lg text-muted-foreground">
+                           Un processus simple et direct pour partager votre passion.
+                        </p>
                     </div>
-                    <div className="mt-12 grid md:grid-cols-3 gap-8 text-center">
-                        <div className="flex flex-col items-center">
-                            <div className="p-4 bg-primary/10 rounded-full mb-4">
-                                <Lightbulb className="w-10 h-10 text-primary" />
+                    <div className="mt-16 grid grid-cols-1 gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="flex flex-col items-center text-center">
+                            <div className="relative mb-4">
+                                <div className="p-4 bg-primary/10 rounded-full"><Users className="w-10 h-10 text-primary"/></div>
+                                <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center font-bold text-lg">1</div>
                             </div>
-                            <h3 className="text-xl font-bold">{t('instructor_reasons1_title')}</h3>
-                            <p className="mt-2 text-muted-foreground">
-                                {t('instructor_reasons1_text')}
-                            </p>
+                            <h3 className="text-xl font-bold mt-2">Créez votre compte</h3>
+                            <p className="mt-2 text-muted-foreground">Inscrivez-vous sur la plateforme. Si vous avez déjà un compte étudiant, vous pouvez l'utiliser.</p>
                         </div>
-                        <div className="flex flex-col items-center">
-                             <div className="p-4 bg-primary/10 rounded-full mb-4">
-                                <Rocket className="w-10 h-10 text-primary" />
+                        <div className="flex flex-col items-center text-center">
+                             <div className="relative mb-4">
+                                <div className="p-4 bg-primary/10 rounded-full"><ListPlus className="w-10 h-10 text-primary"/></div>
+                                <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center font-bold text-lg">2</div>
                             </div>
-                            <h3 className="text-xl font-bold">{t('instructor_reasons2_title')}</h3>
-                            <p className="mt-2 text-muted-foreground">
-                                {t('instructor_reasons2_text')}
-                            </p>
+                            <h3 className="text-xl font-bold mt-2">Préparez votre cours</h3>
+                            <p className="mt-2 text-muted-foreground">Définissez votre plan de cours et enregistrez vos vidéos. Nous vous aidons avec des ressources et une communauté de soutien.</p>
                         </div>
-                        <div className="flex flex-col items-center">
-                             <div className="p-4 bg-primary/10 rounded-full mb-4">
-                                <Award className="w-10 h-10 text-primary" />
+                        <div className="flex flex-col items-center text-center">
+                            <div className="relative mb-4">
+                                <div className="p-4 bg-primary/10 rounded-full"><Send className="w-10 h-10 text-primary"/></div>
+                                <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center font-bold text-lg">3</div>
                             </div>
-                            <h3 className="text-xl font-bold">{t('instructor_reasons3_title')}</h3>
-                            <p className="mt-2 text-muted-foreground">
-                                {t('instructor_reasons3_text')}
-                            </p>
+                            <h3 className="text-xl font-bold mt-2">Soumettez votre demande</h3>
+                            <p className="mt-2 text-muted-foreground">Remplissez votre profil et envoyez votre demande pour devenir formateur via cette page.</p>
+                        </div>
+                        <div className="flex flex-col items-center text-center">
+                             <div className="relative mb-4">
+                                <div className="p-4 bg-primary/10 rounded-full"><ShieldCheckIcon className="w-10 h-10 text-primary"/></div>
+                                <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center font-bold text-lg">4</div>
+                            </div>
+                            <h3 className="text-xl font-bold mt-2">Validation & Publication</h3>
+                            <p className="mt-2 text-muted-foreground">Une fois votre demande approuvée, vous pourrez créer et soumettre vos cours pour validation par notre équipe.</p>
                         </div>
                     </div>
                 </div>
             </section>
-            
+
              {/* Stats Section */}
             <section className="bg-primary text-primary-foreground py-16">
                 <div className="container px-4">
