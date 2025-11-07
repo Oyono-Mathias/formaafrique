@@ -38,7 +38,7 @@ export default function ModulePage({ params }: ModulePageProps) {
 
   // Fetch videos for all modules once
   useEffect(() => {
-    if (!modulesData || modulesData.length === 0) {
+    if (!modulesData || modulesData.length === 0 || !courseId) {
       setVideosLoading(false);
       return;
     }
@@ -49,12 +49,20 @@ export default function ModulePage({ params }: ModulePageProps) {
       for (const module of modulesData) {
         if (module.id) {
           const videosCollection = `courses/${courseId}/modules/${module.id}/videos`;
-          // This is a simplified fetch. In a real app, you'd use useCollection or a similar hook.
-          // For now, we'll do a one-time fetch for simplicity of this refactor.
-          const response = await fetch(`/api/get-collection?path=${encodeURIComponent(videosCollection)}&filters[0][field]=publie&filters[0][op]=%3D%3D&filters[0][value]=true`);
-          if (response.ok) {
-            const videos = (await response.json()) as Video[];
-            allVideos[module.id] = videos.sort((a,b) => a.ordre - b.ordre);
+          
+          try {
+             // We can't use useCollection in a loop, so we fetch manually.
+            const response = await fetch(`/api/get-collection?path=${encodeURIComponent(videosCollection)}`);
+             if (response.ok) {
+                const videos = (await response.json()) as Video[];
+                // Filter for published videos and sort them
+                allVideos[module.id] = videos.filter(v => v.publie).sort((a, b) => a.ordre - b.ordre);
+            } else {
+                allVideos[module.id] = [];
+            }
+          } catch(e) {
+            console.error("Failed to fetch videos for module:", module.id, e);
+            allVideos[module.id] = [];
           }
         }
       }
