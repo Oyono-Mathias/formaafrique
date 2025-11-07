@@ -78,6 +78,22 @@
             }
         }
     },
+    "Category": {
+        "title": "Category",
+        "description": "Represents a course category.",
+        "type": "object",
+        "properties": {
+            "name": {
+                "type": "string",
+                "description": "The name of the category."
+            },
+            "description": {
+                "type": "string",
+                "description": "A short description of the category."
+            }
+        },
+        "required": ["name", "description"]
+    },
     "Course": {
       "title": "Course",
       "description": "Represents a course on the platform.",
@@ -300,6 +316,10 @@
     "/instructors/{instructorId}": {
         "schema": { "$ref": "#/entities/InstructorProfile" },
         "description": "Stores public profile information for each instructor."
+    },
+    "/categories/{categoryId}": {
+        "schema": { "$ref": "#/entities/Category" },
+        "description": "Stores all course categories."
     },
     "/courses/{courseId}": {
       "schema": {

@@ -13,6 +13,7 @@ import {
   Loader2,
   Menu,
   ShieldCheck,
+  Tag,
 } from 'lucide-react';
 import { Logo } from '@/components/icons/logo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -27,6 +28,7 @@ import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 const adminNavLinks = [
   { href: '/admin', label: 'Tableau de bord', icon: LayoutDashboard },
   { href: '/admin/courses', label: 'Formations', icon: BookCopy },
+  { href: '/admin/categories', label: 'Catégories', icon: Tag },
   { href: '/admin/validation', label: 'Validation', icon: ShieldCheck },
   { href: '/admin/users', label: 'Utilisateurs', icon: Users },
   { href: '/admin/donations', label: 'Transactions', icon: CreditCard },

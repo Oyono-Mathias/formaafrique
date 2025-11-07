@@ -1,14 +1,10 @@
 import type { Timestamp } from 'firebase/firestore';
 
-export type Category = 
-  | 'Entrepreneuriat & Commerce'
-  | 'Compétences numériques'
-  | 'Agriculture & Agro-industrie'
-  | 'Métiers manuels & Artisanat'
-  | 'Éducation & Renforcement des capacités'
-  | 'Santé & Bien-être'
-  | 'Langues & Communication'
-  | 'Finances & Inclusion économique';
+export interface Category {
+  id?: string;
+  name: string;
+  description: string;
+}
 
 export interface Video {
   id?: string;
@@ -29,7 +25,7 @@ export interface Course {
   id?: string; // Firestore ID will be added by the hook
   slug: string;
   titre: string;
-  categorie: Category;
+  categorie: string; // Now a string, not a type
   description: string;
   image: string; // maps to imageId in placeholder-images
   niveau: 'Débutant' | 'Intermédiaire' | 'Avancé';
