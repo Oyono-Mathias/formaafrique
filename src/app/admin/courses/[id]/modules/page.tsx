@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, use } from 'react';
 import Link from 'next/link';
 import { useRouter, notFound } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -82,7 +82,7 @@ export default function AdminManageModulesPage({
 }: {
   params: { id: string };
 }) {
-  const courseId = params?.id;
+  const { id: courseId } = use(params);
   
   const { data: course, loading: courseLoading } = useDoc<Course>(
     'courses',
@@ -605,3 +605,5 @@ function ModuleVideos({
     </div>
   );
 }
+
+    

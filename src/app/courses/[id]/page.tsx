@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { CheckCircle, Clock, BarChart, Users, PlayCircle, Loader2 } from 'lucide-react';
+import { use } from 'react';
 
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Button } from '@/components/ui/button';
@@ -22,8 +23,10 @@ type CoursePageProps = {
 };
 
 export default function CourseDetailPage({ params }: CoursePageProps) {
-  const { data: course, loading, error } = useDoc<Course>('courses', params.id);
-  const { data: modulesData, loading: modulesLoading } = useCollection<Module>(`courses/${params.id}/modules`);
+  const { id: courseId } = use(params);
+
+  const { data: course, loading, error } = useDoc<Course>('courses', courseId);
+  const { data: modulesData, loading: modulesLoading } = useCollection<Module>(courseId ? `courses/${courseId}/modules` : null);
 
   const modules = modulesData || [];
   
@@ -43,7 +46,7 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
     );
   }
   
-  if (error || !course) {
+  if (error || !courseId || !course) {
     notFound();
   }
 
@@ -191,4 +194,5 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
     </div>
   );
 }
+
     

@@ -89,7 +89,7 @@ export default function ManageModulesPage({
 }: {
   params: { id: string };
 }) {
-  const courseId = params?.id;
+  const { id: courseId } = use(params);
   
   const { data: course, loading: courseLoading } = useDoc<Course>(
     'courses',
@@ -673,3 +673,5 @@ function ModuleVideos({
     </div>
   );
 }
+
+    

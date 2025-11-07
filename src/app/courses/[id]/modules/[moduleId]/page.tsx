@@ -3,6 +3,7 @@
 import { notFound, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { PlayCircle, CheckCircle, Lock, Loader2, ArrowLeft } from 'lucide-react';
+import { use } from 'react';
 
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -22,8 +23,7 @@ type ModulePageProps = {
 };
 
 export default function ModulePage({ params }: ModulePageProps) {
-  const courseId = params?.id;
-  const moduleId = params?.moduleId;
+  const { id: courseId, moduleId } = use(params);
 
   const { data: course, loading: courseLoading } = useDoc<Course>(
     courseId ? 'courses' : null,
@@ -35,7 +35,7 @@ export default function ModulePage({ params }: ModulePageProps) {
   
   // Fetch videos for the current module, only if IDs are available
   const { data: videosData, loading: videosLoading } = useCollection<Video>(
-    courseId && moduleId ? `courses/${courseId}/modules/${moduleId}`: null,
+    courseId && moduleId ? `courses/${courseId}/modules/${moduleId}/videos`: null,
     { where: ['publie', '==', true] }
   );
 
@@ -205,3 +205,5 @@ export default function ModulePage({ params }: ModulePageProps) {
     </div>
   );
 }
+
+    

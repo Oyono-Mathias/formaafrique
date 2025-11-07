@@ -3,6 +3,7 @@
 import { notFound, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { PlayCircle, CheckCircle, Lock, Loader2, ArrowLeft } from 'lucide-react';
+import { use } from 'react';
 
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -21,8 +22,10 @@ type ApercuPageProps = {
 };
 
 export default function ApercuPage({ params }: ApercuPageProps) {
-  const { data: course, loading: courseLoading } = useDoc<Course>('courses', params.id);
-  const { data: modulesData, loading: modulesLoading } = useCollection<Module>(`courses/${params.id}/modules`);
+  const { id: courseId } = use(params);
+
+  const { data: course, loading: courseLoading } = useDoc<Course>('courses', courseId);
+  const { data: modulesData, loading: modulesLoading } = useCollection<Module>(`courses/${courseId}/modules`);
   const modules = useMemo(() => (modulesData || []).sort((a,b) => a.ordre - b.ordre), [modulesData]);
 
   const [currentModuleId, setCurrentModuleId] = useState<string | null>(null);
@@ -33,7 +36,7 @@ export default function ApercuPage({ params }: ApercuPageProps) {
     }
   }, [modules, currentModuleId]);
   
-  const { data: videosData, loading: videosLoading } = useCollection<Video>(currentModuleId ? `courses/${params.id}/modules/${currentModuleId}/videos` : null);
+  const { data: videosData, loading: videosLoading } = useCollection<Video>(currentModuleId ? `courses/${courseId}/modules/${currentModuleId}/videos` : null);
 
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   
@@ -65,7 +68,7 @@ export default function ApercuPage({ params }: ApercuPageProps) {
     );
   }
   
-  if (!course) {
+  if (!courseId || !course) {
     notFound();
   }
 
@@ -189,3 +192,5 @@ export default function ApercuPage({ params }: ApercuPageProps) {
     </div>
   );
 }
+
+    

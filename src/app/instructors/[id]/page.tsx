@@ -3,6 +3,7 @@
 import { useDoc, useCollection } from '@/firebase';
 import type { InstructorProfile, Course } from '@/lib/types';
 import { notFound } from 'next/navigation';
+import { use } from 'react';
 import { Loader2, BookOpen, Star, Users, Linkedin } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -14,16 +15,20 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useMemo } from 'react';
 
 export default function InstructorProfilePage({ params }: { params: { id: string } }) {
-    const { data: instructor, loading: instructorLoading, error: instructorError } = useDoc<InstructorProfile>('instructors', params.id);
+    const { id: instructorId } = use(params);
+    
+    const { data: instructor, loading: instructorLoading, error: instructorError } = useDoc<InstructorProfile>('instructors', instructorId);
     const { data: coursesData, loading: coursesLoading, error: coursesError } = useCollection<Course>(
         'courses',
-        { where: ['instructorId', '==', params.id] }
+        instructorId ? { where: ['instructorId', '==', instructorId] } : undefined
     );
     const courses = coursesData || [];
 
     const publishedCourses = useMemo(() => courses.filter(c => c.publie), [courses]);
+    
+    const loading = instructorLoading || coursesLoading;
 
-    if (instructorLoading || coursesLoading) {
+    if (loading) {
         return (
             <div className="flex h-screen w-full items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin" />
@@ -32,7 +37,7 @@ export default function InstructorProfilePage({ params }: { params: { id: string
         );
     }
 
-    if (!instructor) {
+    if (!instructorId || !instructor) {
         notFound();
     }
 
@@ -77,7 +82,6 @@ export default function InstructorProfilePage({ params }: { params: { id: string
                             Formations proposées par {instructor.name}
                         </h2>
                         
-                        {coursesLoading && <div className="flex justify-center items-center h-40"><Loader2 className="animate-spin h-8 w-8" /></div>}
                         {coursesError && <p className="text-destructive">Impossible de charger les formations.</p>}
 
                         {!coursesLoading && publishedCourses.length > 0 ? (
@@ -127,4 +131,5 @@ export default function InstructorProfilePage({ params }: { params: { id: string
         </div>
     );
 }
+
     
