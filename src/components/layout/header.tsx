@@ -15,6 +15,7 @@ const navLinks = [
   { href: '/', label: 'Accueil' },
   { href: '/courses', label: 'Formations' },
   { href: '/instructors', label: 'Nos Formateurs' },
+  { href: '/community', label: 'Communauté' },
   { href: '/about', label: 'À propos' },
   { href: '/contact', label: 'Contact' },
   { href: '/donate', label: 'Faire un don' },
