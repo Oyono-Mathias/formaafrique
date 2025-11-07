@@ -1,9 +1,32 @@
+'use client';
+
 import Link from 'next/link';
 import { Globe } from 'lucide-react';
 import { Logo } from '@/components/icons/logo';
 import { Button } from '../ui/button';
+import { useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+
+const languages = [
+    { code: 'en', name: 'English' },
+    { code: 'es', name: 'Español' },
+    { code: 'fr', name: 'Français' },
+    { code: 'de', name: 'Deutsch' },
+    { code: 'pt', name: 'Português' },
+    { code: 'ja', name: '日本語' },
+    { code: 'ko', name: '한국어' },
+];
+
 
 export default function Footer() {
+  const [isLangDialogOpen, setIsLangDialogOpen] = useState(false);
+  const [currentLang] = useState('fr');
 
   const footerLinkGroups = [
     {
@@ -54,10 +77,28 @@ export default function Footer() {
             </div>
           ))}
           <div className="col-span-2 md:col-span-4 lg:col-span-1 lg:place-self-end">
-             <Button variant="outline" className="bg-transparent border-white text-white hover:bg-white/10 hover:text-white w-full lg:w-auto">
-                <Globe className="mr-2 h-4 w-4" />
-                Français
-             </Button>
+            <Dialog open={isLangDialogOpen} onOpenChange={setIsLangDialogOpen}>
+                <DialogTrigger asChild>
+                    <Button variant="outline" className="bg-transparent border-white text-white hover:bg-white/10 hover:text-white w-full lg:w-auto">
+                        <Globe className="mr-2 h-4 w-4" />
+                        Français
+                    </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px] bg-white text-black">
+                    <DialogHeader>
+                        <DialogTitle>LANGUES</DialogTitle>
+                    </DialogHeader>
+                    <ul className="space-y-1 py-4">
+                        {languages.map(lang => (
+                            <li key={lang.code}>
+                                <button className={`w-full text-left p-3 rounded-md text-lg ${currentLang === lang.code ? 'font-bold text-primary bg-primary/10' : 'hover:bg-muted'}`}>
+                                    {lang.name}
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                </DialogContent>
+            </Dialog>
           </div>
         </div>
         <div className="mt-12 border-t border-gray-700 pt-8 flex flex-col sm:flex-row justify-between items-center">
