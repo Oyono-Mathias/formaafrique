@@ -13,6 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useState } from 'react';
 import EditProfileDialog from '@/components/dashboard/edit-profile-dialog';
+import { cn } from '@/lib/utils';
 
 const SettingsItem = ({ icon: Icon, title, description, action, onClick }: { icon: React.ElementType, title: string, description: string, action?: React.ReactNode, onClick?: () => void }) => (
     <div onClick={onClick} className={cn("flex items-center justify-between py-3", onClick && "cursor-pointer")}>
