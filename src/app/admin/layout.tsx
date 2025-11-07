@@ -16,6 +16,7 @@ import {
   Tag,
   Activity,
   Bell,
+  Wrench,
 } from 'lucide-react';
 import { Logo } from '@/components/icons/logo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -49,7 +50,8 @@ const adminNavLinks = [
 
 function NavLink({ href, icon: Icon, label }: { href: string, icon: React.ElementType, label: string }) {
   const pathname = usePathname();
-  const isActive = pathname === href;
+  const isActive = pathname.startsWith(href) && (pathname === href || href !== '/admin');
+
   return (
     <Link
       href={href}

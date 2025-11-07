@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { useCollection, useFirestore } from '@/firebase';
 import type { Course } from '@/lib/types';
-import { Loader2, PlusCircle, Search, Trash2, Edit, MoreVertical, BookCopy, Tag, DollarSign, Eye } from 'lucide-react';
+import { Loader2, PlusCircle, Search, Trash2, Edit, MoreVertical, BookCopy, Tag, DollarSign, Eye, Wrench } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -45,6 +45,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import CourseDialog from './course-dialog';
+import { useRouter } from 'next/navigation';
 
 export default function AdminCoursesPage() {
   const { data: coursesData, loading, error } = useCollection<Course>('courses');
@@ -56,6 +57,7 @@ export default function AdminCoursesPage() {
 
   const db = useFirestore();
   const { toast } = useToast();
+  const router = useRouter();
 
   const filteredCourses = useMemo(() => {
     return courses.filter(course =>
@@ -82,6 +84,11 @@ export default function AdminCoursesPage() {
     setSelectedCourse(null);
     setIsDialogOpen(true);
   };
+  
+  const handleManageModules = (courseId: string | undefined) => {
+    if (!courseId) return;
+    router.push(`/admin/courses/${courseId}/modules`);
+  }
 
   const handleDelete = async () => {
     if (!courseToDelete || !db) return;
@@ -232,6 +239,10 @@ export default function AdminCoursesPage() {
                               <DropdownMenuItem onSelect={() => handleEdit(course)}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 Modifier
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => handleManageModules(course.id)}>
+                                <Wrench className="mr-2 h-4 w-4" />
+                                Gérer les modules
                               </DropdownMenuItem>
                               <DropdownMenuItem asChild>
                                 <Link href={`/courses/${course.id}`} target="_blank" rel="noopener noreferrer">
