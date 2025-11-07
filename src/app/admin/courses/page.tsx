@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useCollection, useFirestore } from '@/firebase';
-import type { Course } from '@/lib/types';
+import type { Course, UserProfile } from '@/lib/types';
 import { Loader2, PlusCircle, Search, Trash2, Edit, MoreVertical, BookCopy, Tag, DollarSign, Eye, Wrench } from 'lucide-react';
 import {
   Card,
@@ -46,10 +46,15 @@ import Link from 'next/link';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import CourseDialog from './course-dialog';
 import { useRouter } from 'next/navigation';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function AdminCoursesPage() {
-  const { data: coursesData, loading, error } = useCollection<Course>('courses');
+  const { data: coursesData, loading: coursesLoading, error: coursesError } = useCollection<Course>('courses');
+  const { data: usersData, loading: usersLoading, error: usersError } = useCollection<UserProfile>('users');
+  
   const courses = coursesData || [];
+  const users = usersData || [];
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -59,21 +64,23 @@ export default function AdminCoursesPage() {
   const { toast } = useToast();
   const router = useRouter();
 
-  const filteredCourses = useMemo(() => {
-    return courses.filter(course =>
+  const { formateurCourses, adminCourses, totalCourses, uniqueCategories, totalRevenue } = useMemo(() => {
+    const formateurIds = new Set(users.filter(u => u.role === 'formateur').map(u => u.id));
+    
+    const allCourses = courses.filter(course =>
       course.titre.toLowerCase().includes(searchTerm.toLowerCase()) ||
       course.auteur.toLowerCase().includes(searchTerm.toLowerCase()) ||
       course.categorie.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [courses, searchTerm]);
 
-  const { totalCourses, uniqueCategories, totalRevenue } = useMemo(() => {
     return {
+      formateurCourses: allCourses.filter(c => formateurIds.has(c.instructorId)),
+      adminCourses: allCourses.filter(c => !formateurIds.has(c.instructorId)),
       totalCourses: courses.length,
       uniqueCategories: new Set(courses.map(c => c.categorie)).size,
       totalRevenue: courses.reduce((sum, course) => sum + (course.prix > 0 ? 5 * course.prix : 0), 0) // Mock: 5 inscriptions par cours payant
     };
-  }, [courses]);
+  }, [courses, users, searchTerm]);
 
   const handleEdit = (course: Course) => {
     setSelectedCourse(course);
@@ -109,6 +116,96 @@ export default function AdminCoursesPage() {
       setCourseToDelete(null);
     }
   };
+  
+  const loading = coursesLoading || usersLoading;
+  const error = coursesError || usersError;
+
+  const renderCoursesTable = (coursesToList: Course[]) => (
+     <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className='w-[350px]'>Titre</TableHead>
+              <TableHead>Auteur</TableHead>
+              <TableHead className="hidden sm:table-cell">Catégorie</TableHead>
+              <TableHead className="text-right">Prix</TableHead>
+              <TableHead className="hidden md:table-cell text-center">Statut</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {coursesToList.length > 0 ? coursesToList.map((course) => {
+              const courseImage = PlaceHolderImages.find((img) => img.id === course.image);
+              return (
+                <TableRow key={course.id}>
+                  <TableCell>
+                      <div className="flex items-center gap-3">
+                        {courseImage && (
+                          <Image
+                              src={courseImage.imageUrl}
+                              alt={course.titre}
+                              width={80}
+                              height={45}
+                              className="rounded-md object-cover aspect-video"
+                          />
+                        )}
+                        <span className='font-medium'>{course.titre}</span>
+                      </div>
+                  </TableCell>
+                  <TableCell>{course.auteur}</TableCell>
+                  <TableCell className="hidden sm:table-cell">{course.categorie}</TableCell>
+                  <TableCell className="text-right font-mono">{course.prix === 0 ? 'Gratuit' : `${course.prix} XAF`}</TableCell>
+                  <TableCell className="hidden md:table-cell text-center">
+                      <Badge variant={course.publie ? 'default' : 'secondary'}>
+                          {course.publie ? 'Publié' : 'Brouillon'}
+                      </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onSelect={() => handleEdit(course)}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          Modifier
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleManageModules(course.id)}>
+                          <Wrench className="mr-2 h-4 w-4" />
+                          Gérer les modules
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href={`/courses/${course.id}`} target="_blank" rel="noopener noreferrer">
+                              <Eye className="mr-2 h-4 w-4" />
+                              Voir la page
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                          onSelect={() => setCourseToDelete(course)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Supprimer
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              );
+            }) : (
+              <TableRow>
+                <TableCell colSpan={6} className="h-24 text-center">
+                  Aucune formation ne correspond à votre recherche.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+  );
 
   return (
     <div className="space-y-8">
@@ -189,90 +286,18 @@ export default function AdminCoursesPage() {
               ❌ Erreur de chargement des formations.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className='w-[350px]'>Titre</TableHead>
-                    <TableHead>Auteur</TableHead>
-                    <TableHead className="hidden sm:table-cell">Catégorie</TableHead>
-                    <TableHead className="text-right">Prix</TableHead>
-                    <TableHead className="hidden md:table-cell text-center">Statut</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredCourses.length > 0 ? filteredCourses.map((course) => {
-                    const courseImage = PlaceHolderImages.find((img) => img.id === course.image);
-                    return (
-                      <TableRow key={course.id}>
-                        <TableCell>
-                           <div className="flex items-center gap-3">
-                              {courseImage && (
-                                <Image
-                                    src={courseImage.imageUrl}
-                                    alt={course.titre}
-                                    width={80}
-                                    height={45}
-                                    className="rounded-md object-cover aspect-video"
-                                />
-                              )}
-                              <span className='font-medium'>{course.titre}</span>
-                           </div>
-                        </TableCell>
-                        <TableCell>{course.auteur}</TableCell>
-                        <TableCell className="hidden sm:table-cell">{course.categorie}</TableCell>
-                        <TableCell className="text-right font-mono">{course.prix === 0 ? 'Gratuit' : `${course.prix} XAF`}</TableCell>
-                        <TableCell className="hidden md:table-cell text-center">
-                            <Badge variant={course.publie ? 'default' : 'secondary'}>
-                                {course.publie ? 'Publié' : 'Brouillon'}
-                            </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onSelect={() => handleEdit(course)}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Modifier
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onSelect={() => handleManageModules(course.id)}>
-                                <Wrench className="mr-2 h-4 w-4" />
-                                Gérer les modules
-                              </DropdownMenuItem>
-                              <DropdownMenuItem asChild>
-                                <Link href={`/courses/${course.id}`} target="_blank" rel="noopener noreferrer">
-                                    <Eye className="mr-2 h-4 w-4" />
-                                    Voir la page
-                                </Link>
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                className="text-destructive focus:text-destructive focus:bg-destructive/10"
-                                onSelect={() => setCourseToDelete(course)}
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Supprimer
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  }) : (
-                    <TableRow>
-                      <TableCell colSpan={6} className="h-24 text-center">
-                        Aucune formation ne correspond à votre recherche.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+            <Tabs defaultValue="formateurs" className="w-full">
+              <TabsList>
+                <TabsTrigger value="formateurs">Soumissions des Formateurs</TabsTrigger>
+                <TabsTrigger value="admin">Formations de l'Admin</TabsTrigger>
+              </TabsList>
+              <TabsContent value="formateurs" className="mt-4">
+                {renderCoursesTable(formateurCourses)}
+              </TabsContent>
+              <TabsContent value="admin" className="mt-4">
+                {renderCoursesTable(adminCourses)}
+              </TabsContent>
+            </Tabs>
           )}
         </CardContent>
       </Card>
