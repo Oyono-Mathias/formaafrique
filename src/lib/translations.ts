@@ -1,4 +1,5 @@
 
+
 // Dictionnaires de traduction
 
 type Translation = {
@@ -509,9 +510,9 @@ const ko: Translation = {
     'instructor_cta_button': '시작하기',
 };
 
+const sg: Translation = fr;
 
-export const translations = { fr, en, es, de, pt, ja, ko };
+
+export const translations = { fr, en, es, de, pt, ja, ko, sg };
 
 export type TranslationKey = keyof typeof fr;
-
-    

@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { translations, TranslationKey } from '@/lib/translations';
 
 // Élargir le type pour inclure toutes les langues supportées
-type Language = 'fr' | 'en' | 'es' | 'de' | 'pt' | 'ja' | 'ko';
+type Language = 'fr' | 'en' | 'es' | 'de' | 'pt' | 'ja' | 'ko' | 'sg';
 
 interface LanguageContextType {
   language: Language;
@@ -23,6 +23,7 @@ const supportedLanguages: { code: Language; name: string }[] = [
     { code: 'pt', name: 'Português' },
     { code: 'ja', name: '日本語' },
     { code: 'ko', name: '한국어' },
+    { code: 'sg', name: 'Sango' },
 ];
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
