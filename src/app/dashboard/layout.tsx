@@ -1,18 +1,21 @@
+
 'use client';
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import {
-  Home,
+  Star,
+  Search as SearchIcon,
+  Play,
+  Heart,
+  User as UserIcon,
   BookCopy,
   GraduationCap,
-  User as UserIcon,
-  Settings,
   LogOut,
   Menu,
   Bell,
-  Search,
+  Settings,
   Loader2,
 } from 'lucide-react';
 import { Logo } from '@/components/icons/logo';
@@ -33,12 +36,20 @@ import {
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { useToast } from '@/hooks/use-toast';
 
-const dashboardNavLinks = [
-  { href: '/dashboard', label: 'Accueil', icon: Home },
-  { href: '/dashboard/courses', label: 'Mes Formations', icon: BookCopy },
-  { href: '/dashboard/certificates', label: 'Certificats', icon: GraduationCap },
-  { href: '/dashboard/profile', label: 'Profil', icon: UserIcon },
-  { href: '/dashboard/settings', label: 'Paramètres', icon: Settings },
+const mainNavLinks = [
+  { href: '/dashboard', label: 'Sélection', icon: Star },
+  { href: '/search', label: 'Rechercher', icon: SearchIcon },
+  { href: '/dashboard/courses', label: 'Mon apprentissage', icon: Play },
+  { href: '/dashboard/wishlist', label: 'Liste de souhaits', icon: Heart },
+  { href: '/dashboard/profile', label: 'Compte', icon: UserIcon },
+];
+
+const desktopNavLinks = [
+    { href: '/dashboard', label: 'Accueil', icon: Star },
+    { href: '/dashboard/courses', label: 'Mes Formations', icon: BookCopy },
+    { href: '/dashboard/certificates', label: 'Certificats', icon: GraduationCap },
+    { href: '/dashboard/profile', label: 'Profil', icon: UserIcon },
+    { href: '/dashboard/settings', label: 'Paramètres', icon: Settings },
 ];
 
 function NavLink({
@@ -55,6 +66,21 @@ function NavLink({
   const pathname = usePathname();
   const isActive = pathname === href;
 
+  if (isMobile) {
+    return (
+         <Link
+            href={href}
+            className={cn(
+                'flex flex-col items-center justify-center h-14 w-full transition-colors',
+                isActive ? 'text-primary' : 'text-muted-foreground hover:text-primary'
+            )}
+            >
+            <Icon className="h-6 w-6" />
+            <span className="text-xs font-medium">{label}</span>
+        </Link>
+    )
+  }
+
   return (
     <Link
       href={href}
@@ -63,7 +89,6 @@ function NavLink({
         isActive
           ? 'bg-primary text-primary-foreground'
           : 'text-foreground/70 hover:bg-muted hover:text-foreground',
-        isMobile ? 'text-lg' : 'text-sm'
       )}
     >
       <Icon className="h-5 w-5" />
@@ -90,7 +115,7 @@ function SidebarContent() {
         </Link>
       </div>
       <nav className="flex-1 space-y-2 p-4">
-        {dashboardNavLinks.map((link) => (
+        {desktopNavLinks.map((link) => (
           <NavLink key={link.href} {...link} />
         ))}
       </nav>
@@ -163,37 +188,20 @@ export default function DashboardLayout({
 
 
   return (
-    <div className="min-h-screen w-full bg-background flex">
+    <div className="min-h-screen w-full bg-background flex flex-col lg:flex-row">
       {/* Desktop Sidebar */}
       <aside className="hidden lg:block w-64 flex-shrink-0 border-r bg-card">
         <SidebarContent />
       </aside>
 
-      <div className="flex flex-col flex-1">
+      <div className="flex flex-col flex-1 overflow-hidden">
         {/* Header */}
-        <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-card px-4 lg:px-8">
-          {/* Mobile Menu Trigger */}
-          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-            <SheetTrigger asChild className="lg:hidden">
-              <Button variant="ghost" size="icon">
-                <Menu className="h-6 w-6" />
-                <span className="sr-only">Ouvrir le menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-64 p-0">
-              <VisuallyHidden>
-                <SheetTitle>Menu principal</SheetTitle>
-              </VisuallyHidden>
-              <SidebarContent />
-            </SheetContent>
-          </Sheet>
-
-          {/* Spacer for mobile to center the logo or title if any */}
-          <div className="lg:hidden flex-1"></div>
-
-          <div className="flex items-center gap-4 ml-auto">
-            <Button variant="ghost" size="icon" className="hidden sm:inline-flex">
-              <Search className="h-5 w-5" />
+        <header className="sticky top-0 z-10 hidden lg:flex h-16 items-center justify-between border-b bg-card px-4 lg:px-8">
+           {/* Header content for desktop, e.g. a global search bar or title */}
+           <div className="flex-1"></div>
+           <div className="flex items-center gap-4 ml-auto">
+             <Button variant="ghost" size="icon">
+              <SearchIcon className="h-5 w-5" />
               <span className="sr-only">Rechercher</span>
             </Button>
             <Button variant="ghost" size="icon">
@@ -238,8 +246,23 @@ export default function DashboardLayout({
             </DropdownMenu>
           </div>
         </header>
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 animate-fade-in">{children}</main>
+
+        {/* Main Content */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto animate-fade-in">
+            <div className="pb-16 lg:pb-0">
+                {children}
+            </div>
+        </main>
       </div>
+
+       {/* Mobile Bottom Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 lg:hidden bg-card border-t z-20">
+          <div className="flex justify-around">
+            {mainNavLinks.map(link => (
+                <NavLink key={link.href} {...link} isMobile={true}/>
+            ))}
+          </div>
+      </nav>
     </div>
   );
 }

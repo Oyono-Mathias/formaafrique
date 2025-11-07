@@ -42,9 +42,14 @@ export default function FormateurStudentsPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!db || coursesLoading || !user) return;
+    if (!db || !user) {
+        setLoading(false);
+        return;
+    }
+    // Wait for courses to be loaded before fetching enrollments
+    if (coursesLoading) return;
 
-    if (coursesData.length === 0) {
+    if (!coursesData || coursesData.length === 0) {
         setLoading(false);
         setEnrollments([]);
         return;
@@ -129,7 +134,7 @@ export default function FormateurStudentsPage() {
 
   const getStatus = (enrollment: Enrollment) => {
       if(enrollment.progression === 100) return "Terminé";
-      return enrollment.statut || "En cours";
+      return "En cours";
   }
 
   const getStatusVariant = (enrollment: Enrollment) => {

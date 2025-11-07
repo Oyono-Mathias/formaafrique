@@ -1,3 +1,4 @@
+
 import type { Timestamp } from 'firebase/firestore';
 
 export interface Category {
@@ -42,6 +43,7 @@ export interface Course {
 
 
 export interface UserProfile {
+  id?: string;
   name: string;
   email: string;
   createdAt: Timestamp;
@@ -67,7 +69,6 @@ export interface Enrollment {
     courseTitle: string;
     enrollmentDate: Timestamp | Date;
     progression?: number;
-    statut?: 'En cours' | 'Terminé';
 }
 
 
