@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -7,9 +6,6 @@ import React, { useEffect, useState } from 'react';
 import {
   Star,
   Search as SearchIcon,
-  Play,
-  Heart,
-  User as UserIcon,
   BookCopy,
   GraduationCap,
   LogOut,
@@ -17,6 +13,7 @@ import {
   Bell,
   Settings,
   Loader2,
+  Heart,
 } from 'lucide-react';
 import { Logo } from '@/components/icons/logo';
 import { Button } from '@/components/ui/button';
@@ -36,17 +33,11 @@ import {
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { useToast } from '@/hooks/use-toast';
 
-const mainNavLinks = [
-  { href: '/dashboard', label: 'Sélection', icon: Star },
-  { href: '/search', label: 'Rechercher', icon: SearchIcon },
-  { href: '/dashboard/courses', label: 'Mon apprentissage', icon: Play },
-  { href: '/dashboard/wishlist', label: 'Liste de souhaits', icon: Heart },
-  { href: '/dashboard/settings', label: 'Compte', icon: UserIcon },
-];
-
-const desktopNavLinks = [
+const navLinks = [
     { href: '/dashboard', label: 'Accueil', icon: Star },
     { href: '/dashboard/courses', label: 'Mes Formations', icon: BookCopy },
+    { href: '/search', label: 'Recherche', icon: SearchIcon },
+    { href: '/dashboard/wishlist', label: 'Liste de souhaits', icon: Heart },
     { href: '/dashboard/certificates', label: 'Certificats', icon: GraduationCap },
     { href: '/dashboard/settings', label: 'Paramètres', icon: Settings },
 ];
@@ -70,11 +61,11 @@ function NavLink({
          <Link
             href={href}
             className={cn(
-                'flex flex-col items-center justify-center h-14 w-full transition-colors',
+                'flex flex-col items-center justify-center h-16 w-full transition-colors',
                 isActive ? 'text-primary' : 'text-muted-foreground hover:text-primary'
             )}
             >
-            <Icon className="h-6 w-6" />
+            <Icon className="h-6 w-6 mb-1" />
             <span className="text-xs font-medium">{label}</span>
         </Link>
     )
@@ -114,7 +105,7 @@ function SidebarContent() {
         </Link>
       </div>
       <nav className="flex-1 space-y-2 p-4">
-        {desktopNavLinks.map((link) => (
+        {navLinks.map((link) => (
           <NavLink key={link.href} {...link} />
         ))}
       </nav>
@@ -199,9 +190,11 @@ export default function DashboardLayout({
            {/* Header content for desktop, e.g. a global search bar or title */}
            <div className="flex-1"></div>
            <div className="flex items-center gap-4 ml-auto">
-             <Button variant="ghost" size="icon">
-              <SearchIcon className="h-5 w-5" />
-              <span className="sr-only">Rechercher</span>
+            <Button variant="ghost" size="icon" asChild>
+              <Link href="/search">
+                <SearchIcon className="h-5 w-5" />
+                <span className="sr-only">Rechercher</span>
+              </Link>
             </Button>
             <Button variant="ghost" size="icon">
               <Bell className="h-5 w-5" />
@@ -221,12 +214,6 @@ export default function DashboardLayout({
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>Mon Compte</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard/settings">
-                    <UserIcon className="mr-2 h-4 w-4" />
-                    <span>Profil</span>
-                  </Link>
-                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/dashboard/settings">
                     <Settings className="mr-2 h-4 w-4" />
@@ -257,7 +244,7 @@ export default function DashboardLayout({
        {/* Mobile Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 lg:hidden bg-card border-t z-20">
           <div className="flex justify-around">
-            {mainNavLinks.map(link => (
+            {navLinks.filter(l => ['/dashboard', '/dashboard/courses', '/search', '/dashboard/wishlist', '/dashboard/settings'].includes(l.href)).map(link => (
                 <NavLink key={link.href} {...link} isMobile={true}/>
             ))}
           </div>

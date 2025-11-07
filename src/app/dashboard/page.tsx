@@ -119,10 +119,10 @@ export default function DashboardPage() {
     <div className="space-y-12">
       <div>
         <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
-          Bienvenue, {user?.displayName || 'cher étudiant'} 👋
+          Accueil
         </h1>
         <p className="text-muted-foreground mt-2 text-lg">
-          Prêt à apprendre quelque chose de nouveau aujourd'hui ?
+          Bienvenue, {user?.displayName || 'cher étudiant'} ! Prêt à apprendre ?
         </p>
       </div>
 
