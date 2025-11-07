@@ -338,6 +338,37 @@
             "link": { "type": "string", "format": "uri", "description": "A direct link to the relevant resource (e.g., a course or a user profile)." }
         },
         "required": ["type", "title", "message", "createdAt", "read"]
+    },
+    "InstructorRequest": {
+      "title": "Instructor Request",
+      "description": "A student's request to become an instructor.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user making the request."
+        },
+        "userName": {
+          "type": "string",
+          "description": "The name of the user."
+        },
+        "userEmail": {
+          "type": "string",
+          "format": "email",
+          "description": "The email of the user."
+        },
+        "requestDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of the request."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "approved", "rejected"],
+          "description": "The status of the request."
+        }
+      },
+      "required": ["userId", "userName", "userEmail", "requestDate", "status"]
     }
   },
   "auth": {
@@ -395,6 +426,10 @@
     "/admin_notifications/{notificationId}": {
         "schema": { "$ref": "#/entities/AdminNotification" },
         "description": "Stores notifications intended for platform administrators."
+    },
+    "/instructor_requests/{requestId}": {
+      "schema": { "$ref": "#/entities/InstructorRequest" },
+      "description": "Stores requests from students to become instructors."
     }
   }
 }

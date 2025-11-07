@@ -5,12 +5,68 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Lightbulb, Rocket, Award, Users, Languages, Star, Globe, TrendingUp } from 'lucide-react';
+import { Lightbulb, Rocket, Award, Users, Languages, Star, Globe, TrendingUp, Loader2, CheckCircle } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useLanguage } from '@/contexts/language-context';
+import { useUser, useFirestore, useCollection } from '@/firebase';
+import { addDoc, collection, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
+import { useState, useMemo } from 'react';
+import type { InstructorRequest } from '@/lib/types';
+
 
 export default function BecomeInstructorPage() {
     const { t } = useLanguage();
+    const { user, userProfile } = useUser();
+    const db = useFirestore();
+    const { toast } = useToast();
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Fetch existing requests for the current user
+    const { data: requests, loading: requestsLoading } = useCollection<InstructorRequest>(
+        'instructor_requests',
+        user?.uid ? { where: ['userId', '==', user.uid] } : undefined
+    );
+
+    const pendingRequest = useMemo(() => {
+        return (requests || []).find(r => r.status === 'pending');
+    }, [requests]);
+
+
+    const handleRequest = async () => {
+        if (!user || !userProfile || !db) {
+            toast({ variant: 'destructive', title: 'Erreur', description: 'Vous devez être connecté pour faire une demande.' });
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        // Double check if a pending request exists
+        const q = query(collection(db, "instructor_requests"), where("userId", "==", user.uid), where("status", "==", "pending"));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            toast({ title: 'Demande déjà envoyée', description: 'Vous avez déjà une demande en cours de validation.' });
+            setIsSubmitting(false);
+            return;
+        }
+
+        try {
+            await addDoc(collection(db, 'instructor_requests'), {
+                userId: user.uid,
+                userName: userProfile.name,
+                userEmail: userProfile.email,
+                requestDate: serverTimestamp(),
+                status: 'pending'
+            });
+            toast({ title: 'Demande envoyée !', description: 'Votre demande a été envoyée pour validation. Nous vous contacterons bientôt.' });
+        } catch (error) {
+            console.error(error);
+            toast({ variant: 'destructive', title: 'Erreur', description: 'Une erreur est survenue.' });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     const stats = [
         { label: t('instructor_stats_participants'), value: "80M", icon: Users },
@@ -40,6 +96,27 @@ export default function BecomeInstructorPage() {
         }
     ];
 
+    const renderCallToActionButton = () => {
+        if (!user) {
+            return <Button size="lg" className="mt-8" asChild><Link href="/login?tab=signup">{t('become_instructor')}</Link></Button>;
+        }
+        if (userProfile?.role === 'formateur') {
+            return <Button size="lg" className="mt-8" asChild><Link href="/formateur">Accéder à mon tableau de bord</Link></Button>;
+        }
+        if (requestsLoading) {
+            return <Button size="lg" className="mt-8" disabled><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Chargement...</Button>;
+        }
+        if (pendingRequest) {
+            return <Button size="lg" className="mt-8 bg-green-600 hover:bg-green-700" disabled><CheckCircle className="mr-2 h-4 w-4" /> Demande en cours</Button>;
+        }
+
+        return <Button size="lg" className="mt-8" onClick={handleRequest} disabled={isSubmitting}>
+             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+             Envoyer ma demande
+            </Button>;
+    }
+
+
     return (
         <div className="bg-background">
             {/* Hero Section */}
@@ -49,9 +126,7 @@ export default function BecomeInstructorPage() {
                     <p className="mt-4 text-lg md:text-xl max-w-3xl mx-auto text-muted-foreground">
                         {t('instructor_hero_subtitle')}
                     </p>
-                    <Button size="lg" className="mt-8" asChild>
-                        <Link href="/login?tab=signup">{t('become_instructor')}</Link>
-                    </Button>
+                    {renderCallToActionButton()}
                 </div>
             </section>
 
@@ -155,9 +230,7 @@ export default function BecomeInstructorPage() {
                     <p className="mt-4 text-lg md:text-xl max-w-3xl mx-auto text-muted-foreground">
                         {t('instructor_cta_subtitle')}
                     </p>
-                    <Button size="lg" className="mt-8" asChild>
-                        <Link href="/login?tab=signup">{t('instructor_cta_button')}</Link>
-                    </Button>
+                    {renderCallToActionButton()}
                 </div>
             </section>
         </div>
