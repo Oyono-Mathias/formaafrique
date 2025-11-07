@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, BookCopy, Loader2 } from 'lucide-react';
+import { ArrowRight, BookCopy, Loader2, Star } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -61,45 +61,48 @@ export default function MyCoursesPage() {
     }
 
     return (
-      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
-        {enrollmentsList.map((enrollment) => (
-          <Card key={enrollment.id} className="flex flex-row overflow-hidden">
-             <div className="w-1/3 relative">
-                {/* Find image based on course title as we don't store it on enrollment */}
-                <Image
-                    src={`https://picsum.photos/seed/${enrollment.courseId}/300/200`}
-                    alt={enrollment.courseTitle}
-                    fill
-                    className="object-cover"
-                />
-            </div>
-            <div className="w-2/3 flex flex-col">
-              <CardHeader>
-                <CardTitle className="text-lg leading-tight">{enrollment.courseTitle}</CardTitle>
-              </CardHeader>
-              <CardContent className="flex-grow">
-                 <p className='text-sm text-muted-foreground mb-2'>{enrollment.studentName}</p>
-                <div className="flex items-center gap-2">
-                  <Progress value={enrollment.progression || 0} className="w-full h-2" />
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">{(enrollment.progression || 0)}% terminé</p>
-              </CardContent>
-              <CardFooter>
-                <Button asChild variant="default" className="w-full" size="sm">
-                  { (enrollment.progression || 0) < 100 ? (
-                     <Link href={`/courses/${enrollment.courseId}`}>
-                        Continuer <ArrowRight className="ml-2 h-4 w-4" />
-                      </Link>
-                  ) : (
-                     <Link href={`/dashboard/certificate/${enrollment.courseId}`}>
-                        Voir le certificat
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {enrollmentsList.map((enrollment) => {
+            const courseImage = PlaceHolderImages.find(img => img.id === 'course-project-management'); // Fallback image
+            const progression = enrollment.progression || 0;
+            return (
+              <Card key={enrollment.id} className="flex flex-col overflow-hidden h-full shadow-sm hover:shadow-lg transition-shadow">
+                <CardHeader className="p-0">
+                    <Link href={`/courses/${enrollment.courseId}`} className="block aspect-video relative bg-muted">
+                        <Image
+                            src={courseImage?.imageUrl || `https://picsum.photos/seed/${enrollment.courseId}/400/225`}
+                            alt={enrollment.courseTitle}
+                            fill
+                            className="object-cover"
+                        />
                     </Link>
-                  )}
-                </Button>
-              </CardFooter>
-            </div>
-          </Card>
-        ))}
+                </CardHeader>
+                <CardContent className="p-4 flex flex-col flex-grow">
+                    <CardTitle className="text-base font-bold leading-tight flex-grow hover:text-primary">
+                        <Link href={`/courses/${enrollment.courseId}`}>{enrollment.courseTitle}</Link>
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground mt-1">{enrollment.studentName}</p>
+                </CardContent>
+                <CardFooter className="p-4 pt-0 flex flex-col items-start gap-3">
+                    <div className='w-full'>
+                        <Progress value={progression} className="h-2" />
+                        <p className="text-xs text-muted-foreground mt-1.5">{progression}% terminé</p>
+                    </div>
+                    <Button asChild variant="default" className="w-full" size="sm">
+                    { progression < 100 ? (
+                        <Link href={`/courses/${enrollment.courseId}`}>
+                            Continuer <ArrowRight className="ml-2 h-4 w-4" />
+                        </Link>
+                    ) : (
+                        <Link href={`/dashboard/certificate/${enrollment.courseId}`}>
+                            Voir le certificat
+                        </Link>
+                    )}
+                    </Button>
+                </CardFooter>
+              </Card>
+            )
+        })}
       </div>
     );
   };
@@ -109,7 +112,7 @@ export default function MyCoursesPage() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold font-headline">Mon Apprentissage</h1>
+          <h1 className="text-3xl font-bold font-headline">Mes Formations</h1>
           <p className="text-muted-foreground">
             Suivez votre progression et reprenez là où vous vous êtes arrêté.
           </p>
@@ -121,9 +124,9 @@ export default function MyCoursesPage() {
 
       <Tabs defaultValue="in-progress">
         <TabsList>
-          <TabsTrigger value="all">Tout</TabsTrigger>
-          <TabsTrigger value="in-progress">En cours</TabsTrigger>
-          <TabsTrigger value="completed">Terminées</TabsTrigger>
+          <TabsTrigger value="all">Tout ({enrollments?.length || 0})</TabsTrigger>
+          <TabsTrigger value="in-progress">En cours ({inProgressCourses.length})</TabsTrigger>
+          <TabsTrigger value="completed">Terminées ({completedCourses.length})</TabsTrigger>
         </TabsList>
         <TabsContent value="all" className="mt-6">
             <CourseList enrollmentsList={enrollments || []} />
