@@ -3,7 +3,8 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { translations, TranslationKey } from '@/lib/translations';
 
-type Language = 'fr' | 'en';
+// Élargir le type pour inclure toutes les langues supportées
+type Language = 'fr' | 'en' | 'es' | 'de' | 'pt' | 'ja' | 'ko';
 
 interface LanguageContextType {
   language: Language;
@@ -28,7 +29,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguage] = useState<Language>('fr');
 
   const t = (key: TranslationKey): string => {
-    return translations[language][key] || translations['fr'][key] || key;
+    // S'assurer que translations[language] existe, sinon utiliser 'fr' par défaut.
+    const langDict = translations[language] || translations['fr'];
+    return langDict[key] || translations['fr'][key] || key;
   };
 
   return (
