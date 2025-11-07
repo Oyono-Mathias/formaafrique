@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Search } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -92,6 +92,16 @@ export default function Header() {
                     {link.label}
                   </Link>
                 ))}
+                 <Link
+                    href="/search"
+                    onClick={closeMobileMenu}
+                    className={cn(
+                      'text-lg transition-colors hover:text-yellow-custom',
+                       pathname === '/search' ? 'text-yellow-custom font-bold' : 'text-primary-foreground/90'
+                    )}
+                  >
+                    Rechercher
+                  </Link>
               </nav>
               <div className="mt-auto pt-4">
                 {isAuthenticated ? (
@@ -116,7 +126,11 @@ export default function Header() {
         </div>
 
         <div className="flex flex-1 items-center justify-end space-x-4">
-          <nav className="flex items-center">
+          <nav className="hidden md:flex items-center space-x-4">
+            <Link href="/search" className="text-primary-foreground/90 hover:text-yellow-custom p-2">
+                <Search />
+                <span className="sr-only">Rechercher</span>
+            </Link>
             {loading ? null : isAuthenticated ? (
               <Button asChild variant="secondary">
                 <Link href="/dashboard">Tableau de bord</Link>
@@ -127,6 +141,12 @@ export default function Header() {
               </Button>
             )}
           </nav>
+           <div className="flex items-center md:hidden">
+             <Link href="/search" className="text-primary-foreground/90 hover:text-yellow-custom p-2">
+                <Search />
+                <span className="sr-only">Rechercher</span>
+            </Link>
+          </div>
         </div>
       </div>
     </header>
