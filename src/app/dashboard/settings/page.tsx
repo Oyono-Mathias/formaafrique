@@ -65,7 +65,7 @@ export default function SettingsPage() {
           </CardContent>
            <CardFooter className="p-3 bg-muted/50 justify-center">
                 <Button variant="outline" asChild>
-                    <Link href="/contact">
+                    <Link href="/devenir-formateur">
                         <GraduationCap className="mr-2 h-4 w-4" />
                         Devenir Formateur
                     </Link>
