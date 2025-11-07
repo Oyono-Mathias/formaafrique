@@ -64,7 +64,7 @@ export default function SettingsPage() {
               <p className='text-muted-foreground'>{userEmail}</p>
           </CardContent>
            <CardFooter className="p-3 bg-muted/50 justify-center">
-                <Button variant="outline" asChild>
+                <Button asChild>
                     <Link href="/devenir-formateur">
                         <GraduationCap className="mr-2 h-4 w-4" />
                         Devenir Formateur
