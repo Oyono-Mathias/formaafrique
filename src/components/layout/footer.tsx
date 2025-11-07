@@ -26,7 +26,14 @@ const languages = [
 
 export default function Footer() {
   const [isLangDialogOpen, setIsLangDialogOpen] = useState(false);
-  const [currentLang] = useState('fr');
+  const [currentLang, setCurrentLang] = useState('fr');
+
+  const handleLanguageChange = (langCode: string) => {
+    setCurrentLang(langCode);
+    setIsLangDialogOpen(false);
+    // In a real app, you would also trigger the language change logic here
+    // e.g., router.push(pathname, { locale: langCode });
+  };
 
   const footerLinkGroups = [
     {
@@ -55,6 +62,8 @@ export default function Footer() {
       ],
     },
   ];
+  
+  const currentLanguageName = languages.find(l => l.code === currentLang)?.name || 'Français';
 
   return (
     <footer className="bg-[#1c1d1f] text-white">
@@ -81,7 +90,7 @@ export default function Footer() {
                 <DialogTrigger asChild>
                     <Button variant="outline" className="bg-transparent border-white text-white hover:bg-white/10 hover:text-white w-full lg:w-auto">
                         <Globe className="mr-2 h-4 w-4" />
-                        Français
+                        {currentLanguageName}
                     </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[425px] bg-white text-black">
@@ -91,7 +100,10 @@ export default function Footer() {
                     <ul className="space-y-1 py-4">
                         {languages.map(lang => (
                             <li key={lang.code}>
-                                <button className={`w-full text-left p-3 rounded-md text-lg ${currentLang === lang.code ? 'font-bold text-primary bg-primary/10' : 'hover:bg-muted'}`}>
+                                <button
+                                  onClick={() => handleLanguageChange(lang.code)}
+                                  className={`w-full text-left p-3 rounded-md text-lg ${currentLang === lang.code ? 'font-bold text-primary bg-primary/10' : 'hover:bg-muted'}`}
+                                >
                                     {lang.name}
                                 </button>
                             </li>
