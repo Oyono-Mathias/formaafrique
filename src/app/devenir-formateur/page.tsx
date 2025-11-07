@@ -111,7 +111,7 @@ export default function BecomeInstructorPage() {
 
     const renderCallToActionButton = () => {
         if (!user) {
-            return <Button size="lg" className="mt-8" asChild><Link href="/login?tab=signup">{t('become_instructor')}</Link></Button>;
+            return <Button size="lg" className="mt-8" asChild><Link href="/login?tab=signup">{t('instructor_cta_button')}</Link></Button>;
         }
         if (userProfile?.role === 'formateur') {
             return <Button size="lg" className="mt-8" asChild><Link href="/formateur">Accéder à mon tableau de bord</Link></Button>;
@@ -145,7 +145,7 @@ export default function BecomeInstructorPage() {
                 )}
                  <Button size="lg" className="mt-4" onClick={handleRequest} disabled={isSubmitting || !isProfileComplete}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Envoyer ma demande
+                    {t('submit_instructor_request')}
                 </Button>
             </div>
         );
