@@ -88,8 +88,7 @@ export default function ManageModulesPage({
 }: {
   params: { id: string };
 }) {
-  const resolvedParams = use(params);
-  const courseId = resolvedParams?.id;
+  const courseId = params?.id;
   
   const { data: course, loading: courseLoading } = useDoc<Course>(
     'courses',

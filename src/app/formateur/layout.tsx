@@ -157,7 +157,7 @@ export default function FormateurLayout({
             </SheetContent>
           </Sheet>
           <div className="flex-1">
-            <h1 className="text-lg font-semibold">Dashboard Formateur</h1>
+            {/* Can be used for a page title later */}
           </div>
           <DropdownMenu>
               <DropdownMenuTrigger asChild>
