@@ -14,13 +14,14 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useUser, useCollection } from '@/firebase';
 import type { Course } from '@/lib/types';
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { categories } from '@/lib/categories';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { Timestamp } from 'firebase/firestore';
+import Autoplay from "embla-carousel-autoplay"
 
 const CourseCard = ({ course }: { course: Course }) => {
     const courseImage = PlaceHolderImages.find((img) => img.id === course.image);
@@ -60,6 +61,10 @@ const CourseCard = ({ course }: { course: Course }) => {
 }
 
 const CourseCarousel = ({ title, courses }: { title: string, courses: Course[] }) => {
+    const plugin = useRef(
+        Autoplay({ delay: 5000, stopOnInteraction: true })
+    )
+
     return (
         <div>
             <div className="flex justify-between items-center mb-4">
@@ -68,7 +73,12 @@ const CourseCarousel = ({ title, courses }: { title: string, courses: Course[] }
                     <Link href="/courses">Afficher tout</Link>
                 </Button>
             </div>
-            <Carousel opts={{ align: "start", loop: false }} className="w-full">
+            <Carousel 
+                plugins={[plugin.current]}
+                onMouseEnter={plugin.current.stop}
+                onMouseLeave={plugin.current.reset}
+                opts={{ align: "start", loop: true }} 
+                className="w-full">
                 <CarouselContent className="-ml-2 md:-ml-4">
                 {courses.map((course, index) => (
                     <CarouselItem key={index} className="pl-2 md:pl-4 basis-1/2 sm:basis-1/3 lg:basis-1/4 xl:basis-1/5">
