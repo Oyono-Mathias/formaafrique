@@ -14,6 +14,7 @@ import {
   Menu,
   ShieldCheck,
   Tag,
+  Activity,
 } from 'lucide-react';
 import { Logo } from '@/components/icons/logo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -32,6 +33,7 @@ const adminNavLinks = [
   { href: '/admin/validation', label: 'Validation', icon: ShieldCheck },
   { href: '/admin/users', label: 'Utilisateurs', icon: Users },
   { href: '/admin/donations', label: 'Transactions', icon: CreditCard },
+  { href: '/admin/behavior', label: 'Comportements & Sécurité', icon: Activity },
   { href: '/admin/settings', label: 'Paramètres', icon: Settings },
 ];
 

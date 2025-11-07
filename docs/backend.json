@@ -33,6 +33,11 @@
           ],
           "description": "The role of the user in the system."
         },
+        "status": {
+            "type": "string",
+            "enum": ["actif", "suspendu"],
+            "description": "The status of the user account."
+        },
         "paysOrigine": {
           "type": "string",
           "description": "The user's country of origin."
@@ -58,6 +63,7 @@
         "email",
         "createdAt",
         "role",
+        "status",
         "paysOrigine",
         "paysActuel"
       ]
@@ -299,6 +305,21 @@
         }
       },
       "required": ["donateurId", "donateurNom", "donateurEmail", "montant", "devise", "date", "statut"]
+    },
+    "UserActivityLog": {
+        "title": "User Activity Log",
+        "description": "Tracks important actions performed by users.",
+        "type": "object",
+        "properties": {
+            "userId": { "type": "string", "description": "The UID of the user who performed the action." },
+            "name": { "type": "string", "description": "The name of the user." },
+            "role": { "type": "string", "description": "The role of the user at the time of action." },
+            "action": { "type": "string", "description": "The type of action performed (e.g., 'connexion', 'publication_cours')." },
+            "details": { "type": "string", "description": "A descriptive text of the action." },
+            "timestamp": { "type": "string", "format": "date-time" },
+            "status": { "type": "string", "enum": ["succes", "echec"], "description": "The outcome of the action." }
+        },
+        "required": ["userId", "name", "role", "action", "timestamp", "status"]
     }
   },
   "auth": {
@@ -348,6 +369,10 @@
     "/donations/{donationId}": {
         "schema": { "$ref": "#/entities/Donation" },
         "description": "Stores all donations made on the platform."
+    },
+    "/user_activity_logs/{logId}": {
+        "schema": { "$ref": "#/entities/UserActivityLog" },
+        "description": "Stores a chronological log of all important user actions."
     }
   }
 }
