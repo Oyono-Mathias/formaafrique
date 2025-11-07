@@ -1,3 +1,4 @@
+
 import Image from 'next/image';
 import { Check, Target, Eye, Users, Heart } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -9,9 +10,7 @@ import Link from 'next/link';
 export default function AboutPage() {
   const aboutImage = PlaceHolderImages.find((img) => img.id === 'about-us');
   const team = [
-    { name: 'Yannick Noah', title: 'CEO & Co-fondateur', avatarId: 'instructor-yann' },
-    { name: 'Aisha Keita', title: 'Directrice Pédagogique', avatarId: 'instructor-aisha' },
-    { name: 'David Okoro', title: 'Responsable Partenariats', avatarId: 'instructor-david' },
+    { name: 'Yannick Noah', title: 'CEO & Fondateur', avatarId: 'instructor-yann' },
   ];
 
   return (
@@ -86,11 +85,11 @@ export default function AboutPage() {
       {/* Team Section */}
       <section className="py-16 sm:py-24">
         <div className="container mx-auto px-4 md:px-6 text-center">
-          <h2 className="text-3xl font-bold font-headline text-primary">Notre Équipe Fondatrice</h2>
+          <h2 className="text-3xl font-bold font-headline text-primary">Notre Fondateur</h2>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-            Une équipe passionnée et engagée pour votre réussite.
+            Un leader passionné et engagé pour votre réussite.
           </p>
-          <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="mt-12 flex justify-center">
             {team.map((member) => {
               const memberAvatar = PlaceHolderImages.find(img => img.id === member.avatarId);
               return (
