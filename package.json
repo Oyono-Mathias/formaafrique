@@ -10,7 +10,8 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "db:seed": "ts-node -r dotenv/config src/scripts/seed-courses.ts"
+    "db:seed": "ts-node -r dotenv/config src/scripts/seed-courses.ts",
+    "db:seed-accounting": "ts-node -r dotenv/config src/scripts/seed-accounting-course.ts"
   },
   "dependencies": {
     "@genkit-ai/google-genai": "^1.20.0",
