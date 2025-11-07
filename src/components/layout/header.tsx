@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -23,11 +23,22 @@ const navLinks = [
 export default function Header() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { user, loading } = useUser();
+  
+  // Conditionally call the hook
+  const isPublicPage = navLinks.some(link => link.href === pathname);
+  const { user, loading } = isPublicPage ? useUser() : { user: null, loading: false };
+
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    if (!loading) {
+      setIsAuthenticated(!!user);
+    }
+  }, [user, loading]);
+
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
-  const isAuthenticated = !!user;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-primary/20 bg-primary text-primary-foreground shadow-md">
