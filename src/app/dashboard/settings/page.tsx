@@ -78,9 +78,10 @@ export default function SettingsPage() {
                   />
                    <SettingsItem 
                       icon={Video}
-                      title="Lecture en arrière-plan"
-                      description="Continuez à écouter vos cours lorsque l'application est fermée."
-                      action={<Switch id="background-play" />}
+                      title="Options de lecture vidéo"
+                      description="Gérez l'arrière-plan et la lecture auto."
+                      href="/dashboard/settings/video-playback"
+                      action={<Button variant="outline" size="sm">Gérer</Button>}
                   />
               </CardContent>
           </Card>
