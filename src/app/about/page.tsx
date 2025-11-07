@@ -35,7 +35,7 @@ export default function AboutPage() {
           </div>
           <div className="flex-grow prose prose-lg max-w-none text-foreground/90">
             <p>
-              Fondateur et concepteur de <strong>Formafrique</strong>, <strong>M. Oyono Mathias</strong> est un entrepreneur camerounais passionné par le digital, l’éducation et le développement personnel.
+              Fondateur et concepteur de <strong>Formafrique</strong>, <strong>M. Oyono Mathias</strong> est un entrepreneur camerounais et centrafricain passionné par le digital, l’éducation et le développement personnel.
               Son parcours illustre la <strong>détermination</strong>, la <strong>curiosité</strong> et la <strong>soif d’apprendre</strong> qui animent la jeunesse africaine.
             </p>
             <p>
