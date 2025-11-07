@@ -17,22 +17,87 @@ import { useUser, useCollection } from '@/firebase';
 import type { Course, Enrollment } from '@/lib/types';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import { collection, query, where, onSnapshot, Unsubscribe, getFirestore } from 'firebase/firestore';
+import { db } from '@/firebase/config';
 
 export default function FormateurDashboardPage() {
   const { user, loading: userLoading } = useUser();
   
-  // Conditionally fetch courses only when user.uid is available
   const { data: coursesData, loading: coursesLoading } = useCollection<Course>(
     'courses',
     user?.uid ? { where: ['instructorId', '==', user.uid] } : undefined
   );
   
   const courses = useMemo(() => coursesData || [], [coursesData]);
+  const [totalStudents, setTotalStudents] = useState(0);
+  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [enrollmentsLoading, setEnrollmentsLoading] = useState(true);
 
-  // This is a mock value and should be replaced with real data logic
-  const totalStudents = '125'; // Mock data
-  const totalRevenue = '125 000 XAF'; // Mock data
+  useEffect(() => {
+    if (!courses.length || !db) {
+        if (!coursesLoading) {
+            setEnrollmentsLoading(false);
+        }
+        return;
+    }
+
+    const unsubscribes: Unsubscribe[] = [];
+    const studentIds = new Set<string>();
+    let revenue = 0;
+
+    // Use a count to track when all listeners have reported their initial data
+    let listenersInitialized = 0;
+
+    courses.forEach(course => {
+        if (course.id) {
+            const enrollmentsQuery = collection(db, `courses/${course.id}/enrollments`);
+            const unsubscribe = onSnapshot(enrollmentsQuery, (snapshot) => {
+                
+                snapshot.docs.forEach(doc => {
+                    const enrollment = doc.data() as Enrollment;
+                    if (!studentIds.has(enrollment.studentId)) {
+                        studentIds.add(enrollment.studentId);
+                        // Assuming one enrollment corresponds to one sale at the course price
+                        if(course.prix > 0) {
+                            revenue += course.prix;
+                        }
+                    }
+                });
+
+                setTotalStudents(studentIds.size);
+                setTotalRevenue(revenue);
+                
+                // This part is tricky; for simplicity, we'll stop loading when the first batch of listeners is done.
+                if (++listenersInitialized >= courses.length) {
+                    setEnrollmentsLoading(false);
+                }
+
+            }, (error) => {
+                console.error(`Error fetching enrollments for course ${course.id}: `, error);
+                 if (++listenersInitialized >= courses.length) {
+                    setEnrollmentsLoading(false);
+                }
+            });
+            unsubscribes.push(unsubscribe);
+        }
+    });
+
+     if (courses.length > 0 && unsubscribes.length === 0) {
+      setEnrollmentsLoading(false);
+    }
+
+    return () => {
+        unsubscribes.forEach(unsub => unsub());
+    };
+  }, [courses, db, coursesLoading]);
+
+
+  const loading = userLoading || coursesLoading || enrollmentsLoading;
+  
+  const formatCurrency = (amount: number, currency: string = 'XAF') => {
+    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency }).format(amount);
+  }
 
   const stats = [
     {
@@ -43,13 +108,13 @@ export default function FormateurDashboardPage() {
     },
     {
       label: 'Étudiants inscrits',
-      value: totalStudents, // Using mock data
+      value: loading ? <Loader2 className="h-5 w-5 animate-spin" /> : totalStudents,
       icon: Users,
       description: 'Nombre total d\'étudiants dans vos cours.',
     },
     {
       label: 'Revenus Totaux (Est.)',
-      value: totalRevenue, // Using mock data
+      value: loading ? <Loader2 className="h-5 w-5 animate-spin" /> : formatCurrency(totalRevenue),
       icon: Wallet,
       description: 'Revenus générés par vos formations.',
     },
