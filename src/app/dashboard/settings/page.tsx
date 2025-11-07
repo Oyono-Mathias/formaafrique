@@ -3,11 +3,12 @@
 import {
   Card,
   CardContent,
+  CardFooter,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useUser } from '@/firebase';
-import { Loader2, Video, User, Lock, Bell, HelpCircle, Share2, BarChart2, Download } from 'lucide-react';
+import { Loader2, Video, User, Lock, Bell, HelpCircle, Share2, BarChart2, Download, GraduationCap } from 'lucide-react';
 import Link from 'next/link';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -62,6 +63,14 @@ export default function SettingsPage() {
               <h1 className='text-2xl font-bold'>{userName}</h1>
               <p className='text-muted-foreground'>{userEmail}</p>
           </CardContent>
+           <CardFooter className="p-3 bg-muted/50 justify-center">
+                <Button variant="outline" asChild>
+                    <Link href="/contact">
+                        <GraduationCap className="mr-2 h-4 w-4" />
+                        Devenir Formateur
+                    </Link>
+                </Button>
+            </CardFooter>
         </Card>
 
         <div className="space-y-4">
