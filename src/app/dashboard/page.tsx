@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, BookCopy, Loader2 } from 'lucide-react';
+import { ArrowRight, BookCopy, Loader2, Star } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -15,25 +15,93 @@ import { Progress } from '@/components/ui/progress';
 import { useUser, useCollection } from '@/firebase';
 import type { Course } from '@/lib/types';
 import { useMemo } from 'react';
+import { categories } from '@/lib/categories';
+import { Badge } from '@/components/ui/badge';
+import Image from 'next/image';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+
+const CourseCard = ({ course }: { course: Course }) => {
+    const courseImage = PlaceHolderImages.find((img) => img.id === course.image);
+    const isFree = course.prix === 0;
+
+    return (
+        <Card className="flex flex-col h-full overflow-hidden transition-transform duration-300 hover:shadow-xl border-0">
+            <CardHeader className="p-0">
+                <Link href={`/courses/${course.id}`} className="block aspect-video relative bg-muted">
+                {courseImage && (
+                    <Image
+                        src={courseImage.imageUrl}
+                        alt={course.titre}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    />
+                )}
+                </Link>
+            </CardHeader>
+            <CardContent className="flex-grow p-3">
+                <CardTitle className="text-base font-bold leading-tight hover:text-primary">
+                    <Link href={`/courses/${course.id}`}>{course.titre}</Link>
+                </CardTitle>
+                <p className="mt-1 text-xs text-muted-foreground">{course.auteur}</p>
+                 <div className="flex items-center gap-1 mt-1 text-xs">
+                    <span className='font-bold text-amber-600'>4.5</span>
+                    <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
+                    <span className="text-muted-foreground">(1,250)</span>
+                </div>
+                <p className="mt-2 text-sm font-bold">
+                    {isFree ? 'Gratuit' : `${course.prix.toLocaleString('fr-FR')} FCFA`}
+                </p>
+            </CardContent>
+        </Card>
+    )
+}
+
+const CourseCarousel = ({ title, courses }: { title: string, courses: Course[] }) => {
+    return (
+        <div>
+            <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold">{title}</h2>
+                <Button asChild variant="link">
+                    <Link href="/courses">Afficher tout</Link>
+                </Button>
+            </div>
+            <Carousel opts={{ align: "start", loop: false }} className="w-full">
+                <CarouselContent className="-ml-2 md:-ml-4">
+                {courses.map((course, index) => (
+                    <CarouselItem key={index} className="pl-2 md:pl-4 basis-1/2 sm:basis-1/3 lg:basis-1/4 xl:basis-1/5">
+                        <CourseCard course={course} />
+                    </CarouselItem>
+                ))}
+                </CarouselContent>
+                <CarouselPrevious className="hidden lg:flex"/>
+                <CarouselNext className="hidden lg:flex"/>
+            </Carousel>
+        </div>
+    )
+}
 
 
 export default function DashboardPage() {
   const { user, userProfile } = useUser();
-  const {data: coursesData, loading: coursesLoading} = useCollection<Course>("courses");
-  const courses = coursesData || [];
+  const {data: coursesData, loading: coursesLoading} = useCollection<Course>("courses", { where: ['publie', '==', true]});
+  const allCourses = coursesData || [];
 
-  const enrolledCourses = useMemo(() => {
-    // This is a simplified logic. In a real app, enrollments would be their own collection.
-    // Here, we simulate enrollment based on a mock field, which we assume doesn't exist,
-    // so we'll just show the first course as an "enrolled" example.
-    if (courses.length > 0) return [courses[0]];
-    return [];
-  }, [courses]);
+  const { recommendedCourses, popularCourses, newCourses } = useMemo(() => {
+    // This is a simplified logic. In a real app, this would be based on user data and real metrics.
+    const shuffled = [...allCourses].sort(() => 0.5 - Math.random());
+    return {
+        recommendedCourses: shuffled.slice(0, 10),
+        popularCourses: shuffled.slice(10, 20),
+        newCourses: [...allCourses].sort((a,b) => b.date_creation.seconds - a.date_creation.seconds).slice(0, 10)
+    }
+  }, [allCourses]);
   
   const loading = coursesLoading;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-12">
       <div>
         <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
           Bienvenue, {user?.displayName || 'cher étudiant'} 👋
@@ -43,54 +111,50 @@ export default function DashboardPage() {
         </p>
       </div>
 
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="h-10 w-10 animate-spin" />
+        </div>
+      ) : (
+        <div className="space-y-12">
+            {recommendedCourses.length > 0 && (
+                <CourseCarousel title="Recommandé pour vous" courses={recommendedCourses} />
+            )}
+
+            <div>
+                <h2 className="text-2xl font-bold mb-4">Catégories</h2>
+                <div className="flex flex-wrap gap-2">
+                    {categories.slice(0, 6).map(cat => (
+                        <Button key={cat} variant="outline" asChild>
+                            <Link href={`/courses?category=${encodeURIComponent(cat)}`}>{cat}</Link>
+                        </Button>
+                    ))}
+                </div>
+            </div>
+
+            {popularCourses.length > 0 && (
+                <CourseCarousel title="Populaire pour les développeurs" courses={popularCourses} />
+            )}
+
+            {newCourses.length > 0 && (
+                <CourseCarousel title="Nouveautés sur FormaAfrique" courses={newCourses} />
+            )}
+        </div>
+      )}
+
+      {/* Placeholder for in-progress courses if needed later */}
+      {/* 
       <div>
         <div className='flex justify-between items-center mb-4'>
-            <h2 className="text-2xl font-bold">
-            Reprendre là où vous vous êtes arrêté
-            </h2>
+            <h2 className="text-2xl font-bold">Reprendre là où vous vous êtes arrêté</h2>
              <Button asChild variant="link">
                 <Link href="/dashboard/courses">Voir toutes mes formations</Link>
             </Button>
         </div>
-        {loading ? (
-            <div className="flex justify-center items-center h-40">
-                <Loader2 className="h-8 w-8 animate-spin" />
-            </div>
-        ) : enrolledCourses.length > 0 ? (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {enrolledCourses.map((course) => (
-                <Card key={course.id} className="overflow-hidden shadow-md transition-transform hover:scale-105 duration-300 rounded-2xl">
-                <CardHeader>
-                    <CardTitle className="text-lg">{course.titre}</CardTitle>
-                    <CardDescription>{course.categorie}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex items-center gap-4">
-                    <Progress value={66} className="h-2 flex-grow" />
-                    <span className="text-sm font-medium">66%</span>
-                    </div>
-                </CardContent>
-                <CardFooter>
-                    <Button asChild variant="default" className="w-full">
-                    <Link href={`/courses/${course.id}`}>
-                        Continuer la formation <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                    </Button>
-                </CardFooter>
-                </Card>
-            ))}
-            </div>
-        ) : (
-            <Card className="text-center p-8">
-                <CardTitle>Aucune formation en cours</CardTitle>
-                <CardDescription className="mt-2 mb-4">Il est temps de commencer votre parcours d'apprentissage !</CardDescription>
-                <Button asChild>
-                    <Link href="/courses">Explorer les formations</Link>
-                </Button>
-            </Card>
-        )}
+        ...
       </div>
+      */}
+
     </div>
   );
 }
-    
