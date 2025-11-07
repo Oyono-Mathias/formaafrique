@@ -7,14 +7,19 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useUser } from '@/firebase';
-import { Loader2, Video, User, Lock, Bell, HelpCircle, Share2, BarChart2, Download, GraduationCap } from 'lucide-react';
+import { useUser, useStorage } from '@/firebase';
+import { Loader2, Video, User, Lock, Bell, HelpCircle, Share2, BarChart2, Download, GraduationCap, Camera } from 'lucide-react';
 import Link from 'next/link';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import EditProfileDialog from '@/components/dashboard/edit-profile-dialog';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
+import { doc, updateDoc } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { updateProfile } from 'firebase/auth';
 
 const SettingsItem = ({ icon: Icon, title, description, action, onClick, href }: { icon: React.ElementType, title: string, description: string, action?: React.ReactNode, onClick?: () => void, href?: string }) => {
     const content = (
@@ -40,7 +45,40 @@ const SettingsItem = ({ icon: Icon, title, description, action, onClick, href }:
 
 export default function SettingsPage() {
   const { user, userProfile, loading } = useUser();
+  const storage = useStorage();
+  const db = useFirestore();
+  const { toast } = useToast();
+
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user || !storage || !db) return;
+
+    setIsUploading(true);
+    try {
+      const storageRef = ref(storage, `avatars/${user.uid}/${file.name}`);
+      const snapshot = await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(snapshot.ref);
+
+      const userDocRef = doc(db, 'users', user.uid);
+      await updateDoc(userDocRef, { photoURL: downloadURL });
+      
+      if (user) {
+        await updateProfile(user, { photoURL: downloadURL });
+      }
+
+      toast({ title: "Photo de profil mise à jour" });
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      toast({ variant: "destructive", title: "Erreur de téléversement" });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
 
   if (loading || !user || !userProfile) {
     return <div className="flex items-center justify-center h-full"><Loader2 className="h-6 w-6 animate-spin mr-2" /> Chargement...</div>;
@@ -56,10 +94,23 @@ export default function SettingsPage() {
         
         <Card className="shadow-md rounded-2xl overflow-hidden">
           <CardContent className="p-6 text-center flex flex-col items-center">
-              <Avatar className="w-24 h-24 text-3xl mb-4">
-                  {photoUrl && <AvatarImage src={photoUrl} alt={userName} />}
-                  <AvatarFallback>{userName.charAt(0)}</AvatarFallback>
-              </Avatar>
+              <div className='relative group'>
+                <Avatar className="w-24 h-24 text-3xl mb-4">
+                    {photoUrl && <AvatarImage src={photoUrl} alt={userName} />}
+                    <AvatarFallback>{userName.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="absolute inset-0 w-full h-full bg-black/50 text-white opacity-0 group-hover:opacity-100 rounded-full transition-opacity"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                >
+                    {isUploading ? <Loader2 className="animate-spin" /> : <Camera />}
+                </Button>
+                <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*"/>
+              </div>
               <h1 className='text-2xl font-bold'>{userName}</h1>
               <p className='text-muted-foreground'>{userEmail}</p>
           </CardContent>

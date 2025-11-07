@@ -3,9 +3,9 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Lightbulb, Rocket, Award, Users, Languages, Star, Globe, TrendingUp, Loader2, CheckCircle } from 'lucide-react';
+import { Lightbulb, Rocket, Award, Users, Languages, Star, Globe, TrendingUp, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useLanguage } from '@/contexts/language-context';
 import { useUser, useFirestore, useCollection } from '@/firebase';
@@ -32,10 +32,23 @@ export default function BecomeInstructorPage() {
         return (requests || []).find(r => r.status === 'pending');
     }, [requests]);
 
+    const isProfileComplete = useMemo(() => {
+        if (!userProfile) return false;
+        const hasBio = !!userProfile.bio && userProfile.bio.trim().length > 0;
+        const hasPhoto = !!userProfile.photoURL;
+        const hasSkills = !!userProfile.skills && userProfile.skills.length > 0;
+        return hasBio && hasPhoto && hasSkills;
+    }, [userProfile]);
+
 
     const handleRequest = async () => {
         if (!user || !userProfile || !db) {
             toast({ variant: 'destructive', title: 'Erreur', description: 'Vous devez être connecté pour faire une demande.' });
+            return;
+        }
+
+        if (!isProfileComplete) {
+            toast({ variant: 'destructive', title: 'Profil incomplet', description: 'Veuillez compléter votre profil pour devenir formateur.' });
             return;
         }
 
@@ -110,10 +123,32 @@ export default function BecomeInstructorPage() {
             return <Button size="lg" className="mt-8 bg-green-600 hover:bg-green-700" disabled><CheckCircle className="mr-2 h-4 w-4" /> Demande en cours</Button>;
         }
 
-        return <Button size="lg" className="mt-8" onClick={handleRequest} disabled={isSubmitting}>
-             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-             Envoyer ma demande
-            </Button>;
+        return (
+            <div className='flex flex-col items-center gap-4'>
+                {!isProfileComplete && (
+                    <Card className="max-w-2xl bg-amber-50 border-amber-500 text-amber-900">
+                        <CardHeader className="flex flex-row items-center gap-4">
+                            <AlertCircle className="w-6 h-6 text-amber-700"/>
+                            <div>
+                                <CardTitle>Profil incomplet</CardTitle>
+                                <CardDescription className='text-amber-800'>
+                                    Pour devenir formateur, votre profil doit être complet (photo, biographie et compétences).
+                                </CardDescription>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                             <Button asChild>
+                                <Link href="/dashboard/settings">Compléter mon profil</Link>
+                            </Button>
+                        </CardContent>
+                    </Card>
+                )}
+                 <Button size="lg" className="mt-4" onClick={handleRequest} disabled={isSubmitting || !isProfileComplete}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Envoyer ma demande
+                </Button>
+            </div>
+        );
     }
 
 
@@ -126,7 +161,9 @@ export default function BecomeInstructorPage() {
                     <p className="mt-4 text-lg md:text-xl max-w-3xl mx-auto text-muted-foreground">
                         {t('instructor_hero_subtitle')}
                     </p>
-                    {renderCallToActionButton()}
+                    <div className='mt-8'>
+                        {renderCallToActionButton()}
+                    </div>
                 </div>
             </section>
 
@@ -230,7 +267,9 @@ export default function BecomeInstructorPage() {
                     <p className="mt-4 text-lg md:text-xl max-w-3xl mx-auto text-muted-foreground">
                         {t('instructor_cta_subtitle')}
                     </p>
-                    {renderCallToActionButton()}
+                    <div className='mt-8'>
+                        {renderCallToActionButton()}
+                    </div>
                 </div>
             </section>
         </div>

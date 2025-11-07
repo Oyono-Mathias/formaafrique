@@ -44,6 +44,7 @@ const profileSchema = z.object({
   paysOrigine: z.string().min(1, { message: 'Veuillez sélectionner un pays.' }),
   paysActuel: z.string().min(1, { message: 'Veuillez sélectionner un pays.' }),
   bio: z.string().max(300, { message: 'La biographie ne doit pas dépasser 300 caractères.' }).optional(),
+  skills: z.string().optional(), // We'll handle string to array conversion
 });
 
 type EditProfileDialogProps = {
@@ -69,6 +70,7 @@ export default function EditProfileDialog({
       paysOrigine: '',
       paysActuel: '',
       bio: '',
+      skills: '',
     },
   });
 
@@ -79,12 +81,15 @@ export default function EditProfileDialog({
         paysOrigine: userProfile.paysOrigine,
         paysActuel: userProfile.paysActuel,
         bio: userProfile.bio || '',
+        skills: (userProfile.skills || []).join(', '),
       });
     }
   }, [userProfile, form, isOpen]);
 
   async function onSubmit(values: z.infer<typeof profileSchema>) {
     if (!userId || !db) return;
+
+    const skillsArray = values.skills ? values.skills.split(',').map(s => s.trim()).filter(s => s) : [];
 
     const userDocRef = doc(db, 'users', userId);
     try {
@@ -93,6 +98,7 @@ export default function EditProfileDialog({
         paysOrigine: values.paysOrigine,
         paysActuel: values.paysActuel,
         bio: values.bio,
+        skills: skillsArray,
       });
       toast({
         title: 'Profil mis à jour',
@@ -111,7 +117,7 @@ export default function EditProfileDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Modifier mes informations</DialogTitle>
           <DialogDescription>
@@ -119,7 +125,7 @@ export default function EditProfileDialog({
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
             <FormField
               control={form.control}
               name="name"
@@ -142,6 +148,20 @@ export default function EditProfileDialog({
                   <FormControl>
                     <Textarea {...field} placeholder="Parlez un peu de vous..." rows={3} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="skills"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Compétences</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Ex: Développement Web, Marketing, Design" />
+                  </FormControl>
+                   <p className="text-xs text-muted-foreground">Séparez les compétences par des virgules.</p>
                   <FormMessage />
                 </FormItem>
               )}
@@ -201,7 +221,7 @@ export default function EditProfileDialog({
                 />
             </div>
             
-            <DialogFooter className="pt-4">
+            <DialogFooter className="pt-4 sticky bottom-0 bg-background py-4 -mx-6 px-6 border-t">
               <DialogClose asChild>
                 <Button type="button" variant="secondary">
                   Annuler
