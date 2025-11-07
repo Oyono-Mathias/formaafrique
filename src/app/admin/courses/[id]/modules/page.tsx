@@ -13,6 +13,7 @@ import {
   deleteDoc,
   updateDoc,
   serverTimestamp,
+  getDocs,
 } from 'firebase/firestore';
 
 import { useFirestore, useCollection, useDoc } from '@/firebase';
@@ -70,6 +71,12 @@ const moduleSchema = z.object({
     .min(10, { message: 'La description doit avoir au moins 10 caractères.' }),
 });
 
+const videoSchema = z.object({
+  titre: z.string().min(3, 'Titre requis.'),
+  url: z.string().url('URL de vidéo valide requise.'),
+});
+
+
 export default function AdminManageModulesPage({
   params,
 }: {
@@ -87,8 +94,11 @@ export default function AdminManageModulesPage({
   const db = useFirestore();
   const { toast } = useToast();
 
+  const [selectedModule, setSelectedModule] = useState<Module | null>(null);
   const [editingModule, setEditingModule] = useState<Module | null>(null);
   const [isModuleModalOpen, setIsModuleModalOpen] = useState(false);
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+  const [editingVideo, setEditingVideo] = useState<Video | null>(null);
  
   const sortedModules = useMemo(() => {
     return (modulesData || []).sort((a, b) => a.ordre - b.ordre);
@@ -97,6 +107,11 @@ export default function AdminManageModulesPage({
   const moduleForm = useForm<z.infer<typeof moduleSchema>>({
     resolver: zodResolver(moduleSchema),
     defaultValues: { titre: '', description: '' },
+  });
+
+  const videoForm = useForm<z.infer<typeof videoSchema>>({
+    resolver: zodResolver(videoSchema),
+    defaultValues: { titre: '', url: '' },
   });
 
   useEffect(() => {
@@ -112,18 +127,29 @@ export default function AdminManageModulesPage({
     }
   }, [editingModule, isModuleModalOpen, moduleForm]);
 
+  useEffect(() => {
+    if (isVideoModalOpen) {
+      if (editingVideo) {
+        videoForm.reset({
+          titre: editingVideo.titre,
+          url: editingVideo.url,
+        });
+      } else {
+        videoForm.reset({ titre: '', url: '' });
+      }
+    }
+  }, [editingVideo, isVideoModalOpen, videoForm]);
+
 
   async function onModuleSubmit(values: z.infer<typeof moduleSchema>) {
     if (!db || !courseId) return;
 
     try {
       if (editingModule) {
-        // Update existing module
         const moduleRef = doc(db, `courses/${courseId}/modules`, editingModule.id!);
         await updateDoc(moduleRef, values);
         toast({ title: 'Module mis à jour !' });
       } else {
-        // Create new module
         const modulesCollectionRef = collection(db, 'courses', courseId, 'modules');
         await addDoc(modulesCollectionRef, {
           ...values,
@@ -143,6 +169,42 @@ export default function AdminManageModulesPage({
     }
   }
 
+  async function onVideoSubmit(values: z.infer<typeof videoSchema>) {
+    if (!db || !courseId || !selectedModule?.id) return;
+
+    try {
+      const videosCollectionRef = collection(
+        db,
+        `courses/${courseId}/modules/${selectedModule.id}/videos`
+      );
+      
+      const videosSnapshot = await getDocs(videosCollectionRef);
+      const nextOrder = (videosSnapshot.docs.length || 0) + 1;
+
+      if (editingVideo) {
+        const videoRef = doc(db, `courses/${courseId}/modules/${selectedModule.id}/videos`, editingVideo.id!);
+        await updateDoc(videoRef, values);
+        toast({ title: 'Vidéo mise à jour !' });
+      } else {
+        await addDoc(videosCollectionRef, {
+          ...values,
+          ordre: nextOrder,
+          publie: false,
+        });
+        toast({ title: 'Vidéo ajoutée !' });
+      }
+      videoForm.reset();
+      setIsVideoModalOpen(false);
+      setEditingVideo(null);
+    } catch (error) {
+      console.error('Error adding video:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Erreur',
+        description: "Impossible d'ajouter la vidéo.",
+      });
+    }
+  }
 
   const handleDeleteModule = async (moduleId: string) => {
     if (!db || !courseId) return;
@@ -151,9 +213,6 @@ export default function AdminManageModulesPage({
     );
     if (!confirmed) return;
 
-    // A real implementation should delete subcollections recursively.
-    // Firestore client SDK cannot do this. This needs a Cloud Function or server-side code.
-    // For now, we just delete the module doc.
     const moduleRef = doc(db, `courses/${courseId}/modules`, moduleId);
     try {
       await deleteDoc(moduleRef);
@@ -167,6 +226,12 @@ export default function AdminManageModulesPage({
   const openModuleDialog = (module: Module | null = null) => {
     setEditingModule(module);
     setIsModuleModalOpen(true);
+  };
+  
+  const openVideoDialog = (module: Module, video: Video | null = null) => {
+    setSelectedModule(module);
+    setEditingVideo(video);
+    setIsVideoModalOpen(true);
   };
 
   if (!courseId) {
@@ -225,32 +290,36 @@ export default function AdminManageModulesPage({
         {sortedModules.length > 0 ? (
           sortedModules.map((module) => (
             <Card key={module.id}>
-              <CardHeader className="flex-row justify-between items-start">
+              <CardHeader className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
                 <div>
                   <CardTitle>{module.titre}</CardTitle>
                   <CardDescription>{module.description}</CardDescription>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => openModuleDialog(module)}
                   >
-                    <Edit className="mr-2 h-4 w-4" /> Modifier
+                    <Edit className="mr-2 h-4 w-4" /> Modifier Module
                   </Button>
                   <Button
                     variant="destructive"
                     size="sm"
                     onClick={() => handleDeleteModule(module.id!)}
                   >
-                    <Trash2 className="mr-2 h-4 w-4" /> Supprimer
+                    <Trash2 className="mr-2 h-4 w-4" /> Supprimer Module
+                  </Button>
+                  <Button size="sm" onClick={() => openVideoDialog(module)}>
+                    <PlusCircle className="mr-2 h-4 w-4" /> Ajouter une Vidéo
                   </Button>
                 </div>
               </CardHeader>
               <CardContent>
                 <ModuleVideos
                   courseId={courseId}
-                  moduleId={module.id!}
+                  module={module}
+                  onEditVideo={(video) => openVideoDialog(module, video)}
                 />
               </CardContent>
             </Card>
@@ -259,7 +328,7 @@ export default function AdminManageModulesPage({
           <div className="text-center text-muted-foreground py-12 border-2 border-dashed rounded-lg">
             <p className="font-semibold">Aucun module pour cette formation.</p>
             <p className="text-sm">
-              Le formateur n'a pas encore ajouté de contenu.
+              Le formateur n'a pas encore ajouté de contenu, ou vous pouvez en ajouter un.
             </p>
           </div>
         )}
@@ -330,18 +399,95 @@ export default function AdminManageModulesPage({
           </Form>
         </DialogContent>
       </Dialog>
+
+      {/* Video Dialog */}
+      <VideoDialog
+        isOpen={isVideoModalOpen}
+        setIsOpen={setIsVideoModalOpen}
+        form={videoForm}
+        onSubmit={onVideoSubmit}
+        isEditing={!!editingVideo}
+        moduleTitle={selectedModule?.titre || ''}
+      />
     </div>
   );
 }
 
+function VideoDialog({ isOpen, setIsOpen, form, onSubmit, isEditing, moduleTitle }: any) {
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            {isEditing
+              ? 'Modifier la vidéo'
+              : `Ajouter une vidéo à "${moduleTitle}"`}
+          </DialogTitle>
+          <DialogDescription>
+            Entrez les détails de la vidéo ci-dessous. Utilisez un lien YouTube ou Google Drive.
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-4 py-4"
+          >
+            <FormField
+              control={form.control}
+              name="titre"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Titre de la vidéo</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Ex: Les bases du bilan" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="url"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>URL de la vidéo</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="https://www.youtube.com/watch?v=..." />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button" variant="secondary">
+                  Annuler
+                </Button>
+              </DialogClose>
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                {isEditing ? 'Enregistrer les modifications' : 'Ajouter la vidéo'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 function ModuleVideos({
   courseId,
-  moduleId,
+  module,
+  onEditVideo,
 }: {
   courseId: string;
-  moduleId: string;
+  module: Module;
+  onEditVideo: (video: Video) => void;
 }) {
+  const moduleId = module.id!;
   const { data: videosData, loading, error } = useCollection<Video>(
     courseId && moduleId ? `courses/${courseId}/modules/${moduleId}/videos` : null
   );
@@ -368,6 +514,24 @@ function ModuleVideos({
         variant: 'destructive',
         title: 'Erreur',
         description: "Impossible de changer le statut de la vidéo.",
+      });
+    }
+  };
+
+  const handleDeleteVideo = async (videoId: string) => {
+    if (!db || !courseId || !moduleId) return;
+    const confirmed = window.confirm('Voulez-vous vraiment supprimer cette vidéo ?');
+    if (!confirmed) return;
+    
+    const videoRef = doc(db, `courses/${courseId}/modules/${moduleId}/videos`, videoId);
+    try {
+      await deleteDoc(videoRef);
+      toast({ title: 'Vidéo supprimée !' });
+    } catch (e) {
+      toast({
+        variant: 'destructive',
+        title: 'Erreur',
+        description: "Impossible de supprimer la vidéo.",
       });
     }
   };
@@ -413,6 +577,22 @@ function ModuleVideos({
                         {video.publie ? 'Dépublier' : 'Publier'}
                     </Button>
                 </div>
+                 <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => onEditVideo(video)}
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-destructive h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+                  onClick={() => handleDeleteVideo(video.id!)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
             </div>
           ))}
