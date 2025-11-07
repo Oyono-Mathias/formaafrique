@@ -1,83 +1,110 @@
 
 import Image from 'next/image';
-import { Button } from '@/components/ui/button';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { Lightbulb, Rocket, Quote } from 'lucide-react';
+import { Lightbulb, Rocket, Users, Target, BarChart, Globe } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function AboutPage() {
   const founderImage = PlaceHolderImages.find((img) => img.id === 'instructor-yann');
 
+  const stats = [
+    { label: "Apprenants passionnés", value: "+10,000", icon: Users },
+    { label: "Formations d'experts", value: "+150", icon: Rocket },
+    { label: "Pays touchés", value: "25+", icon: Globe },
+    { label: "Taux de réussite", value: "92%", icon: BarChart },
+  ];
+
   return (
-    <div className="bg-primary/5 py-12 md:py-20">
-      <div className="max-w-4xl mx-auto bg-card rounded-2xl shadow-xl p-6 md:p-10">
-
-        <header className="text-center mb-10">
-          <h1 className="text-3xl md:text-4xl font-bold text-primary font-headline mb-2">
-            👤 À propos du fondateur — <span className="text-green-600">M. Oyono Mathias</span>
-          </h1>
-          <p className="text-lg text-muted-foreground">
-            Fondateur de <strong>Formafrique</strong> — Entrepreneur digital, créateur no-code et passionné par la formation africaine.
+    <div className="bg-background text-foreground">
+      {/* Hero Section */}
+      <section className="bg-primary/10 py-20 text-center">
+        <div className="container px-4">
+          <Target className="mx-auto h-12 w-12 text-primary mb-4" />
+          <h1 className="text-4xl md:text-5xl font-bold font-headline text-primary">Notre Mission</h1>
+          <p className="mt-4 text-lg md:text-xl max-w-3xl mx-auto text-muted-foreground">
+            Rendre l'éducation de qualité accessible à tous en Afrique, en fournissant les compétences nécessaires pour construire l'avenir du continent.
           </p>
-        </header>
+        </div>
+      </section>
 
-        <section className="flex flex-wrap md:flex-nowrap items-center justify-center gap-8 md:gap-12">
-          <div className="flex-shrink-0 text-center">
-            {founderImage && (
-              <Image
-                src={founderImage.imageUrl}
-                alt="Fondateur Formafrique, M. Oyono Mathias"
-                width={250}
-                height={250}
-                className="rounded-full object-cover border-4 border-green-600 shadow-lg mx-auto"
-                data-ai-hint={founderImage.imageHint}
-              />
-            )}
+      {/* Our Story Section */}
+      <section className="py-16 sm:py-24">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="order-2 lg:order-1">
+              <h2 className="text-3xl font-bold tracking-tight text-primary sm:text-4xl font-headline mb-4">Notre Histoire</h2>
+              <div className="prose prose-lg max-w-none text-foreground/90 space-y-4">
+                <p>
+                  L'histoire de <strong>FormaAfrique</strong> est celle de la passion et de la persévérance. Elle commence avec son fondateur, <strong>M. Oyono Mathias</strong>, un entrepreneur camerounais et centrafricain animé par une soif d'apprendre insatiable.
+                </p>
+                <p>
+                  Sans formation de développeur, il a débuté en assemblant des lignes de code, mû par la curiosité de comprendre leur fonctionnement. Armé de son seul téléphone Android, il a appris à créer des sites web, transformant sa détermination en compétence.
+                </p>
+                <p>
+                  De cette expérience est née une conviction : avec les bons outils et de la volonté, chaque jeune Africain peut surmonter les barrières techniques et réaliser son potentiel. <strong>FormaAfrique a été créée sur ce principe fondamental.</strong>
+                </p>
+              </div>
+            </div>
+            <div className="order-1 lg:order-2 flex justify-center">
+              {founderImage && (
+                <Image
+                  src={founderImage.imageUrl}
+                  alt="Fondateur Formafrique, M. Oyono Mathias"
+                  width={350}
+                  height={350}
+                  className="rounded-full object-cover border-8 border-primary/20 shadow-xl"
+                  data-ai-hint={founderImage.imageHint}
+                />
+              )}
+            </div>
           </div>
-          <div className="flex-grow prose prose-lg max-w-none text-foreground/90">
-            <p>
-              Fondateur et concepteur de <strong>Formafrique</strong>, <strong>M. Oyono Mathias</strong> est un entrepreneur camerounais et centrafricain passionné par le digital, l’éducation et le développement personnel.
-              Son parcours illustre la <strong>détermination</strong>, la <strong>curiosité</strong> et la <strong>soif d’apprendre</strong> qui animent la jeunesse africaine.
-            </p>
-            <p>
-              Au départ, il n’était pas développeur web. Ses débuts se résumaient à <strong>copier-coller des lignes de code</strong> sans tout comprendre.
-              Mais animé par la passion d’apprendre, il a décidé de comprendre le rôle de chaque balise, chaque style, et chaque fonction.
-              Grâce à sa persévérance, il a appris à créer ses propres sites web à partir de son <strong>téléphone Android</strong> avec l’application <strong>TrebEdit</strong>.
-            </p>
-            <p>
-              Aujourd’hui, il se définit comme un <strong>développeur no-code</strong> : un créateur qui conçoit des plateformes puissantes et fonctionnelles sans écrire de code complexe, mais en comprenant parfaitement leur fonctionnement.
+        </div>
+      </section>
+
+      {/* Impact Section */}
+      <section className="bg-muted py-16 sm:py-24">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="text-center max-w-2xl mx-auto">
+            <h2 className="text-3xl font-bold tracking-tight text-primary sm:text-4xl font-headline">Notre Impact</h2>
+            <p className="mt-4 text-lg text-foreground/70">
+              Nous sommes fiers de contribuer au développement des compétences sur tout le continent.
             </p>
           </div>
-        </section>
-
-        <section className="mt-12">
-          <h2 className="text-2xl font-bold font-headline text-primary flex items-center gap-3 mb-3"><Lightbulb /> Sa vision</h2>
-          <p className="prose prose-lg max-w-none text-foreground/90">
-            À travers <strong>Formafrique</strong>, il veut prouver qu’avec de la volonté et de la patience, tout jeune africain peut apprendre, créer et réussir.
-            Sa mission est de rendre la formation professionnelle accessible à tous, même à ceux qui n’ont ni ordinateur, ni expérience technique.
-          </p>
-        </section>
-
-        <section className="mt-10">
-          <h2 className="text-2xl font-bold font-headline text-primary flex items-center gap-3 mb-3"><Rocket /> Son message à la jeunesse africaine</h2>
-          <blockquote className="border-l-4 border-green-600 pl-6 py-4 bg-muted rounded-r-lg my-4">
-            <p className="text-lg italic text-foreground/80">
-              “Je n’étais pas développeur. J’ai commencé par copier et coller, sans rien comprendre.
-              Aujourd’hui, je crée mes propres sites et je partage mes connaissances.
-              Si moi j’ai pu le faire, toi aussi tu peux y arriver.”
+          <div className="mt-16 grid grid-cols-2 lg:grid-cols-4 gap-8">
+            {stats.map((stat) => (
+              <Card key={stat.label} className="text-center bg-card shadow-lg hover:shadow-primary/20 transition-shadow">
+                <CardHeader className="flex flex-col items-center">
+                  <div className="p-4 bg-primary/10 rounded-full mb-2">
+                    <stat.icon className="w-8 h-8 text-primary" />
+                  </div>
+                  <CardTitle className="text-4xl font-bold">{stat.value}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground font-medium">{stat.label}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+      
+      {/* Vision Section */}
+      <section className="py-16 sm:py-24">
+        <div className="container mx-auto px-4 md:px-6 text-center max-w-3xl">
+           <Lightbulb className="mx-auto h-12 w-12 text-primary mb-4" />
+           <h2 className="text-3xl font-bold tracking-tight text-primary sm:text-4xl font-headline">Notre Vision</h2>
+            <p className="mt-4 text-lg text-foreground/80">
+                Nous aspirons à un avenir où chaque Africain a le pouvoir de transformer sa vie et sa communauté grâce à une éducation accessible et de classe mondiale. Nous voulons être le catalyseur qui libère le potentiel de millions de personnes, en formant les leaders, les innovateurs et les créateurs de demain.
             </p>
-          </blockquote>
-          <p className="prose prose-lg max-w-none text-foreground/90">
-            Son histoire est une source d’inspiration pour tous les jeunes africains : <strong>il n’y a pas de limites à ce qu’on peut accomplir quand on croit en soi</strong>.
-          </p>
-        </section>
+             <blockquote className="border-l-4 border-primary pl-6 py-4 bg-muted rounded-r-lg my-8 text-left max-w-xl mx-auto">
+                <p className="text-xl italic text-foreground/80">
+                    “Si moi j’ai pu le faire, toi aussi tu peux y arriver. Il n’y a pas de limites à ce qu’on peut accomplir quand on croit en soi.”
+                </p>
+                 <footer className="text-right mt-2 font-semibold text-primary">— M. Oyono Mathias, Fondateur</footer>
+            </blockquote>
+        </div>
+      </section>
 
-        <footer className="text-center mt-16">
-          <h3 className="text-xl md:text-2xl font-semibold text-green-600 italic">
-            « Former l’Afrique d’aujourd’hui pour bâtir celle de demain. »
-          </h3>
-        </footer>
-
-      </div>
     </div>
   );
 }
