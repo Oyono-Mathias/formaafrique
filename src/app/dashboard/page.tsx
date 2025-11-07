@@ -20,6 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { Timestamp } from 'firebase/firestore';
 
 const CourseCard = ({ course }: { course: Course }) => {
     const courseImage = PlaceHolderImages.find((img) => img.id === course.image);
@@ -94,7 +95,11 @@ export default function DashboardPage() {
     return {
         recommendedCourses: shuffled.slice(0, 10),
         popularCourses: shuffled.slice(10, 20),
-        newCourses: [...allCourses].sort((a,b) => b.date_creation.seconds - a.date_creation.seconds).slice(0, 10)
+        newCourses: [...allCourses].sort((a, b) => {
+            const dateA = a.date_creation instanceof Timestamp ? a.date_creation.toMillis() : new Date(a.date_creation as string).getTime();
+            const dateB = b.date_creation instanceof Timestamp ? b.date_creation.toMillis() : new Date(b.date_creation as string).getTime();
+            return dateB - dateA;
+        }).slice(0, 10),
     }
   }, [allCourses]);
   
