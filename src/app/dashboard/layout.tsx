@@ -41,14 +41,13 @@ const mainNavLinks = [
   { href: '/search', label: 'Rechercher', icon: SearchIcon },
   { href: '/dashboard/courses', label: 'Mon apprentissage', icon: Play },
   { href: '/dashboard/wishlist', label: 'Liste de souhaits', icon: Heart },
-  { href: '/dashboard/profile', label: 'Compte', icon: UserIcon },
+  { href: '/dashboard/settings', label: 'Compte', icon: UserIcon },
 ];
 
 const desktopNavLinks = [
     { href: '/dashboard', label: 'Accueil', icon: Star },
     { href: '/dashboard/courses', label: 'Mes Formations', icon: BookCopy },
     { href: '/dashboard/certificates', label: 'Certificats', icon: GraduationCap },
-    { href: '/dashboard/profile', label: 'Profil', icon: UserIcon },
     { href: '/dashboard/settings', label: 'Paramètres', icon: Settings },
 ];
 
@@ -223,7 +222,7 @@ export default function DashboardLayout({
                 <DropdownMenuLabel>Mon Compte</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href="/dashboard/profile">
+                  <Link href="/dashboard/settings">
                     <UserIcon className="mr-2 h-4 w-4" />
                     <span>Profil</span>
                   </Link>
