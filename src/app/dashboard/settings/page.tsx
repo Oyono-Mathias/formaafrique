@@ -7,7 +7,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useUser } from '@/firebase';
-import { Loader2, Video, User, Lock, Bell, HelpCircle, Share2, BarChart2 } from 'lucide-react';
+import { Loader2, Video, User, Lock, Bell, HelpCircle, Share2, BarChart2, Download } from 'lucide-react';
 import Link from 'next/link';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -15,18 +15,27 @@ import { useState } from 'react';
 import EditProfileDialog from '@/components/dashboard/edit-profile-dialog';
 import { cn } from '@/lib/utils';
 
-const SettingsItem = ({ icon: Icon, title, description, action, onClick }: { icon: React.ElementType, title: string, description: string, action?: React.ReactNode, onClick?: () => void }) => (
-    <div onClick={onClick} className={cn("flex items-center justify-between py-3", onClick && "cursor-pointer")}>
-        <div className="flex items-center gap-4">
-            <Icon className="h-5 w-5 text-muted-foreground" />
-            <div>
-                <p className="font-medium">{title}</p>
-                <p className="text-sm text-muted-foreground">{description}</p>
+const SettingsItem = ({ icon: Icon, title, description, action, onClick, href }: { icon: React.ElementType, title: string, description: string, action?: React.ReactNode, onClick?: () => void, href?: string }) => {
+    const content = (
+        <div onClick={onClick} className={cn("flex items-center justify-between py-3", (onClick || href) && "cursor-pointer")}>
+            <div className="flex items-center gap-4">
+                <Icon className="h-5 w-5 text-muted-foreground" />
+                <div>
+                    <p className="font-medium">{title}</p>
+                    <p className="text-sm text-muted-foreground">{description}</p>
+                </div>
             </div>
+            {action}
         </div>
-        {action}
-    </div>
-);
+    );
+
+    if (href) {
+        return <Link href={href}>{content}</Link>
+    }
+
+    return content;
+};
+
 
 export default function SettingsPage() {
   const { user, userProfile, loading } = useUser();
@@ -61,10 +70,11 @@ export default function SettingsPage() {
           <Card>
               <CardContent className='divide-y p-4'>
                   <SettingsItem 
-                      icon={Video}
-                      title="Qualité de téléchargement"
-                      description="Choisissez la qualité des vidéos téléchargées."
-                      action={<Button variant="outline" size="sm">Auto</Button>}
+                      icon={Download}
+                      title="Options de téléchargement"
+                      description="Gérer la qualité et l'espace de stockage"
+                      href="/dashboard/settings/download-options"
+                      action={<Button variant="outline" size="sm">Gérer</Button>}
                   />
                    <SettingsItem 
                       icon={Video}
@@ -111,22 +121,20 @@ export default function SettingsPage() {
           <h2 className='font-bold text-lg mt-6'>Aide et support</h2>
           <Card>
                <CardContent className='divide-y p-4'>
-                    <Link href="/about">
-                        <SettingsItem 
-                            icon={HelpCircle}
-                            title="En savoir plus sur FormaAfrique"
-                            description="Découvrez notre mission et notre vision."
-                            action={<Button variant="outline" size="sm">Visiter</Button>}
-                        />
-                    </Link>
-                    <Link href="/contact">
-                        <SettingsItem 
-                            icon={HelpCircle}
-                            title="Foire aux questions"
-                            description="Trouvez des réponses à vos questions."
-                            action={<Button variant="outline" size="sm">Consulter</Button>}
-                        />
-                    </Link>
+                    <SettingsItem 
+                        icon={HelpCircle}
+                        title="En savoir plus sur FormaAfrique"
+                        description="Découvrez notre mission et notre vision."
+                        href="/about"
+                        action={<Button variant="outline" size="sm">Visiter</Button>}
+                    />
+                    <SettingsItem 
+                        icon={HelpCircle}
+                        title="Foire aux questions"
+                        description="Trouvez des réponses à vos questions."
+                        href="/contact"
+                        action={<Button variant="outline" size="sm">Consulter</Button>}
+                    />
                    <SettingsItem 
                       icon={Share2}
                       title="Partager l'application"
