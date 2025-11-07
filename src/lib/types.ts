@@ -131,3 +131,9 @@ export interface AdminNotification {
     link?: string;
 }
     
+// This is a temporary API route to fetch collections from the client side
+// as server components are not fully supported with the current firebase setup
+export interface GetCollectionApiRequest {
+    path: string;
+    filters?: { field: string; op: any; value: any }[];
+}

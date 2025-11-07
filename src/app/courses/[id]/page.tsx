@@ -3,7 +3,7 @@
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { CheckCircle, Clock, BarChart, Users, PlayCircle, Loader2 } from 'lucide-react';
+import { CheckCircle, Clock, BarChart, Users, PlayCircle, Loader2, BookOpen } from 'lucide-react';
 import { use } from 'react';
 
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useDoc, useCollection } from '@/firebase';
-import type { Course, Module } from '@/lib/types';
+import type { Course, Module, Video, InstructorProfile } from '@/lib/types';
 import { useMemo } from 'react';
 
 type CoursePageProps = {
@@ -27,17 +27,17 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
 
   const { data: course, loading, error } = useDoc<Course>('courses', courseId);
   const { data: modulesData, loading: modulesLoading } = useCollection<Module>(courseId ? `courses/${courseId}/modules` : null);
+  const { data: instructorData, loading: instructorLoading } = useDoc<InstructorProfile>(course?.instructorId ? 'instructors' : null, course?.instructorId);
 
-  const modules = modulesData || [];
-  
+
   const sortedModules = useMemo(() => {
-      return [...modules].sort((a, b) => a.ordre - b.ordre);
-  }, [modules]);
+      return (modulesData || []).sort((a, b) => a.ordre - b.ordre);
+  }, [modulesData]);
 
   const firstModuleId = (sortedModules.length > 0) ? sortedModules[0].id : null;
 
 
-  if (loading || modulesLoading) {
+  if (loading || modulesLoading || instructorLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -52,8 +52,7 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
 
   const courseImage = PlaceHolderImages.find((img) => img.id === course.image);
   
-  const instructorImageId = `instructor-${course.auteur.split(' ')[0].toLowerCase()}`;
-  const instructorImage = PlaceHolderImages.find((img) => img.id === instructorImageId);
+  const instructorImage = PlaceHolderImages.find((img) => img.id === `instructor-${course.auteur.split(' ')[0].toLowerCase()}`);
   const isFree = course.prix === 0;
 
   return (
@@ -66,16 +65,18 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
               <Badge variant="secondary">{course.categorie}</Badge>
               <h1 className="text-4xl lg:text-5xl font-bold font-headline">{course.titre}</h1>
               <p className="text-lg text-primary-foreground/80">{course.description}</p>
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center">
-                  <Avatar className="h-8 w-8 mr-2">
-                    {instructorImage && (
-                      <AvatarImage src={instructorImage.imageUrl} alt={course.auteur} data-ai-hint={instructorImage.imageHint} />
-                    )}
-                    <AvatarFallback>{course.auteur.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <span>{course.auteur}</span>
-                </div>
+              <div className="flex items-center space-x-4 pt-2">
+                {instructorData && (
+                    <Link href={`/instructors/${instructorData.id}`} className="flex items-center gap-2 group">
+                        <Avatar className="h-10 w-10">
+                            {instructorData.photoURL && (
+                            <AvatarImage src={instructorData.photoURL} alt={instructorData.name} />
+                            )}
+                            <AvatarFallback>{instructorData.name?.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <span className='font-semibold group-hover:underline'>{instructorData.name}</span>
+                    </Link>
+                )}
               </div>
             </div>
             <div className="md:col-span-1">
@@ -99,7 +100,7 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
                     </div>
                     <div className="flex justify-between items-center text-sm">
                       <span className="flex items-center gap-2 text-muted-foreground"><Clock size={16} /> Durée</span>
-                      <span className="font-semibold">{modules.length} modules</span>
+                      <span className="font-semibold">{sortedModules.length} modules</span>
                     </div>
                     <div className="flex justify-between items-center text-sm">
                       <span className="flex items-center gap-2 text-muted-foreground"><BarChart size={16} /> Niveau</span>
@@ -107,14 +108,14 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
                     </div>
                     
                   <Button size="lg" className="w-full" asChild disabled={!firstModuleId}>
-                    {isFree ? (
-                      <Link href={firstModuleId ? `/courses/${course.id}/modules/${firstModuleId}` : '#'}>
+                    {firstModuleId ? (
+                       <Link href={`/courses/${course.id}/modules/${firstModuleId}`}>
                         Commencer la formation
                       </Link>
                     ) : (
-                      <Link href="/donate">
-                        Faire un don pour débloquer
-                      </Link>
+                      <Button size="lg" className="w-full" disabled>
+                        Contenu bientôt disponible
+                      </Button>
                     )}
                   </Button>
                 </CardContent>
@@ -147,12 +148,11 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
                       <CardContent className="p-4 flex items-center justify-between">
                         <div className="flex items-center">
                           <div className="p-3 bg-primary/10 rounded-full mr-4">
-                            <PlayCircle className="h-6 w-6 text-primary" />
+                            <BookOpen className="h-6 w-6 text-primary" />
                           </div>
                           <div>
                             <p className="font-semibold text-lg">{module.titre}</p>
-                            {/* This needs to be updated to fetch video count from subcollection */}
-                            <p className="text-sm text-muted-foreground">Vidéos à venir</p>
+                            <p className="text-sm text-muted-foreground">{module.description}</p>
                           </div>
                         </div>
                         <Button variant="ghost" size="sm">Voir le module</Button>
@@ -160,7 +160,7 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
                     </Card>
                   </Link>
                 ))}
-                 {modules.length === 0 && (
+                 {sortedModules.length === 0 && (
                     <p className="text-muted-foreground">Le contenu du cours sera bientôt disponible.</p>
                 )}
               </div>
@@ -168,31 +168,34 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
           </div>
           
           {/* Instructor bio */}
-          <div className="lg:col-span-1">
-             <Card>
-              <CardHeader>
-                <CardTitle className="font-headline text-2xl">Votre formateur</CardTitle>
-              </CardHeader>
-              <CardContent className="text-center flex flex-col items-center">
-                <Avatar className="w-24 h-24 mb-4 border-4 border-primary">
-                  {instructorImage && (
-                    <AvatarImage src={instructorImage.imageUrl} alt={course.auteur} data-ai-hint={instructorImage.imageHint}/>
-                  )}
-                  <AvatarFallback>{course.auteur.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <h3 className="text-xl font-semibold">{course.auteur}</h3>
-                {/* <p className="text-accent-foreground font-medium">{instructor?.title}</p> */}
-                <p className="mt-4 text-sm text-muted-foreground">
-                  {course.auteur} est un formateur passionné avec une vaste expérience dans son domaine.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+           {instructorData && (
+                <div className="lg:col-span-1">
+                    <Card className='sticky top-24'>
+                        <CardHeader>
+                            <CardTitle className="font-headline text-2xl">Votre formateur</CardTitle>
+                        </CardHeader>
+                        <CardContent className="text-center flex flex-col items-center">
+                            <Avatar className="w-24 h-24 mb-4 border-4 border-primary">
+                            {instructorData.photoURL && (
+                                <AvatarImage src={instructorData.photoURL} alt={instructorData.name} />
+                            )}
+                            <AvatarFallback>{instructorData.name?.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <h3 className="text-xl font-semibold">{instructorData.name}</h3>
+                            <p className="text-accent-foreground font-medium">{instructorData.headline}</p>
+                            <p className="mt-4 text-sm text-muted-foreground">
+                            {instructorData.bio || `${instructorData.name} est un formateur passionné.`}
+                            </p>
+                            <Button asChild variant="outline" className="mt-4">
+                                <Link href={`/instructors/${instructorData.id}`}>Voir le profil complet</Link>
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </div>
+           )}
 
         </div>
       </div>
     </div>
   );
 }
-
-    
