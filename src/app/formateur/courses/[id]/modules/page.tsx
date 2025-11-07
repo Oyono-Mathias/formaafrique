@@ -56,6 +56,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 
 const moduleSchema = z.object({
   titre: z
@@ -295,7 +296,7 @@ export default function ManageModulesPage({
       </div>
 
        <div className="flex justify-between items-center">
-        <Link href={`/apercu/${courseId}`} className='text-sm'>
+        <Link href={`/apercu/${courseId}`} target="_blank" className='text-sm'>
             <Button variant="outline">
                 <PlaySquare className="mr-2 h-4 w-4" />
                 Prévisualiser comme étudiant
@@ -311,28 +312,28 @@ export default function ManageModulesPage({
         {sortedModules.length > 0 ? (
           sortedModules.map((module) => (
             <Card key={module.id}>
-              <CardHeader className="flex-row justify-between items-start">
+              <CardHeader className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
                 <div>
                   <CardTitle>{module.titre}</CardTitle>
                   <CardDescription>{module.description}</CardDescription>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => openModuleDialog(module)}
                   >
-                    <Edit className="mr-2 h-4 w-4" /> Modifier
+                    <Edit className="mr-2 h-4 w-4" /> Modifier Module
                   </Button>
                   <Button
                     variant="destructive"
                     size="sm"
                     onClick={() => handleDeleteModule(module.id!)}
                   >
-                    <Trash2 className="mr-2 h-4 w-4" /> Supprimer
+                    <Trash2 className="mr-2 h-4 w-4" /> Supprimer Module
                   </Button>
                   <Button size="sm" onClick={() => openVideoDialog(module)}>
-                    <VideoIcon className="mr-2 h-4 w-4" /> Ajouter une Vidéo
+                    <PlusCircle className="mr-2 h-4 w-4" /> Ajouter une Vidéo
                   </Button>
                 </div>
               </CardHeader>
