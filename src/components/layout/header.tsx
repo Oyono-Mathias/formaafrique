@@ -41,11 +41,11 @@ export default function Header() {
 
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-primary/20 bg-primary text-primary-foreground shadow-md">
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
         <div className="mr-4 hidden md:flex">
           <Link href="/" className="mr-6 flex items-center">
-            <Logo className="text-primary-foreground" />
+            <Logo />
             <span className="sr-only">FormaAfrique Home</span>
           </Link>
           <nav className="flex items-center space-x-6 text-sm font-medium">
@@ -54,8 +54,8 @@ export default function Header() {
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  'transition-colors hover:text-yellow-custom',
-                  pathname === link.href ? 'text-yellow-custom font-bold' : 'text-primary-foreground/90'
+                  'transition-colors hover:text-foreground/80',
+                  pathname === link.href ? 'text-foreground' : 'text-foreground/60'
                 )}
               >
                 {link.label}
@@ -67,16 +67,16 @@ export default function Header() {
         {/* Mobile Menu */}
         <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
           <SheetTrigger asChild>
-            <Button variant="ghost" className="md:hidden text-primary-foreground hover:bg-primary/80 hover:text-primary-foreground">
+            <Button variant="ghost" className="md:hidden">
               <Menu className="h-6 w-6" />
               <span className="sr-only">Open menu</span>
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="bg-primary text-primary-foreground">
+          <SheetContent side="left">
              <SheetTitle className="sr-only">Menu principal</SheetTitle>
             <div className="flex flex-col h-full">
               <Link href="/" className="mb-8" onClick={closeMobileMenu}>
-                <Logo className="text-primary-foreground" />
+                <Logo />
               </Link>
               <nav className="flex flex-col space-y-4">
                 {navLinks.map((link) => (
@@ -85,8 +85,8 @@ export default function Header() {
                     href={link.href}
                     onClick={closeMobileMenu}
                     className={cn(
-                      'text-lg transition-colors hover:text-yellow-custom',
-                       pathname === link.href ? 'text-yellow-custom font-bold' : 'text-primary-foreground/90'
+                      'text-lg transition-colors hover:text-foreground',
+                       pathname === link.href ? 'text-foreground font-bold' : 'text-foreground/80'
                     )}
                   >
                     {link.label}
@@ -96,8 +96,8 @@ export default function Header() {
                     href="/search"
                     onClick={closeMobileMenu}
                     className={cn(
-                      'text-lg transition-colors hover:text-yellow-custom',
-                       pathname === '/search' ? 'text-yellow-custom font-bold' : 'text-primary-foreground/90'
+                      'text-lg transition-colors hover:text-foreground',
+                       pathname === '/search' ? 'text-foreground font-bold' : 'text-foreground/80'
                     )}
                   >
                     Rechercher
@@ -105,11 +105,11 @@ export default function Header() {
               </nav>
               <div className="mt-auto pt-4">
                 {isAuthenticated ? (
-                  <Button asChild variant="secondary" className="w-full" onClick={closeMobileMenu}>
+                  <Button asChild variant="default" className="w-full" onClick={closeMobileMenu}>
                     <Link href="/dashboard">Tableau de bord</Link>
                   </Button>
                 ) : (
-                  <Button asChild variant="secondary" className="w-full" onClick={closeMobileMenu}>
+                  <Button asChild variant="default" className="w-full" onClick={closeMobileMenu}>
                     <Link href="/login">Connexion / Inscription</Link>
                   </Button>
                 )}
@@ -121,28 +121,28 @@ export default function Header() {
         {/* Logo for mobile */}
         <div className="flex justify-center flex-1 md:hidden">
           <Link href="/">
-              <Logo className="text-primary-foreground"/>
+              <Logo />
           </Link>
         </div>
 
         <div className="flex flex-1 items-center justify-end space-x-4">
           <nav className="hidden md:flex items-center space-x-4">
-            <Link href="/search" className="text-primary-foreground/90 hover:text-yellow-custom p-2">
+            <Link href="/search" className="text-foreground/60 hover:text-foreground/80 p-2">
                 <Search />
                 <span className="sr-only">Rechercher</span>
             </Link>
             {loading ? null : isAuthenticated ? (
-              <Button asChild variant="secondary">
+              <Button asChild variant="default">
                 <Link href="/dashboard">Tableau de bord</Link>
               </Button>
             ) : (
-              <Button asChild variant="secondary" className="hidden md:inline-flex">
+              <Button asChild variant="outline" className="hidden md:inline-flex">
                 <Link href="/login">Connexion / Inscription</Link>
               </Button>
             )}
           </nav>
            <div className="flex items-center md:hidden">
-             <Link href="/search" className="text-primary-foreground/90 hover:text-yellow-custom p-2">
+             <Link href="/search" className="text-foreground/60 hover:text-foreground/80 p-2">
                 <Search />
                 <span className="sr-only">Rechercher</span>
             </Link>
