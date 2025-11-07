@@ -73,7 +73,7 @@ export default function EditProfileDialog({
   });
 
   useEffect(() => {
-    if (userProfile) {
+    if (userProfile && isOpen) {
       form.reset({
         name: userProfile.name,
         paysOrigine: userProfile.paysOrigine,
