@@ -22,10 +22,15 @@ export default function BecomeInstructorPage() {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    const collectionOptions = useMemo(() => {
+        if (!user?.uid) return undefined;
+        return { where: ['userId', '==', user.uid] as [string, '==', string] };
+    }, [user?.uid]);
+
     // Fetch existing requests for the current user
     const { data: requests, loading: requestsLoading } = useCollection<InstructorRequest>(
-        user?.uid ? 'instructor_requests' : undefined, // only run query if user is logged in
-        user?.uid ? { where: ['userId', '==', user.uid] } : undefined
+        user?.uid ? 'instructor_requests' : null,
+        collectionOptions
     );
 
     const pendingRequest = useMemo(() => {
@@ -283,5 +288,3 @@ export default function BecomeInstructorPage() {
         </div>
     );
 }
-
-    

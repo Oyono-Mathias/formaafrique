@@ -74,8 +74,8 @@ export default function AdminCoursesPage() {
     );
 
     return {
-      formateurCourses: allCourses.filter(c => formateurIds.has(c.instructorId)),
-      adminCourses: allCourses.filter(c => !formateurIds.has(c.instructorId)),
+      formateurCourses: allCourses.filter(c => c.instructorId && formateurIds.has(c.instructorId)),
+      adminCourses: allCourses.filter(c => !c.instructorId || !formateurIds.has(c.instructorId)),
       totalCourses: courses.length,
       uniqueCategories: new Set(courses.map(c => c.categorie)).size,
       totalRevenue: courses.reduce((sum, course) => sum + (course.prix > 0 ? 5 * course.prix : 0), 0) // Mock: 5 inscriptions par cours payant
@@ -330,4 +330,3 @@ export default function AdminCoursesPage() {
     </div>
   );
 }
-    

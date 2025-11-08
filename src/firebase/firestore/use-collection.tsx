@@ -5,7 +5,7 @@ import { collection, onSnapshot, query, where, Query, DocumentData, WhereFilterO
 import { useFirestore } from '@/firebase/provider';
 
 interface Options {
-    where?: [string, WhereFilterOp, any];
+    where?: [string, WhereFilterOp, any] | [string, WhereFilterOp, any][];
 }
 
 export function useCollection<T>(collectionName: string | null, options?: Options) {
@@ -15,7 +15,8 @@ export function useCollection<T>(collectionName: string | null, options?: Option
     const [error, setError] = useState<Error | null>(null);
 
     // Memoize the where clause to prevent re-renders from creating new array instances
-    const whereClause = useMemo(() => options?.where, [options?.where]);
+    // JSON.stringify is a common technique to create a stable dependency from an object/array.
+    const optionsDependencies = useMemo(() => JSON.stringify(options?.where), [options?.where]);
 
     useEffect(() => {
         if (!db || !collectionName) {
@@ -23,26 +24,42 @@ export function useCollection<T>(collectionName: string | null, options?: Option
             return;
         }
 
-        // A more robust check for a valid where clause
-        const isValidWhereClause = whereClause && 
-                                   Array.isArray(whereClause) && 
-                                   whereClause.length === 3 && 
-                                   !whereClause.some(val => val === undefined);
-
         let q: Query<DocumentData>;
         const collectionRef = collection(db, collectionName);
 
-        if (isValidWhereClause) {
-            q = query(collectionRef, where(...whereClause));
-        } else if (options?.where) {
-            // If where is provided but invalid, don't query.
-            setLoading(false);
-            setData([]);
-            return;
+        if (options?.where) {
+            // Check if it's a single where clause or an array of where clauses
+            if (Array.isArray(options.where[0])) {
+                // It's an array of where clauses for compound queries
+                const whereClauses = options.where as [string, WhereFilterOp, any][];
+                const queryConstraints = whereClauses.map(w => {
+                    if (w.length !== 3 || w.some(val => val === undefined)) return null;
+                    return where(w[0], w[1], w[2]);
+                }).filter(Boolean);
+
+                if (queryConstraints.length !== whereClauses.length) {
+                     setLoading(false);
+                     setData([]);
+                     return;
+                }
+                
+                q = query(collectionRef, ...queryConstraints as any);
+
+            } else {
+                 // It's a single where clause
+                const whereClause = options.where as [string, WhereFilterOp, any];
+                if (whereClause.length !== 3 || whereClause.some(val => val === undefined)) {
+                    setLoading(false);
+                    setData([]);
+                    return;
+                }
+                q = query(collectionRef, where(whereClause[0], whereClause[1], whereClause[2]));
+            }
         } else {
             q = query(collectionRef);
         }
 
+        setLoading(true);
         const unsubscribe = onSnapshot(
             q,
             (snapshot) => {
@@ -59,7 +76,8 @@ export function useCollection<T>(collectionName: string | null, options?: Option
         );
 
         return () => unsubscribe();
-    }, [db, collectionName, whereClause]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [db, collectionName, optionsDependencies]);
 
     return { data, loading, error };
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useUser, useCollection, useFirestore } from '@/firebase';
@@ -39,10 +39,18 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 export default function FormateurCoursesPage() {
   const { user } = useUser();
   const router = useRouter();
+
+  // Memoize the options object to prevent re-renders in useCollection
+  const collectionOptions = useMemo(() => {
+    if (!user?.uid) return undefined;
+    return { where: ['instructorId', '==', user.uid] as [string, '==', string]};
+  }, [user?.uid]);
+
   const { data: coursesData, loading, error } = useCollection<Course>(
-    'courses', 
-    user?.uid ? { where: ['instructorId', '==', user.uid] } : undefined
+    user?.uid ? 'courses' : null, 
+    collectionOptions
   );
+
   const courses = coursesData || [];
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);

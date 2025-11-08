@@ -32,10 +32,15 @@ export default function WishlistPage() {
   const { user } = useUser();
   const db = useFirestore();
   const { toast } = useToast();
+
+  const collectionOptions = useMemo(() => {
+    if (!user?.uid) return undefined;
+    return { where: ['userId', '==', user.uid] as [string, '==', string] };
+  }, [user?.uid]);
   
   const { data: wishlistItems, loading: wishlistLoading, error: wishlistError } = useCollection<WishlistItem>(
     user?.uid ? 'wishlist' : null,
-    user?.uid ? { where: ['userId', '==', user.uid] } : undefined
+    collectionOptions
   );
 
   const [enrichedWishlist, setEnrichedWishlist] = useState<EnrichedWishlistItem[]>([]);
