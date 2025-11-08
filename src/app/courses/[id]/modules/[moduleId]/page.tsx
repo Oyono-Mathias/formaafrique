@@ -2,9 +2,9 @@
 
 import { notFound, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { PlayCircle, CheckCircle, Lock, Loader2, ArrowLeft } from 'lucide-react';
+import { PlayCircle, CheckCircle, Lock, Loader2, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import React, { use, useMemo, useState, useEffect } from 'react';
-import ReactPlayer from 'react-player/lazy';
+import ReactPlayer from 'react-player';
 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { cn } from '@/lib/utils';
@@ -14,6 +14,7 @@ import type { Course, Module, Video } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { collection, getDocs } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { Progress } from '@/components/ui/progress';
 
 type ModulePageProps = {
   params: {
@@ -28,7 +29,6 @@ export default function ModulePage({ params }: ModulePageProps) {
   const { id: courseId, moduleId } = use(params);
   const router = useRouter();
   const db = useFirestore();
-  const { user } = useUser();
   const { toast } = useToast();
 
   const { data: course, loading: courseLoading } = useDoc<Course>('courses', courseId);
@@ -36,78 +36,51 @@ export default function ModulePage({ params }: ModulePageProps) {
     courseId ? `courses/${courseId}/modules` : null
   );
   
-  const [videosByModule, setVideosByModule] = useState<Record<string, Video[]>>({});
-  const [videosLoading, setVideosLoading] = useState(true);
+  const { data: videosData, loading: videosLoading } = useCollection<Video>(
+    courseId && moduleId ? `courses/${courseId}/modules/${moduleId}/videos` : null
+  );
   
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
 
-  useEffect(() => {
-    if (!courseId || !db || !modulesData || modulesData.length === 0) {
-      if (!modulesLoading) setVideosLoading(false);
-      return;
-    }
+  const sortedModules = useMemo(() => (modulesData || []).sort((a,b) => a.ordre - b.ordre), [modulesData]);
+  const sortedVideos = useMemo(() => (videosData || []).sort((a,b) => a.ordre - b.ordre), [videosData]);
 
-    const fetchAllVideos = async () => {
-      setVideosLoading(true);
-      const allVideos: Record<string, Video[]> = {};
-      for (const module of modulesData) {
-        if (module.id) {
-          try {
-            const videosCollectionRef = collection(db, `courses/${courseId}/modules/${module.id}/videos`);
-            const snapshot = await getDocs(videosCollectionRef);
-            const videos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Video[];
-            allVideos[module.id] = videos.filter(v => v.publie).sort((a, b) => a.ordre - b.ordre);
-          } catch (e) {
-            console.error("Failed to fetch videos for module:", module.id, e);
-            allVideos[module.id] = [];
-          }
-        }
-      }
-      setVideosByModule(allVideos);
-      setVideosLoading(false);
-    };
+  const { currentModule, currentModuleIndex, nextModule, previousModule } = useMemo(() => {
+    const currentIndex = sortedModules.findIndex(m => m.id === moduleId);
+    const currentMod = currentIndex !== -1 ? sortedModules[currentIndex] : null;
+    const nextMod = currentIndex !== -1 ? sortedModules[currentIndex + 1] : null;
+    const prevMod = currentIndex > 0 ? sortedModules[currentIndex - 1] : null;
+    return { currentModule: currentMod, currentModuleIndex: currentIndex, nextModule: nextMod, previousModule: prevMod };
+  }, [sortedModules, moduleId]);
 
-    fetchAllVideos();
-  }, [modulesData, courseId, db, modulesLoading]);
+  const { currentVideoIndex, nextVideo, previousVideo, completedVideosCount } = useMemo(() => {
+    if (!selectedVideo) return { currentVideoIndex: -1, nextVideo: null, previousVideo: null, completedVideosCount: 0 };
+    const vidIndex = sortedVideos.findIndex(v => v.id === selectedVideo.id);
+    const nxtVideo = sortedVideos[vidIndex + 1] || null;
+    const prevVideo = vidIndex > 0 ? sortedVideos[vidIndex - 1] : null;
+    // This is a mock completion count for now. Will be replaced with firestore data.
+    const completedCount = sortedVideos.slice(0, vidIndex + 1).length;
+    return { currentVideoIndex: vidIndex, nextVideo: nxtVideo, previousVideo: prevVideo, completedVideosCount: completedCount };
+  }, [selectedVideo, sortedVideos]);
 
-  const { sortedModulesWithVideos, currentModule, currentModuleIndex } = useMemo(() => {
-    const sortedMods = (modulesData || []).sort((a, b) => a.ordre - b.ordre);
-    const modsWithVideos = sortedMods.map(mod => ({ ...mod, videos: videosByModule[mod.id!] || [] }));
-    const currentIndex = modsWithVideos.findIndex(m => m.id === moduleId);
-    const currentMod = currentIndex !== -1 ? modsWithVideos[currentIndex] : null;
-    
-    return { 
-        sortedModulesWithVideos: modsWithVideos, 
-        currentModule: currentMod,
-        currentModuleIndex: currentIndex,
-    };
-  }, [modulesData, videosByModule, moduleId]);
+  const courseProgress = useMemo(() => {
+    const totalVideos = sortedVideos.length;
+    if (totalVideos === 0) return 0;
+    return (completedVideosCount / totalVideos) * 100;
+  }, [completedVideosCount, sortedVideos.length]);
 
-  const { currentVideoIndex, nextVideo, nextModule } = useMemo(() => {
-      if (!currentModule) return { currentVideoIndex: -1, nextVideo: null, nextModule: null };
-      
-      const vidIndex = currentModule.videos.findIndex(v => v.id === selectedVideo?.id);
-      const nxtVideo = currentModule.videos[vidIndex + 1] || null;
-      const nxtModule = !nxtVideo ? sortedModulesWithVideos[currentModuleIndex + 1] : null;
-
-      return {
-          currentVideoIndex: vidIndex,
-          nextVideo: nxtVideo,
-          nextModule: nxtModule
-      }
-  }, [currentModule, selectedVideo, sortedModulesWithVideos, currentModuleIndex]);
 
   useEffect(() => {
-    if (currentModule && currentModule.videos.length > 0) {
-      if (!selectedVideo || !currentModule.videos.some(v => v.id === selectedVideo.id)) {
-           setSelectedVideo(currentModule.videos[0]);
-      }
-    } else if (currentModule && currentModule.videos.length === 0) {
-      setSelectedVideo(null);
+    // Set the first video as selected by default
+    if (sortedVideos.length > 0 && !selectedVideo) {
+      setSelectedVideo(sortedVideos[0]);
     }
-  }, [currentModule, selectedVideo]);
+  }, [sortedVideos, selectedVideo]);
   
   const handleVideoEnd = () => {
+    // Here we will add logic to mark video as complete in Firestore
+    toast({ title: "Leçon terminée !", description: `"${selectedVideo?.titre}" marquée comme terminée.`});
+
     if (nextVideo) {
       setSelectedVideo(nextVideo);
     } else if (nextModule) {
@@ -121,6 +94,14 @@ export default function ModulePage({ params }: ModulePageProps) {
       router.push(`/dashboard/certificate/${courseId}`);
     }
   };
+  
+  const handleNext = () => {
+      if(nextVideo) setSelectedVideo(nextVideo);
+  }
+  
+  const handlePrevious = () => {
+      if(previousVideo) setSelectedVideo(previousVideo);
+  }
 
   const loading = courseLoading || modulesLoading || videosLoading;
 
@@ -137,26 +118,27 @@ export default function ModulePage({ params }: ModulePageProps) {
     notFound();
   }
 
-  const handleVideoSelect = (video: Video, module: ModuleWithVideos) => {
-    if(module.id !== moduleId) {
-        router.push(`/courses/${courseId}/modules/${module.id}`, { scroll: false });
-    }
-    setSelectedVideo(video);
-  };
-
   return (
-    <div className="flex flex-col lg:flex-row min-h-[calc(100vh-4rem)] bg-background">
-      <div className="flex-grow lg:w-3/4 p-4 md:p-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="mb-4">
-             <Button variant="ghost" asChild>
-                <Link href={`/courses/${course.id}`}>
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Retour à la formation
-                </Link>
-            </Button>
-          </div>
-          <div className="aspect-video bg-black rounded-lg overflow-hidden mb-6 shadow-lg">
+    <div className="flex flex-col min-h-[calc(100vh-4rem)] bg-background">
+       <header className="p-4 border-b flex justify-between items-center bg-card">
+        <Button variant="ghost" asChild>
+            <Link href={`/courses/${course.id}`}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Retour à la formation
+            </Link>
+        </Button>
+        <div className="text-center">
+            <h1 className="text-xl font-bold font-headline text-primary hidden md:block">
+                {currentModule.titre}
+            </h1>
+            <p className='text-sm text-muted-foreground'>Leçon {currentModuleIndex + 1} / {sortedModules.length}</p>
+        </div>
+        <div className="w-48"></div>
+       </header>
+
+      <div className="flex-grow flex flex-col md:flex-row">
+        <main className="flex-1 p-4 md:p-8">
+             <div className="aspect-video bg-black rounded-lg overflow-hidden mb-6 shadow-lg">
              {selectedVideo?.url ? (
                 <ReactPlayer
                     url={selectedVideo.url}
@@ -165,78 +147,65 @@ export default function ModulePage({ params }: ModulePageProps) {
                     height="100%"
                     playing={true}
                     onEnded={handleVideoEnd}
+                    config={{
+                        file: {
+                            attributes: {
+                                controlsList: 'nodownload' // prevent download
+                            }
+                        }
+                    }}
                 />
              ) : (
                 <div className='w-full h-full bg-muted flex items-center justify-center text-center p-4'>
                     <p className='text-muted-foreground'>
-                        {currentModule.videos.length === 0 ? "Ce module ne contient aucune vidéo publiée." : "Sélectionnez une vidéo pour commencer."}
+                        {sortedVideos.length === 0 ? "Ce module ne contient aucune vidéo publiée." : "Sélectionnez une vidéo pour commencer."}
                     </p>
                 </div>
              )}
-          </div>
-          <h1 className="text-3xl md:text-4xl font-bold font-headline text-primary mb-2">
-            {selectedVideo?.titre || currentModule.titre}
-          </h1>
-          <p className="text-muted-foreground mb-6">
-            Leçon en cours de la formation : <Link href={`/courses/${course.id}`} className="text-primary hover:underline">{course.titre}</Link>
-          </p>
-          <Separator />
-          <div className="prose max-w-none mt-8">
-            <h2 className="font-headline text-2xl">À propos de cette leçon</h2>
-            <p>{currentModule.description || "Contenu de la leçon à venir."}</p>
-          </div>
-        </div>
+            </div>
+             <div className="mt-6 border-t pt-6">
+                <div className="flex justify-between items-center">
+                    <Button variant="outline" onClick={handlePrevious} disabled={!previousVideo}>
+                        <ChevronLeft className="mr-2 h-4 w-4" /> Précédent
+                    </Button>
+                     <div className="w-full max-w-xs mx-4">
+                        <Progress value={courseProgress} />
+                        <p className='text-center text-sm text-muted-foreground mt-1'>{Math.round(courseProgress)}% terminé</p>
+                    </div>
+                    <Button onClick={handleNext} disabled={!nextVideo}>
+                        Suivant <ChevronRight className="ml-2 h-4 w-4" />
+                    </Button>
+                </div>
+            </div>
+        </main>
+         <aside className="w-full md:w-80 bg-primary/5 border-l p-4 overflow-y-auto">
+            <h2 className="text-lg font-bold font-headline mb-4">Vidéos du module</h2>
+             <ul className="space-y-2 list-none">
+                {sortedVideos.length > 0 ? (
+                sortedVideos.map((video, index) => (
+                    <li key={video.id}>
+                    <button
+                        onClick={() => setSelectedVideo(video)}
+                        className={cn(
+                        "block w-full text-left p-3 rounded-md transition-colors text-sm hover:bg-background",
+                        selectedVideo?.id === video.id && "bg-primary/10 text-primary font-semibold"
+                        )}
+                    >
+                        <div className="flex items-start gap-3">
+                            <span className='font-mono text-muted-foreground text-xs pt-1'>{String(index + 1).padStart(2, '0')}</span>
+                            <span className="font-medium flex-grow">{video.titre}</span>
+                            <CheckCircle className={cn('h-5 w-5 text-green-500 flex-shrink-0', index < currentVideoIndex ? 'opacity-100' : 'opacity-0')} />
+                        </div>
+                    </button>
+                    </li>
+                ))
+                ) : (
+                <li className='p-3 text-sm text-muted-foreground'>Aucune vidéo publiée dans ce module.</li>
+                )}
+            </ul>
+        </aside>
       </div>
 
-      <aside className="w-full lg:w-1/4 bg-primary/5 border-l p-4 lg:p-6 overflow-y-auto max-h-screen">
-        <h2 className="text-xl font-bold font-headline mb-4">Contenu du cours</h2>
-        <Accordion type="single" collapsible defaultValue={`module-${currentModule.id}`} className="w-full">
-            {sortedModulesWithVideos.map((module, index) => {
-              const isCurrentModule = module.id === currentModule.id;
-              const isCompleted = index < currentModuleIndex;
-              const isLocked = false; 
-
-              return (
-                <AccordionItem value={`module-${module.id!}`} key={module.id}>
-                    <AccordionTrigger 
-                      className={cn('font-semibold hover:no-underline', isCurrentModule && 'text-primary')}
-                      disabled={isLocked}
-                      onClick={() => router.push(`/courses/${courseId}/modules/${module.id}`, { scroll: false })}
-                    >
-                         <div className="flex items-center gap-3 text-left">
-                          {isCompleted ? <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" /> : isLocked ? <Lock className='h-5 w-5 text-muted-foreground flex-shrink-0' /> : <PlayCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />}
-                          <span>{module.titre}</span>
-                        </div>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <ul className="space-y-1 pl-4 list-none">
-                        {module.videos.length > 0 ? (
-                          module.videos.map((video) => (
-                            <li key={video.id}>
-                              <button
-                                onClick={() => handleVideoSelect(video, module)}
-                                className={cn(
-                                  "block w-full text-left p-3 rounded-md transition-colors text-sm hover:bg-background",
-                                  selectedVideo?.id === video.id && "bg-primary/10 text-primary font-semibold"
-                                )}
-                              >
-                                <div className="flex items-center">
-                                  <PlayCircle className="h-4 w-4 mr-3 text-muted-foreground flex-shrink-0" />
-                                  <span className="font-medium">{video.titre}</span>
-                                </div>
-                              </button>
-                            </li>
-                          ))
-                        ) : (
-                          <li className='p-3 text-sm text-muted-foreground'>Aucune vidéo publiée.</li>
-                        )}
-                      </ul>
-                    </AccordionContent>
-                </AccordionItem>
-              );
-            })}
-        </Accordion>
-      </aside>
     </div>
   );
 }
