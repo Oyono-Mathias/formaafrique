@@ -124,30 +124,30 @@ export default function ModulePage({ params }: ModulePageProps) {
 
   const getEmbedUrl = (url: string): string | null => {
     if (!url) return null;
+    let videoId: string | null = null;
     try {
-      const urlObj = new URL(url);
-      if (urlObj.hostname.includes('youtube.com') || urlObj.hostname.includes('youtu.be')) {
-        const videoId = urlObj.hostname.includes('youtu.be')
-          ? urlObj.pathname.slice(1)
-          : urlObj.searchParams.get('v');
-        if (!videoId) return null;
-        // Ajout des paramètres pour un lecteur plus professionnel
-        const embedUrl = new URL(`https://www.youtube.com/embed/${videoId}`);
-        embedUrl.searchParams.append('rel', '0'); // Désactiver les vidéos similaires à la fin
-        embedUrl.searchParams.append('showinfo', '0'); // Déprécié, mais on le garde pour compatibilité
-        embedUrl.searchParams.append('modestbranding', '1'); // Logo YouTube moins visible
-        embedUrl.searchParams.append('iv_load_policy', '3'); // Désactiver les annotations
-        return embedUrl.toString();
-      }
-      if (urlObj.hostname.includes('drive.google.com')) {
-        const match = url.match(/file\/d\/([a-zA-Z0-9_-]+)/);
-        const fileId = match ? match[1] : null;
-        return fileId ? `https://drive.google.com/file/d/${fileId}/preview` : null;
-      }
-      return url; 
+        const urlObj = new URL(url);
+        if (urlObj.hostname.includes('youtube.com')) {
+            videoId = urlObj.searchParams.get('v');
+        } else if (urlObj.hostname.includes('youtu.be')) {
+            videoId = urlObj.pathname.slice(1);
+        } else if (urlObj.hostname.includes('drive.google.com')) {
+            const match = url.match(/file\/d\/([a-zA-Z0-9_-]+)/);
+            return match ? `https://drive.google.com/file/d/${match[1]}/preview` : url;
+        }
+
+        if (videoId) {
+            const embedUrl = new URL(`https://www.youtube.com/embed/${videoId}`);
+            embedUrl.searchParams.append('rel', '0'); // Disable related videos
+            embedUrl.searchParams.append('showinfo', '0'); // Deprecated but for compatibility
+            embedUrl.searchParams.append('modestbranding', '1'); // Less prominent YouTube logo
+            embedUrl.searchParams.append('iv_load_policy', '3'); // Disable annotations
+            return embedUrl.toString();
+        }
+        return url;
     } catch (error) {
-      console.error("Invalid video URL:", error);
-      return null;
+        console.error("Invalid URL:", error);
+        return url; // Fallback to original URL if parsing fails
     }
   };
   
