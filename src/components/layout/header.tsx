@@ -1,22 +1,26 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Menu, X, Search } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Menu, X, Search, LogOut } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Logo } from '@/components/icons/logo';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { useUser } from '@/firebase';
+import { useUser, useAuth } from '@/firebase';
 import { useLanguage } from '@/contexts/language-context';
+import { signOut } from 'firebase/auth';
 
 export default function Header() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { t } = useLanguage();
-  
+  const { user, loading } = useUser();
+  const auth = useAuth();
+  const router = useRouter();
+
   const navLinks = [
     { href: '/', label: t('nav_home') },
     { href: '/courses', label: t('nav_courses') },
@@ -26,22 +30,17 @@ export default function Header() {
     { href: '/contact', label: t('nav_contact') },
     { href: '/donate', label: t('nav_donate') },
   ];
-  
-  // Conditionally call the hook
-  const isPublicPage = navLinks.some(link => link.href === pathname);
-  const { user, loading } = isPublicPage ? useUser() : { user: null, loading: false };
 
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  useEffect(() => {
-    if (!loading) {
-      setIsAuthenticated(!!user);
-    }
-  }, [user, loading]);
-
+  const isAuthenticated = !loading && !!user;
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
+  const handleSignOut = async () => {
+    closeMobileMenu();
+    if (!auth) return;
+    await signOut(auth);
+    router.push('/login');
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -106,11 +105,16 @@ export default function Header() {
                     {t('search')}
                   </Link>
               </nav>
-              <div className="mt-auto pt-4">
+              <div className="mt-auto pt-4 border-t">
                 {isAuthenticated ? (
-                  <Button asChild variant="default" className="w-full" onClick={closeMobileMenu}>
-                    <Link href="/dashboard">{t('dashboard')}</Link>
-                  </Button>
+                  <>
+                    <Button asChild variant="default" className="w-full mb-2" onClick={closeMobileMenu}>
+                      <Link href="/dashboard">{t('dashboard')}</Link>
+                    </Button>
+                    <Button variant="ghost" className="w-full text-destructive" onClick={handleSignOut}>
+                       <LogOut className="mr-2 h-4 w-4" /> Déconnexion
+                    </Button>
+                  </>
                 ) : (
                   <Button asChild variant="default" className="w-full" onClick={closeMobileMenu}>
                     <Link href="/login">{t('login_signup')}</Link>
