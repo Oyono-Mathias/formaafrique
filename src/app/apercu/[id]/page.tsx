@@ -1,9 +1,11 @@
+
 'use client';
 
 import { notFound, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { PlayCircle, CheckCircle, Lock, Loader2, ArrowLeft } from 'lucide-react';
 import { use } from 'react';
+import YouTube from 'react-youtube';
 
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -19,6 +21,13 @@ type ApercuPageProps = {
   params: {
     id: string;
   };
+};
+
+const extractYouTubeId = (url: string): string | null => {
+  if (!url) return null;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
 };
 
 export default function ApercuPage({ params }: ApercuPageProps) {
@@ -72,41 +81,20 @@ export default function ApercuPage({ params }: ApercuPageProps) {
     notFound();
   }
 
-  const getEmbedUrl = (url: string): string | null => {
-    if (!url) return null;
-    try {
-        const urlObj = new URL(url);
-        let videoId: string | null = null;
-        if (urlObj.hostname.includes('youtube.com') || urlObj.hostname.includes('youtu.be')) {
-            videoId = urlObj.hostname.includes('youtu.be')
-              ? urlObj.pathname.slice(1)
-              : urlObj.searchParams.get('v');
-            
-            if (videoId) {
-              const searchParams = new URLSearchParams({
-                rel: '0', // Disable related videos
-                showinfo: '0', // Deprecated, but doesn't hurt
-                modestbranding: '1', // Reduce YouTube logo
-                iv_load_policy: '3', // Disable annotations
-                autoplay: '1' // Autoplay the video
-              });
-              return `https://www.youtube.com/embed/${videoId}?${searchParams.toString()}`;
-            }
-
-        } else if (urlObj.hostname.includes('drive.google.com')) {
-            const match = url.match(/file\/d\/([a-zA-Z0-9_-]+)/);
-            return match ? `https://drive.google.com/file/d/${match[1]}/preview` : null;
-        }
-        return url; // Fallback for other providers
-    } catch (error) {
-        console.error("Invalid URL:", error);
-        return null;
-    }
+  const videoId = selectedVideo ? extractYouTubeId(selectedVideo.url) : null;
+  const youtubePlayerOptions = {
+    height: '100%',
+    width: '100%',
+    playerVars: {
+      autoplay: 1,
+      controls: 1,
+      rel: 0,
+      modestbranding: 1,
+    },
   };
   
   const videoPlaceholder = PlaceHolderImages.find((img) => img.id === 'video-placeholder');
   const currentModuleIndex = modules.findIndex(m => m.id === currentModuleId);
-  const embedUrl = selectedVideo ? getEmbedUrl(selectedVideo.url) : null;
 
   return (
     <div className="flex flex-col lg:flex-row min-h-[calc(100vh-4rem)] bg-background">
@@ -121,15 +109,12 @@ export default function ApercuPage({ params }: ApercuPageProps) {
             </Button>
           </div>
           <div className="aspect-video bg-black rounded-lg overflow-hidden mb-6 shadow-lg">
-             {embedUrl ? (
-                <iframe
-                    key={selectedVideo?.id}
-                    src={embedUrl}
-                    title={selectedVideo?.titre}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className='w-full h-full'
-                ></iframe>
+             {videoId ? (
+                <YouTube
+                    videoId={videoId}
+                    opts={youtubePlayerOptions}
+                    className="w-full h-full"
+                />
              ) : (
                 <div className='w-full h-full bg-muted flex items-center justify-center text-center p-4'>
                     <p className='text-muted-foreground'>Sélectionnez une vidéo pour la prévisualiser, ou ajoutez-en une à ce module.</p>
