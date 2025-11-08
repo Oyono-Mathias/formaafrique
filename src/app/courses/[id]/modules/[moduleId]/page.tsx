@@ -3,15 +3,16 @@
 import { notFound, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { PlayCircle, CheckCircle, Lock, Loader2, ArrowLeft } from 'lucide-react';
-import { use } from 'react';
+import React, { use, useMemo, useState, useEffect } from 'react';
+import ReactPlayer from 'react-player/youtube';
 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
-import { useDoc, useCollection } from '@/firebase';
+import { useUser, useDoc, useCollection, useFirestore } from '@/firebase';
 import type { Course, Module, Video } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { useMemo, useState, useEffect } from 'react';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 
 type ModulePageProps = {
   params: {
@@ -23,8 +24,10 @@ type ModulePageProps = {
 type ModuleWithVideos = Module & { videos: Video[] };
 
 export default function ModulePage({ params }: ModulePageProps) {
-  const { id: courseId, moduleId } = use(params);
+  const { id: courseId, moduleId } = params;
   const router = useRouter();
+  const db = useFirestore();
+  const { user } = useUser();
 
   const { data: course, loading: courseLoading } = useDoc<Course>('courses', courseId);
   const { data: modulesData, loading: modulesLoading } = useCollection<Module>(
@@ -39,7 +42,7 @@ export default function ModulePage({ params }: ModulePageProps) {
   // Fetch videos for all modules once
   useEffect(() => {
     if (!modulesData || modulesData.length === 0 || !courseId) {
-      setVideosLoading(false);
+      if (!modulesLoading) setVideosLoading(false);
       return;
     }
 
@@ -51,11 +54,9 @@ export default function ModulePage({ params }: ModulePageProps) {
           const videosCollection = `courses/${courseId}/modules/${module.id}/videos`;
           
           try {
-             // We can't use useCollection in a loop, so we fetch manually.
             const response = await fetch(`/api/get-collection?path=${encodeURIComponent(videosCollection)}`);
              if (response.ok) {
                 const videos = (await response.json()) as Video[];
-                // Filter for published videos and sort them
                 allVideos[module.id] = videos.filter(v => v.publie).sort((a, b) => a.ordre - b.ordre);
             } else {
                 allVideos[module.id] = [];
@@ -71,32 +72,78 @@ export default function ModulePage({ params }: ModulePageProps) {
     };
 
     fetchAllVideos();
-  }, [modulesData, courseId]);
+  }, [modulesData, courseId, modulesLoading]);
 
 
-  const { sortedModulesWithVideos, currentModule, currentModuleIndex } = useMemo(() => {
+  const { sortedModulesWithVideos, currentModule, currentModuleIndex, currentVideoIndex } = useMemo(() => {
     const sortedMods = (modulesData || []).sort((a, b) => a.ordre - b.ordre);
     const modsWithVideos = sortedMods.map(mod => ({
       ...mod,
       videos: videosByModule[mod.id!] || []
     }));
     const currentIndex = modsWithVideos.findIndex(m => m.id === moduleId);
+    const currentVidIndex = currentModule?.videos.findIndex(v => v.id === selectedVideo?.id) ?? -1;
     return { 
         sortedModulesWithVideos: modsWithVideos, 
         currentModule: modsWithVideos[currentIndex],
-        currentModuleIndex: currentIndex
+        currentModuleIndex: currentIndex,
+        currentVideoIndex: currentVidIndex
     };
-  }, [modulesData, videosByModule, moduleId]);
+  }, [modulesData, videosByModule, moduleId, selectedVideo]);
 
 
   // Effect to select the first video of the current module by default
   useEffect(() => {
-    if (currentModule && currentModule.videos.length > 0) {
+    if (currentModule && currentModule.videos.length > 0 && !selectedVideo) {
       setSelectedVideo(currentModule.videos[0]);
-    } else {
-      setSelectedVideo(null); // No videos in this module
+    } else if (currentModule && currentModule.videos.length === 0) {
+      setSelectedVideo(null);
     }
-  }, [currentModule]);
+  }, [currentModule, selectedVideo]);
+  
+  const handleVideoEnded = async () => {
+    if (!currentModule || !selectedVideo) return;
+
+    // --- Save Progress ---
+    if(user && db) {
+        const enrollmentQuery = `users/${user.uid}/enrollments`;
+        try {
+            const enrollmentRef = doc(db, enrollmentQuery, courseId);
+            const enrollmentSnap = await getDoc(enrollmentRef);
+            if (enrollmentSnap.exists()) {
+                const totalVideos = sortedModulesWithVideos.reduce((acc, mod) => acc + mod.videos.length, 0);
+                const watchedVideos = (enrollmentSnap.data().watchedVideos || 0) + 1;
+                const progression = Math.min(Math.round((watchedVideos / totalVideos) * 100), 100);
+
+                await updateDoc(enrollmentRef, {
+                    progression,
+                    watchedVideos,
+                    lastWatchedVideo: selectedVideo.id
+                });
+            }
+        } catch(e) {
+            console.error("Failed to update progression:", e);
+        }
+    }
+
+
+    // --- Go to Next Video/Module ---
+    const nextVideo = currentModule.videos[currentVideoIndex + 1];
+
+    if (nextVideo) {
+      setSelectedVideo(nextVideo);
+    } else {
+      // Go to the first video of the next module
+      const nextModule = sortedModulesWithVideos[currentModuleIndex + 1];
+      if (nextModule && nextModule.videos.length > 0) {
+        router.push(`/courses/${courseId}/modules/${nextModule.id}`);
+      } else {
+        // Last video of the last module
+        alert("Félicitations ! Vous avez terminé la formation 🎉");
+        router.push(`/dashboard/certificate/${courseId}`);
+      }
+    }
+  };
 
 
   const loading = courseLoading || modulesLoading || videosLoading;
@@ -116,45 +163,10 @@ export default function ModulePage({ params }: ModulePageProps) {
 
   const handleVideoSelect = (video: Video, module: ModuleWithVideos) => {
     setSelectedVideo(video);
-    // Update URL without full page reload if module is different
     if(module.id !== moduleId) {
         router.push(`/courses/${courseId}/modules/${module.id}`, { scroll: false });
     }
   };
-
-  const getEmbedUrl = (url: string): string | null => {
-    if (!url) return null;
-    try {
-        const urlObj = new URL(url);
-        let videoId: string | null = null;
-        if (urlObj.hostname.includes('youtube.com') || urlObj.hostname.includes('youtu.be')) {
-            videoId = urlObj.hostname.includes('youtu.be')
-              ? urlObj.pathname.slice(1)
-              : urlObj.searchParams.get('v');
-            
-            if (videoId) {
-              const searchParams = new URLSearchParams({
-                rel: '0', // Disable related videos
-                showinfo: '0', // Deprecated, but doesn't hurt
-                modestbranding: '1', // Reduce YouTube logo
-                iv_load_policy: '3', // Disable annotations
-                autoplay: '1' // Autoplay the video
-              });
-              return `https://www.youtube.com/embed/${videoId}?${searchParams.toString()}`;
-            }
-
-        } else if (urlObj.hostname.includes('drive.google.com')) {
-            const match = url.match(/file\/d\/([a-zA-Z0-9_-]+)/);
-            return match ? `https://drive.google.com/file/d/${match[1]}/preview` : null;
-        }
-        return url; // Fallback for other providers
-    } catch (error) {
-        console.error("Invalid URL:", error);
-        return null;
-    }
-  };
-  
-  const embedUrl = selectedVideo ? getEmbedUrl(selectedVideo.url) : null;
 
   return (
     <div className="flex flex-col lg:flex-row min-h-[calc(100vh-4rem)] bg-background">
@@ -170,15 +182,25 @@ export default function ModulePage({ params }: ModulePageProps) {
             </Button>
           </div>
           <div className="aspect-video bg-black rounded-lg overflow-hidden mb-6 shadow-lg">
-             {embedUrl ? (
-                <iframe
-                    key={selectedVideo?.id}
-                    src={embedUrl}
-                    title={selectedVideo?.titre}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className='w-full h-full'
-                ></iframe>
+             {selectedVideo?.url ? (
+                <ReactPlayer
+                    key={selectedVideo.id}
+                    url={selectedVideo.url}
+                    width="100%"
+                    height="100%"
+                    controls
+                    playing
+                    onEnded={handleVideoEnded}
+                    config={{
+                        youtube: {
+                            playerVars: { 
+                                showinfo: 0, 
+                                rel: 0,
+                                modestbranding: 1
+                            }
+                        }
+                    }}
+                />
              ) : (
                 <div className='w-full h-full bg-muted flex items-center justify-center text-center p-4'>
                     <p className='text-muted-foreground'>
