@@ -26,7 +26,7 @@ export default function ApercuPage({ params }: ApercuPageProps) {
   const { id: courseId } = use(params);
 
   const { data: course, loading: courseLoading } = useDoc<Course>('courses', courseId);
-  const { data: modulesData, loading: modulesLoading } = useCollection<Module>(`courses/${courseId}/modules`);
+  const { data: modulesData, loading: modulesLoading } = useCollection<Module>(courseId ? `courses/${courseId}/modules` : null);
   const modules = useMemo(() => (modulesData || []).sort((a,b) => a.ordre - b.ordre), [modulesData]);
 
   const [currentModuleId, setCurrentModuleId] = useState<string | null>(null);
@@ -46,7 +46,8 @@ export default function ApercuPage({ params }: ApercuPageProps) {
   const { currentModule, sortedVideos } = useMemo(() => {
       const allVideos = videosData || [];
       const currentMod = modules.find(m => m.id === currentModuleId);
-      const sortedVids = [...allVideos].sort((a,b) => a.ordre - b.ordre);
+      // On affiche uniquement les vidéos publiées dans l'aperçu
+      const sortedVids = [...allVideos].filter(v => v.publie).sort((a,b) => a.ordre - b.ordre);
       return { currentModule: currentMod, sortedVideos: sortedVids };
   }, [modules, videosData, currentModuleId]);
 

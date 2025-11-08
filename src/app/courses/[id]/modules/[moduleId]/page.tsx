@@ -12,7 +12,6 @@ import { Separator } from '@/components/ui/separator';
 import { useUser, useDoc, useCollection, useFirestore } from '@/firebase';
 import type { Course, Module, Video } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { collection, getDocs } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 
@@ -22,8 +21,6 @@ type ModulePageProps = {
     moduleId: string;
   };
 };
-
-type ModuleWithVideos = Module & { videos: Video[] };
 
 export default function ModulePage({ params }: ModulePageProps) {
   const { id: courseId, moduleId } = use(params);
@@ -37,7 +34,8 @@ export default function ModulePage({ params }: ModulePageProps) {
   );
   
   const { data: videosData, loading: videosLoading } = useCollection<Video>(
-    courseId && moduleId ? `courses/${courseId}/modules/${moduleId}/videos` : null
+    courseId && moduleId ? `courses/${courseId}/modules/${moduleId}/videos` : null,
+    { where: ['publie', '==', true] }
   );
   
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
