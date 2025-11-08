@@ -605,5 +605,3 @@ function ModuleVideos({
     </div>
   );
 }
-
-    
