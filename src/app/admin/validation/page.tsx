@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { useCollection, useFirestore } from '@/firebase';
+import { useUser, useCollection, useFirestore } from '@/firebase';
 import type { Course, InstructorRequest } from '@/lib/types';
 import { Loader2, Search, Filter, MoreVertical, Eye, Check, X, ShieldAlert, UserCheck } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { doc, updateDoc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { doc, updateDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { Timestamp } from 'firebase/firestore';
@@ -358,3 +358,5 @@ function InstructorsValidationTab() {
         </Card>
     )
 }
+
+    

@@ -24,7 +24,7 @@ export default function BecomeInstructorPage() {
 
     // Fetch existing requests for the current user
     const { data: requests, loading: requestsLoading } = useCollection<InstructorRequest>(
-        'instructor_requests',
+        user?.uid ? 'instructor_requests' : undefined, // only run query if user is logged in
         user?.uid ? { where: ['userId', '==', user.uid] } : undefined
     );
 
@@ -283,3 +283,5 @@ export default function BecomeInstructorPage() {
         </div>
     );
 }
+
+    
