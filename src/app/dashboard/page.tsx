@@ -28,7 +28,7 @@ const CourseCard = ({ course }: { course: Course }) => {
     const isFree = course.prix === 0;
 
     return (
-        <Card className="flex flex-col h-full overflow-hidden transition-transform duration-300 hover:shadow-xl border-0">
+        <Card className="flex flex-col h-full overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-1 border-white/10 bg-white/5">
             <CardHeader className="p-0">
                 <Link href={`/courses/${course.id}`} className="block aspect-video relative bg-muted">
                 {courseImage && (
@@ -48,8 +48,8 @@ const CourseCard = ({ course }: { course: Course }) => {
                 </CardTitle>
                 <p className="mt-1 text-xs text-muted-foreground">{course.auteur}</p>
                  <div className="flex items-center gap-1 mt-1 text-xs">
-                    <span className='font-bold text-amber-600'>4.5</span>
-                    <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
+                    <span className='font-bold text-amber-400'>4.5</span>
+                    <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
                     <span className="text-muted-foreground">(1,250)</span>
                 </div>
                 <p className="mt-2 text-sm font-bold">
@@ -86,8 +86,8 @@ const CourseCarousel = ({ title, courses }: { title: string, courses: Course[] }
                     </CarouselItem>
                 ))}
                 </CarouselContent>
-                <CarouselPrevious className="hidden lg:flex"/>
-                <CarouselNext className="hidden lg:flex"/>
+                <CarouselPrevious className="hidden lg:flex bg-background/50"/>
+                <CarouselNext className="hidden lg:flex bg-background/50"/>
             </Carousel>
         </div>
     )
@@ -128,7 +128,7 @@ export default function DashboardPage() {
 
       {loading ? (
         <div className="flex justify-center items-center h-64">
-          <Loader2 className="h-10 w-10 animate-spin" />
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
         </div>
       ) : (
         <div className="space-y-12">
@@ -137,10 +137,10 @@ export default function DashboardPage() {
             )}
 
             <div>
-                <h2 className="text-2xl font-bold mb-4">Catégories</h2>
-                <div className="flex flex-wrap gap-2">
-                    {categories.slice(0, 6).map(cat => (
-                        <Button key={cat} variant="outline" asChild>
+                <h2 className="text-2xl font-bold mb-4">Catégories populaires</h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {categories.slice(0, 8).map(cat => (
+                        <Button key={cat} variant="secondary" asChild className="h-16 text-base justify-start text-left bg-white/5 hover:bg-white/10 border border-white/10">
                             <Link href={`/courses?category=${encodeURIComponent(cat)}`}>{cat}</Link>
                         </Button>
                     ))}
@@ -148,7 +148,7 @@ export default function DashboardPage() {
             </div>
 
             {popularCourses.length > 0 && (
-                <CourseCarousel title="Populaire pour les développeurs" courses={popularCourses} />
+                <CourseCarousel title="Populaire en Développement Web" courses={popularCourses} />
             )}
 
             {newCourses.length > 0 && (
@@ -156,20 +156,6 @@ export default function DashboardPage() {
             )}
         </div>
       )}
-
-      {/* Placeholder for in-progress courses if needed later */}
-      {/* 
-      <div>
-        <div className='flex justify-between items-center mb-4'>
-            <h2 className="text-2xl font-bold">Reprendre là où vous vous êtes arrêté</h2>
-             <Button asChild variant="link">
-                <Link href="/dashboard/courses">Voir toutes mes formations</Link>
-            </Button>
-        </div>
-        ...
-      </div>
-      */}
-
     </div>
   );
 }

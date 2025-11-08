@@ -14,6 +14,7 @@ import {
   Settings,
   Loader2,
   Heart,
+  Home,
 } from 'lucide-react';
 import { Logo } from '@/components/icons/logo';
 import { Button } from '@/components/ui/button';
@@ -34,12 +35,11 @@ import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { useToast } from '@/hooks/use-toast';
 
 const navLinks = [
-    { href: '/dashboard', label: 'Accueil', icon: Star },
+    { href: '/dashboard', label: 'Accueil', icon: Home },
     { href: '/dashboard/courses', label: 'Mes Formations', icon: BookCopy },
     { href: '/search', label: 'Recherche', icon: SearchIcon },
-    { href: '/dashboard/wishlist', label: 'Liste de souhaits', icon: Heart },
+    { href: '/dashboard/wishlist', label: 'Favoris', icon: Heart },
     { href: '/dashboard/certificates', label: 'Certificats', icon: GraduationCap },
-    { href: '/dashboard/settings', label: 'Paramètres', icon: Settings },
 ];
 
 function NavLink({
@@ -78,7 +78,7 @@ function NavLink({
         'flex items-center gap-4 px-4 py-3 rounded-lg transition-colors',
         isActive
           ? 'bg-primary text-primary-foreground'
-          : 'text-foreground/70 hover:bg-muted hover:text-foreground',
+          : 'text-foreground/70 hover:bg-muted/10 hover:text-foreground',
       )}
     >
       <Icon className="h-5 w-5" />
@@ -98,8 +98,8 @@ function SidebarContent() {
   };
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="p-4">
+    <div className="flex h-full flex-col text-white">
+      <div className="p-6 border-b border-white/10">
         <Link href="/" aria-label="Retour à la page d'accueil">
           <Logo />
         </Link>
@@ -109,7 +109,14 @@ function SidebarContent() {
           <NavLink key={link.href} {...link} />
         ))}
       </nav>
-      <div className="p-4 mt-auto">
+      <div className="p-4 mt-auto border-t border-white/10">
+        <Link
+            href="/dashboard/settings"
+            className="flex items-center gap-4 px-4 py-3 rounded-lg text-foreground/70 hover:bg-muted/10 hover:text-foreground transition-colors"
+        >
+          <Settings className="h-5 w-5" />
+          <span className="font-medium">Paramètres</span>
+        </Link>
         <Button
           onClick={handleSignOut}
           variant="ghost"
@@ -152,7 +159,6 @@ export default function DashboardLayout({
         } else if (userProfile.role === 'formateur') {
             router.replace('/formateur');
         } else {
-            // Fallback if role is unknown, sign out and go to login
             if (auth) signOut(auth);
             router.replace('/login');
         }
@@ -161,7 +167,7 @@ export default function DashboardLayout({
 
   if (loading || !user || !userProfile || userProfile.role !== 'etudiant') {
     return (
-      <div className="flex justify-center items-center h-screen bg-background">
+      <div className="flex justify-center items-center h-screen bg-neutral-950 text-white">
         <Loader2 className="h-8 w-8 animate-spin" />
         <p className="flex items-center gap-2 text-lg ml-4">
           Vérification de votre accès...
@@ -178,16 +184,27 @@ export default function DashboardLayout({
 
 
   return (
-    <div className="min-h-screen w-full bg-background flex flex-col lg:flex-row">
+    <div className="min-h-screen w-full bg-neutral-950 text-white flex flex-col lg:flex-row">
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:block w-64 flex-shrink-0 border-r bg-card">
+      <aside className="hidden lg:block w-64 flex-shrink-0 border-r border-white/10 bg-neutral-900/50">
         <SidebarContent />
       </aside>
 
       <div className="flex flex-col flex-1 overflow-hidden">
         {/* Header */}
-        <header className="sticky top-0 z-10 hidden lg:flex h-16 items-center justify-between border-b bg-card px-4 lg:px-8">
-           {/* Header content for desktop, e.g. a global search bar or title */}
+        <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-white/10 bg-neutral-950/80 backdrop-blur-sm px-4 lg:px-8">
+           <div className="lg:hidden">
+            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu className="h-6 w-6" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-64 bg-neutral-950 border-r-white/10 p-0">
+                <SidebarContent />
+              </SheetContent>
+            </Sheet>
+           </div>
            <div className="flex-1"></div>
            <div className="flex items-center gap-4 ml-auto">
             <Button variant="ghost" size="icon" asChild>
@@ -240,15 +257,6 @@ export default function DashboardLayout({
             </div>
         </main>
       </div>
-
-       {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 lg:hidden bg-card border-t z-20">
-          <div className="flex justify-around">
-            {navLinks.filter(l => ['/dashboard', '/dashboard/courses', '/search', '/dashboard/wishlist', '/dashboard/settings'].includes(l.href)).map(link => (
-                <NavLink key={link.href} {...link} isMobile={true}/>
-            ))}
-          </div>
-      </nav>
     </div>
   );
 }
