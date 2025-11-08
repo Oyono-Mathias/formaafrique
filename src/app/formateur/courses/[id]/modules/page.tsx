@@ -208,33 +208,43 @@ export default function ManageModulesPage({
   }
 
   const handleDeleteModule = async (moduleId: string) => {
-    if (!db || !courseId) {
-      toast({ variant: 'destructive', title: 'Erreur', description: 'Configuration de la base de données invalide.' });
-      return;
-    }
-    
-    const confirmed = window.confirm('Voulez-vous vraiment supprimer ce module et toutes ses vidéos ? Cette action est irréversible.');
+    if (!db || !courseId) return;
+
+    const confirmed = window.confirm(
+      'Voulez-vous vraiment supprimer ce module et toutes ses vidéos ? Cette action est irréversible.'
+    );
     if (!confirmed) return;
 
-    const moduleRef = doc(db, `courses/${courseId}/modules`, moduleId);
-    const videosQuery = query(collection(moduleRef, 'videos'));
+    const moduleRef = doc(db, 'courses', courseId, 'modules', moduleId);
+    const videosRef = collection(moduleRef, 'videos');
 
     try {
-      const videosSnapshot = await getDocs(videosQuery);
+      // Get all videos in the subcollection
+      const videosSnapshot = await getDocs(videosRef);
       const batch = writeBatch(db);
-      
+
+      // Add all video deletions to the batch
       videosSnapshot.forEach((videoDoc) => {
         batch.delete(videoDoc.ref);
       });
-      
+
+      // Add the module deletion to the batch
       batch.delete(moduleRef);
-      
+
+      // Commit the batch
       await batch.commit();
       
-      toast({ title: 'Module supprimé ✅', description: 'Le module et toutes ses vidéos ont été supprimés.' });
+      toast({
+        title: 'Module supprimé',
+        description: 'Le module et toutes ses vidéos ont été supprimés.',
+      });
     } catch (error) {
-      console.error('Error deleting module:', error);
-      toast({ variant: 'destructive', title: 'Erreur de suppression', description: 'Impossible de supprimer le module.' });
+      console.error('Error deleting module and its videos:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Erreur de suppression',
+        description: 'Impossible de supprimer le module.',
+      });
     }
   };
 
@@ -528,10 +538,8 @@ function ModuleVideos({
   }, [videosData]);
 
   const handleDeleteVideo = async (videoId: string) => {
-    if (!db || !courseId || !moduleId) {
-      toast({ variant: 'destructive', title: 'Erreur', description: 'Configuration de la base de données invalide.' });
-      return;
-    }
+    if (!db || !courseId || !moduleId) return;
+
     const confirmed = window.confirm(
       'Voulez-vous vraiment supprimer cette vidéo ?'
     );
@@ -540,7 +548,7 @@ function ModuleVideos({
     try {
       const videoRef = doc(db, `courses/${courseId}/modules/${moduleId}/videos`, videoId);
       await deleteDoc(videoRef);
-      toast({ title: 'Vidéo supprimée ! ✅' });
+      toast({ title: 'Vidéo supprimée avec succès !' });
     } catch (e) {
       console.error("Error deleting video:", e);
       toast({
@@ -640,3 +648,5 @@ function ModuleVideos({
     </div>
   );
 }
+
+    
