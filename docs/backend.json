@@ -369,6 +369,23 @@
         }
       },
       "required": ["userId", "userName", "userEmail", "requestDate", "status"]
+    },
+    "CommunityPost": {
+      "title": "Community Post",
+      "description": "Represents a discussion post in the community forum.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "The title of the discussion post." },
+        "content": { "type": "string", "description": "The main content of the post." },
+        "authorId": { "type": "string", "description": "The UID of the user who created the post." },
+        "authorName": { "type": "string", "description": "The name of the user who created the post." },
+        "authorImage": { "type": "string", "format": "uri", "description": "URL of the author's profile picture." },
+        "tags": { "type": "array", "items": { "type": "string" }, "description": "Tags associated with the post." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp when the post was created." },
+        "commentCount": { "type": "number", "description": "Number of comments on the post." },
+        "voteCount": { "type": "number", "description": "Number of upvotes on the post." }
+      },
+      "required": ["title", "content", "authorId", "authorName", "createdAt", "commentCount", "voteCount"]
     }
   },
   "auth": {
@@ -430,6 +447,10 @@
     "/instructor_requests/{requestId}": {
       "schema": { "$ref": "#/entities/InstructorRequest" },
       "description": "Stores requests from students to become instructors."
+    },
+    "/community_posts/{postId}": {
+      "schema": { "$ref": "#/entities/CommunityPost" },
+      "description": "Stores all discussion posts in the community forum."
     }
   }
 }

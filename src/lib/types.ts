@@ -1,4 +1,3 @@
-
 import type { Timestamp } from 'firebase/firestore';
 
 export interface Category {
@@ -149,6 +148,19 @@ export interface InstructorRequest {
     userEmail: string;
     requestDate: Timestamp;
     status: 'pending' | 'approved' | 'rejected';
+}
+
+export interface CommunityPost {
+    id?: string;
+    title: string;
+    content: string;
+    authorId: string;
+    authorName: string;
+    authorImage: string;
+    tags: string[];
+    createdAt: Timestamp;
+    commentCount: number;
+    voteCount: number;
 }
 
 // This is a temporary API route to fetch collections from the client side
