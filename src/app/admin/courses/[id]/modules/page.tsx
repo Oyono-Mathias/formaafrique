@@ -211,12 +211,11 @@ export default function AdminManageModulesPage({
 
   const handleDeleteModule = async (moduleId: string) => {
     if (!db || !courseId) {
-      console.error("Database or courseId is missing.");
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Configuration de la base de données invalide.' });
       return;
     }
-    const confirmed = window.confirm(
-      'Voulez-vous vraiment supprimer ce module et toutes ses vidéos ? Cette action est irréversible.'
-    );
+    
+    const confirmed = window.confirm('Voulez-vous vraiment supprimer ce module et toutes ses vidéos ? Cette action est irréversible.');
     if (!confirmed) return;
 
     try {
@@ -547,7 +546,7 @@ function ModuleVideos({
 
   const handleDeleteVideo = async (videoId: string) => {
     if (!db || !courseId || !moduleId) {
-        console.error("Database, courseId, or moduleId is missing.");
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Configuration de la base de données invalide.' });
         return;
     }
     const confirmed = window.confirm('Voulez-vous vraiment supprimer cette vidéo ?');
@@ -558,7 +557,7 @@ function ModuleVideos({
       await deleteDoc(videoRef);
       toast({ title: 'Vidéo supprimée ! ✅' });
     } catch (e) {
-        console.error("Error deleting video:", e);
+      console.error("Error deleting video:", e);
       toast({
         variant: 'destructive',
         title: 'Erreur',
