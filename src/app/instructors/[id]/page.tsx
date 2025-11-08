@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useDoc, useCollection } from '@/firebase';
@@ -18,13 +19,18 @@ export default function InstructorProfilePage({ params }: { params: { id: string
     const { id: instructorId } = use(params);
     
     const { data: instructor, loading: instructorLoading, error: instructorError } = useDoc<InstructorProfile>('instructors', instructorId);
+    
+    const coursesQueryOptions = useMemo(() => {
+        if (!instructorId) return undefined;
+        return { where: [['instructorId', '==', instructorId], ['publie', '==', true]] as [[string, '==', string], [string, '==', boolean]] };
+    }, [instructorId]);
+
     const { data: coursesData, loading: coursesLoading, error: coursesError } = useCollection<Course>(
         'courses',
-        instructorId ? { where: ['instructorId', '==', instructorId] } : undefined
+        coursesQueryOptions
     );
-    const courses = coursesData || [];
 
-    const publishedCourses = useMemo(() => courses.filter(c => c.publie), [courses]);
+    const publishedCourses = coursesData || [];
     
     const loading = instructorLoading || coursesLoading;
 
@@ -37,7 +43,7 @@ export default function InstructorProfilePage({ params }: { params: { id: string
         );
     }
 
-    if (!instructorId || !instructor) {
+    if (instructorError || !instructor) {
         notFound();
     }
 
@@ -121,8 +127,10 @@ export default function InstructorProfilePage({ params }: { params: { id: string
                                 })}
                             </div>
                         ) : !coursesLoading && (
-                            <div className="text-center py-12 border-2 border-dashed rounded-lg">
-                                <p className="text-muted-foreground">Aucune formation publiée pour le moment.</p>
+                            <div className="text-center py-16 border-2 border-dashed rounded-lg bg-card">
+                                <BookOpen className="mx-auto h-12 w-12 text-muted-foreground" />
+                                <h3 className="mt-4 text-lg font-semibold">Aucune formation publiée</h3>
+                                <p className="mt-2 text-sm text-muted-foreground">Ce formateur n'a pas encore publié de formation.</p>
                             </div>
                         )}
                     </div>
@@ -131,5 +139,3 @@ export default function InstructorProfilePage({ params }: { params: { id: string
         </div>
     );
 }
-
-    
