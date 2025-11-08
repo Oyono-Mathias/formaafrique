@@ -207,7 +207,10 @@ export default function ManageModulesPage({
   }
 
   const handleDeleteModule = async (moduleId: string) => {
-    if (!db || !courseId) return;
+    if (!db || !courseId) {
+        console.error("Database or courseId is missing.");
+        return;
+    };
     const confirmed = window.confirm(
       'Voulez-vous vraiment supprimer ce module et toutes ses vidéos ? Cette action est irréversible.'
     );
@@ -220,18 +223,16 @@ export default function ManageModulesPage({
       // Use a batch to delete all videos and the module itself
       const batch = writeBatch(db);
       
-      // Get all videos to delete
       const videosSnapshot = await getDocs(videosRef);
       videosSnapshot.forEach((videoDoc) => {
         batch.delete(videoDoc.ref);
       });
       
-      // Delete the module
       batch.delete(moduleRef);
       
       await batch.commit();
       
-      toast({ title: 'Module supprimé', description: 'Le module et toutes ses vidéos ont été supprimés.' });
+      toast({ title: 'Module supprimé ✅', description: 'Le module et toutes ses vidéos ont été supprimés.' });
     } catch (error) {
       console.error('Error deleting module:', error);
       toast({ variant: 'destructive', title: 'Erreur de suppression', description: 'Impossible de supprimer le module.' });
@@ -480,7 +481,7 @@ function VideoDialog({ isOpen, setIsOpen, form, onSubmit, isEditing, module }: a
               )}
             />
             
-            {videoUrl && (
+            {videoUrl && ReactPlayer.canPlay(videoUrl) && (
               <div className="space-y-2">
                 <Label>Prévisualisation</Label>
                 <div className="relative aspect-video w-full overflow-hidden rounded-md border bg-muted">
@@ -528,11 +529,15 @@ function ModuleVideos({
   }, [videosData]);
 
   const handleDeleteVideo = async (videoId: string) => {
-    if (!db || !courseId || !moduleId) return;
+    if (!db || !courseId || !moduleId) {
+      console.error("Database, courseId, or moduleId is missing.");
+      return;
+    }
     const confirmed = window.confirm(
       'Voulez-vous vraiment supprimer cette vidéo ?'
     );
     if (!confirmed) return;
+    
     const videoRef = doc(
       db,
       `courses/${courseId}/modules/${moduleId}/videos`,
@@ -540,8 +545,9 @@ function ModuleVideos({
     );
     try {
       await deleteDoc(videoRef);
-      toast({ title: 'Vidéo supprimée !' });
+      toast({ title: 'Vidéo supprimée ! ✅' });
     } catch (e) {
+      console.error("Error deleting video:", e);
       toast({
         variant: 'destructive',
         title: 'Erreur',
@@ -551,8 +557,8 @@ function ModuleVideos({
   };
 
   const handlePublishToggle = async (video: Video) => {
-    if (!db || !courseId || !moduleId) return;
-    const videoRef = doc(db, `courses/${courseId}/modules/${moduleId}/videos`, video.id!);
+    if (!db || !courseId || !moduleId || !video.id) return;
+    const videoRef = doc(db, `courses/${courseId}/modules/${moduleId}/videos`, video.id);
     try {
       await updateDoc(videoRef, { publie: !video.publie });
       toast({

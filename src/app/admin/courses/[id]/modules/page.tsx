@@ -63,6 +63,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
+import ReactPlayer from 'react-player';
 
 const moduleSchema = z.object({
   titre: z
@@ -209,7 +210,10 @@ export default function AdminManageModulesPage({
   }
 
   const handleDeleteModule = async (moduleId: string) => {
-    if (!db || !courseId) return;
+    if (!db || !courseId) {
+      console.error("Database or courseId is missing.");
+      return;
+    }
     const confirmed = window.confirm(
       'Voulez-vous vraiment supprimer ce module et toutes ses vidéos ? Cette action est irréversible.'
     );
@@ -219,21 +223,18 @@ export default function AdminManageModulesPage({
       const moduleRef = doc(db, `courses/${courseId}/modules`, moduleId);
       const videosRef = collection(moduleRef, 'videos');
       
-      // Use a batch to delete all videos and the module itself
       const batch = writeBatch(db);
       
-      // Get all videos to delete
       const videosSnapshot = await getDocs(videosRef);
       videosSnapshot.forEach((videoDoc) => {
         batch.delete(videoDoc.ref);
       });
       
-      // Delete the module
       batch.delete(moduleRef);
       
       await batch.commit();
       
-      toast({ title: 'Module supprimé', description: 'Le module et toutes ses vidéos ont été supprimés.' });
+      toast({ title: 'Module supprimé ✅', description: 'Le module et toutes ses vidéos ont été supprimés.' });
     } catch (error) {
       console.error('Error deleting module:', error);
       toast({ variant: 'destructive', title: 'Erreur de suppression', description: 'Impossible de supprimer le module.' });
@@ -431,9 +432,10 @@ export default function AdminManageModulesPage({
 }
 
 function VideoDialog({ isOpen, setIsOpen, form, onSubmit, isEditing, moduleTitle }: any) {
+  const videoUrl = form.watch('url');
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>
             {isEditing
@@ -475,6 +477,14 @@ function VideoDialog({ isOpen, setIsOpen, form, onSubmit, isEditing, moduleTitle
                 </FormItem>
               )}
             />
+             {videoUrl && ReactPlayer.canPlay(videoUrl) && (
+              <div className="space-y-2">
+                <Label>Prévisualisation</Label>
+                <div className="relative aspect-video w-full overflow-hidden rounded-md border bg-muted">
+                    <ReactPlayer url={videoUrl} controls width="100%" height="100%" />
+                </div>
+              </div>
+            )}
             <DialogFooter>
               <DialogClose asChild>
                 <Button type="button" variant="secondary">
@@ -518,8 +528,8 @@ function ModuleVideos({
 
 
   const handlePublishToggle = async (video: Video) => {
-    if (!db || !courseId || !moduleId) return;
-    const videoRef = doc(db, `courses/${courseId}/modules/${moduleId}/videos`, video.id!);
+    if (!db || !courseId || !moduleId || !video.id) return;
+    const videoRef = doc(db, `courses/${courseId}/modules/${moduleId}/videos`, video.id);
     try {
       await updateDoc(videoRef, { publie: !video.publie });
       toast({
@@ -536,15 +546,19 @@ function ModuleVideos({
   };
 
   const handleDeleteVideo = async (videoId: string) => {
-    if (!db || !courseId || !moduleId) return;
+    if (!db || !courseId || !moduleId) {
+        console.error("Database, courseId, or moduleId is missing.");
+        return;
+    }
     const confirmed = window.confirm('Voulez-vous vraiment supprimer cette vidéo ?');
     if (!confirmed) return;
     
     const videoRef = doc(db, `courses/${courseId}/modules/${moduleId}/videos`, videoId);
     try {
       await deleteDoc(videoRef);
-      toast({ title: 'Vidéo supprimée !' });
+      toast({ title: 'Vidéo supprimée ! ✅' });
     } catch (e) {
+        console.error("Error deleting video:", e);
       toast({
         variant: 'destructive',
         title: 'Erreur',
