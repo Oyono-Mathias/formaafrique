@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, use } from 'react';
@@ -13,6 +14,7 @@ import {
   deleteDoc,
   updateDoc,
   getDocs,
+  writeBatch,
 } from 'firebase/firestore';
 
 import { useFirestore, useCollection, useDoc } from '@/firebase';
@@ -207,17 +209,33 @@ export default function ManageModulesPage({
   const handleDeleteModule = async (moduleId: string) => {
     if (!db || !courseId) return;
     const confirmed = window.confirm(
-      'Voulez-vous vraiment supprimer ce module et toutes ses vidéos ?'
+      'Voulez-vous vraiment supprimer ce module et toutes ses vidéos ? Cette action est irréversible.'
     );
     if (!confirmed) return;
 
     const moduleRef = doc(db, `courses/${courseId}/modules`, moduleId);
+    const videosRef = collection(db, `courses/${courseId}/modules/${moduleId}/videos`);
+
     try {
-      await deleteDoc(moduleRef);
-      toast({ title: 'Module supprimé' });
+      // Start a batch write
+      const batch = writeBatch(db);
+
+      // Get all videos in the module
+      const videosSnapshot = await getDocs(videosRef);
+      videosSnapshot.forEach((videoDoc) => {
+        batch.delete(videoDoc.ref);
+      });
+
+      // Delete the module itself
+      batch.delete(moduleRef);
+
+      // Commit the batch
+      await batch.commit();
+
+      toast({ title: 'Module supprimé', description: 'Le module et toutes ses vidéos ont été supprimés.' });
     } catch (error) {
       console.error('Error deleting module:', error);
-      toast({ variant: 'destructive', title: 'Erreur de suppression' });
+      toast({ variant: 'destructive', title: 'Erreur de suppression', description: 'Impossible de supprimer le module.' });
     }
   };
 
@@ -622,3 +640,5 @@ function ModuleVideos({
     </div>
   );
 }
+
+    
