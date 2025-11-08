@@ -29,6 +29,8 @@ import {
   Trash2,
   Edit,
   PlaySquare,
+  Check,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -197,9 +199,9 @@ export default function ManageModulesPage({
         await addDoc(videosCollectionRef, {
           ...videoData,
           ordre: nextOrder,
-          publie: false,
+          publie: true, // Default to published for instructors
         });
-        toast({ title: 'Vidéo ajoutée !' });
+        toast({ title: 'Vidéo ajoutée et publiée !' });
       }
       videoForm.reset();
       setIsVideoModalOpen(false);
@@ -222,11 +224,11 @@ export default function ManageModulesPage({
     );
     if (!confirmed) return;
 
-    const moduleRef = doc(db, 'courses', courseId, 'modules', moduleId);
-    const videosRef = collection(moduleRef, 'videos');
-
     try {
-      const videosSnapshot = await getDocs(videosRef);
+      const moduleRef = doc(db, 'courses', courseId, 'modules', moduleId);
+      const videosQuery = query(collection(db, `courses/${courseId}/modules/${moduleId}/videos`));
+      const videosSnapshot = await getDocs(videosQuery);
+      
       const batch = writeBatch(db);
 
       videosSnapshot.forEach((videoDoc) => {
@@ -432,7 +434,7 @@ export default function ManageModulesPage({
       </Dialog>
 
       {/* Video Dialog */}
-      <VideoDialog
+       <VideoDialog
         isOpen={isVideoModalOpen}
         setIsOpen={setIsVideoModalOpen}
         form={videoForm}
@@ -617,12 +619,10 @@ function ModuleVideos({
               </div>
               <div className="flex gap-2 items-center">
                  <div className="flex items-center space-x-2">
-                    <Switch
-                        id={`publish-${video.id}`}
-                        checked={video.publie}
-                        onCheckedChange={() => handlePublishToggle(video)}
-                    />
-                    <Label htmlFor={`publish-${video.id}`} className="text-sm">Publier</Label>
+                    <Button variant={video.publie ? "outline" : "default"} size="sm" onClick={() => handlePublishToggle(video)}>
+                        {video.publie ? <X className="mr-2 h-4 w-4" /> : <Check className="mr-2 h-4 w-4" />}
+                        {video.publie ? 'Dépublier' : 'Publier'}
+                    </Button>
                 </div>
                 <Button
                   variant="ghost"
@@ -652,9 +652,3 @@ function ModuleVideos({
     </div>
   );
 }
-
-    
-
-    
-
-    

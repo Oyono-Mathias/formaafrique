@@ -226,11 +226,11 @@ export default function AdminManageModulesPage({
     );
     if (!confirmed) return;
 
-    const moduleRef = doc(db, 'courses', courseId, 'modules', moduleId);
-    const videosRef = collection(moduleRef, 'videos');
-
     try {
-      const videosSnapshot = await getDocs(videosRef);
+      const moduleRef = doc(db, 'courses', courseId, 'modules', moduleId);
+      const videosQuery = query(collection(db, `courses/${courseId}/modules/${moduleId}/videos`));
+      const videosSnapshot = await getDocs(videosQuery);
+      
       const batch = writeBatch(db);
 
       videosSnapshot.forEach((videoDoc) => {
@@ -652,7 +652,3 @@ function ModuleVideos({
     </div>
   );
 }
-
-    
-
-    
