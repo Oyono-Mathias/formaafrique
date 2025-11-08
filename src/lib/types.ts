@@ -13,6 +13,7 @@ export interface Video {
   url: string;
   ordre: number;
   publie: boolean;
+  duration?: number;
 }
 
 export interface Module {
@@ -61,14 +62,25 @@ export interface InstructorProfile extends UserProfile {
     headline?: string;
 }
 
+export interface VideoProgress {
+  watched: boolean;
+  watchedAt?: Timestamp;
+  lastPosition?: number;
+}
+
+export interface ModuleProgress {
+  progress: number;
+  videos: { [videoId: string]: VideoProgress };
+}
+
 export interface Enrollment {
-    id?: string;
+    id?: string; // This will be the enrollment doc ID, typically same as courseId for simplicity
     studentId: string;
-    studentName: string;
     courseId: string;
     courseTitle: string;
-    enrollmentDate: Timestamp | Date;
-    progression?: number;
+    enrollmentDate: Timestamp;
+    progression: number; // Overall course progress (0 to 100)
+    modules?: { [moduleId: string]: ModuleProgress };
 }
 
 

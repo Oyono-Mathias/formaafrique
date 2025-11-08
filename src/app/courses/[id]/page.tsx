@@ -3,8 +3,8 @@
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { CheckCircle, Clock, BarChart, Users, PlayCircle, Loader2, BookOpen } from 'lucide-react';
-import { use } from 'react';
+import { CheckCircle, Clock, BarChart, Users, PlayCircle, Loader2, BookOpen, Heart } from 'lucide-react';
+import { use, useMemo, useState } from 'react';
 
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Button } from '@/components/ui/button';
@@ -12,10 +12,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { useDoc, useCollection } from '@/firebase';
-import type { Course, Module, Video, InstructorProfile } from '@/lib/types';
-import { useMemo } from 'react';
+import { useDoc, useCollection, useUser, useFirestore } from '@/firebase';
+import type { Course, Module, Video, InstructorProfile, Enrollment } from '@/lib/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { collection, query, where, getDocs, doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 type CoursePageProps = {
   params: {
@@ -25,17 +26,82 @@ type CoursePageProps = {
 
 export default function CourseDetailPage({ params }: CoursePageProps) {
   const { id: courseId } = use(params);
+  const { user } = useUser();
+  const db = useFirestore();
+  const { toast } = useToast();
 
   const { data: course, loading, error } = useDoc<Course>('courses', courseId);
-  const { data: modulesData, loading: modulesLoading } = useCollection<Module>(courseId ? `courses/${courseId}/modules` : null);
+  const { data: modulesData, loading: modulesLoading } = useCollection<Module>(courseId ? `courses/${courseId}/modules` : undefined);
   const { data: instructorData, loading: instructorLoading } = useDoc<InstructorProfile>(course?.instructorId ? 'instructors' : null, course?.instructorId);
+  
+  const { data: enrollmentData } = useDoc<Enrollment>(user && courseId ? `users/${user.uid}/enrollments` : null, courseId);
+  const { data: wishlistItem } = useCollection(
+      user && courseId ? 'wishlist' : null,
+      user && courseId ? { where: [['userId', '==', user.uid], ['courseId', '==', courseId]] } : undefined
+  );
+  
+  const [isWishlisted, setIsWishlisted] = useState(false);
+  const [isEnrolled, setIsEnrolled] = useState(false);
 
+  useMemo(() => {
+    setIsWishlisted(wishlistItem && wishlistItem.length > 0);
+  }, [wishlistItem]);
+  
+  useMemo(() => {
+      setIsEnrolled(!!enrollmentData);
+  }, [enrollmentData]);
 
   const sortedModules = useMemo(() => {
       return (modulesData || []).sort((a, b) => a.ordre - b.ordre);
   }, [modulesData]);
 
   const firstModuleId = (sortedModules.length > 0) ? sortedModules[0].id : null;
+
+  const handleEnroll = async () => {
+    if (!user || !db || !course) return;
+
+    const enrollmentRef = doc(db, 'users', user.uid, 'enrollments', course.id!);
+    const newEnrollment: Enrollment = {
+        studentId: user.uid,
+        courseId: course.id!,
+        courseTitle: course.titre,
+        enrollmentDate: serverTimestamp() as any,
+        progression: 0,
+        modules: {},
+    };
+
+    try {
+        await setDoc(enrollmentRef, newEnrollment);
+        toast({ title: "Inscription réussie !", description: `Vous êtes maintenant inscrit à "${course.titre}".` });
+        setIsEnrolled(true);
+    } catch (e) {
+        console.error(e);
+        toast({ variant: 'destructive', title: 'Erreur', description: "L'inscription a échoué."});
+    }
+  }
+
+  const handleToggleWishlist = async () => {
+    if (!user || !db || !course) return;
+
+    if (isWishlisted) {
+        // Remove from wishlist
+        const wishlistItemToRemove = wishlistItem?.[0];
+        if (wishlistItemToRemove?.id) {
+            await deleteDoc(doc(db, 'wishlist', wishlistItemToRemove.id));
+            toast({ title: "Retiré de vos favoris." });
+            setIsWishlisted(false);
+        }
+    } else {
+        // Add to wishlist
+        await setDoc(doc(collection(db, 'wishlist')), {
+            userId: user.uid,
+            courseId: course.id,
+            createdAt: serverTimestamp(),
+        });
+        toast({ title: "Ajouté à vos favoris !" });
+        setIsWishlisted(true);
+    }
+  }
 
 
   if (loading || modulesLoading || instructorLoading) {
@@ -54,6 +120,23 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
   const courseImage = PlaceHolderImages.find((img) => img.id === course.image);
   
   const isFree = course.prix === 0;
+
+  const CtaButton = () => {
+      if (isEnrolled) {
+          return (
+              <Button size="lg" className="w-full h-12 text-lg" asChild>
+                   <Link href={`/courses/${course.id}/modules/${firstModuleId}`}>
+                        Continuer la formation
+                  </Link>
+              </Button>
+          )
+      }
+      return (
+          <Button size="lg" className="w-full h-12 text-lg" onClick={handleEnroll} disabled={!firstModuleId}>
+            {firstModuleId ? "S'inscrire maintenant" : "Contenu bientôt disponible"}
+          </Button>
+      )
+  }
 
   return (
     <div>
@@ -193,17 +276,15 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
                       {isFree ? 'Gratuit' : `${course.prix.toLocaleString('fr-FR')} XAF`}
                     </div>
                     
-                  <Button size="lg" className="w-full h-12 text-lg" asChild disabled={!firstModuleId}>
-                    {firstModuleId ? (
-                       <Link href={`/courses/${course.id}/modules/${firstModuleId}`}>
-                        Commencer la formation
-                      </Link>
-                    ) : (
-                      <Button size="lg" className="w-full h-12 text-lg" disabled>
-                        Contenu bientôt disponible
-                      </Button>
-                    )}
-                  </Button>
+                    <div className="flex items-stretch gap-2">
+                        <div className="flex-grow">
+                            <CtaButton />
+                        </div>
+                        <Button variant="outline" size="icon" className="h-12 w-12" onClick={handleToggleWishlist}>
+                            <Heart className={cn("h-6 w-6", isWishlisted && "fill-red-500 text-red-500")} />
+                        </Button>
+                    </div>
+
                    <div className="text-xs text-muted-foreground text-center">Accès illimité</div>
 
                    <Separator/>

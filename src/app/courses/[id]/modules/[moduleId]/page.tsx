@@ -3,14 +3,24 @@
 import { notFound, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { PlayCircle, CheckCircle, Lock, Loader2, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
-import React, { use, useMemo, useState, useEffect } from 'react';
-import ReactPlayer from 'react-player';
+import React, { use, useMemo, useState, useEffect, useRef } from 'react';
+import ReactPlayer from 'react-player/youtube';
+import {
+  collection,
+  doc,
+  getDoc,
+  setDoc,
+  serverTimestamp,
+  updateDoc,
+  onSnapshot,
+  getDocs,
+} from 'firebase/firestore';
 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { useUser, useDoc, useCollection, useFirestore } from '@/firebase';
-import type { Course, Module, Video } from '@/lib/types';
+import type { Course, Module, Video, Enrollment, VideoProgress } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
@@ -26,59 +36,144 @@ export default function ModulePage({ params }: ModulePageProps) {
   const { id: courseId, moduleId } = use(params);
   const router = useRouter();
   const db = useFirestore();
+  const { user, loading: userLoading } = useUser();
   const { toast } = useToast();
+  const playerRef = useRef<ReactPlayer>(null);
 
   const { data: course, loading: courseLoading } = useDoc<Course>('courses', courseId);
   const { data: modulesData, loading: modulesLoading } = useCollection<Module>(
-    courseId ? `courses/${courseId}/modules` : null
+    courseId ? `courses/${courseId}/modules` : undefined
   );
   
-  const { data: videosData, loading: videosLoading } = useCollection<Video>(
-    courseId && moduleId ? `courses/${courseId}/modules/${moduleId}/videos` : null,
-    { where: ['publie', '==', true] }
-  );
+  const [videos, setVideos] = useState<Video[]>([]);
+  const [videosLoading, setVideosLoading] = useState(true);
+
+  const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
+  const [enrollmentLoading, setEnrollmentLoading] = useState(true);
   
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
+  const [canPlay, setCanPlay] = useState(false);
+
+  // Fetch all videos for all modules to calculate total course videos
+  useEffect(() => {
+    if (!modulesData || modulesData.length === 0 || !db) return;
+  
+    const fetchAllVideos = async () => {
+      let allVideos: Video[] = [];
+      for (const module of modulesData) {
+        if(module.id) {
+          const videosCollectionRef = collection(db, `courses/${courseId}/modules/${module.id}/videos`);
+          const videosSnapshot = await getDocs(videosCollectionRef);
+          const moduleVideos = videosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Video));
+          allVideos = [...allVideos, ...moduleVideos];
+        }
+      }
+      const videosOfCurrentModule = allVideos.filter(v => 
+          (modulesData.find(m => m.id === moduleId)?.videos as any)?.includes(v.id)
+      ).sort((a, b) => a.ordre - b.ordre);
+
+      setVideos(videosOfCurrentModule);
+      setVideosLoading(false);
+    };
+  
+    fetchAllVideos();
+
+  }, [courseId, moduleId, modulesData, db]);
+
+  // Enrollment listener
+  useEffect(() => {
+    if (!user || !db || !courseId) {
+        if (!userLoading) setEnrollmentLoading(false);
+        return;
+    };
+
+    const enrollmentDocRef = doc(db, 'users', user.uid, 'enrollments', courseId);
+    
+    const unsubscribe = onSnapshot(enrollmentDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+            setEnrollment(docSnap.data() as Enrollment);
+        } else {
+            // Auto-enroll user if they visit a course page
+            const newEnrollment: Enrollment = {
+                studentId: user.uid,
+                courseId: courseId,
+                courseTitle: course?.titre || 'Titre inconnu',
+                enrollmentDate: serverTimestamp() as any,
+                progression: 0,
+                modules: {},
+            };
+            setDoc(enrollmentDocRef, newEnrollment).catch(e => console.error("Failed to auto-enroll", e));
+        }
+        setEnrollmentLoading(false);
+    });
+
+    return () => unsubscribe();
+
+  }, [user, userLoading, db, courseId, course?.titre]);
 
   const sortedModules = useMemo(() => (modulesData || []).sort((a,b) => a.ordre - b.ordre), [modulesData]);
-  const sortedVideos = useMemo(() => (videosData || []).sort((a,b) => a.ordre - b.ordre), [videosData]);
-
+  const sortedVideos = useMemo(() => videos.sort((a,b) => a.ordre - b.ordre), [videos]);
+  
   const { currentModule, currentModuleIndex, nextModule, previousModule } = useMemo(() => {
     const currentIndex = sortedModules.findIndex(m => m.id === moduleId);
-    const currentMod = currentIndex !== -1 ? sortedModules[currentIndex] : null;
-    const nextMod = currentIndex !== -1 ? sortedModules[currentIndex + 1] : null;
-    const prevMod = currentIndex > 0 ? sortedModules[currentIndex - 1] : null;
-    return { currentModule: currentMod, currentModuleIndex: currentIndex, nextModule: nextMod, previousModule: prevMod };
+    if(currentIndex === -1) return { currentModule: null, currentModuleIndex: -1, nextModule: null, previousModule: null };
+    return { 
+      currentModule: sortedModules[currentIndex], 
+      currentModuleIndex: currentIndex, 
+      nextModule: sortedModules[currentIndex + 1] || null, 
+      previousModule: sortedModules[currentIndex - 1] || null,
+    };
   }, [sortedModules, moduleId]);
 
-  const { currentVideoIndex, nextVideo, previousVideo, completedVideosCount } = useMemo(() => {
-    if (!selectedVideo) return { currentVideoIndex: -1, nextVideo: null, previousVideo: null, completedVideosCount: 0 };
+  const { currentVideoIndex, nextVideo, previousVideo } = useMemo(() => {
+    if (!selectedVideo || sortedVideos.length === 0) return { currentVideoIndex: -1, nextVideo: null, previousVideo: null };
     const vidIndex = sortedVideos.findIndex(v => v.id === selectedVideo.id);
-    const nxtVideo = sortedVideos[vidIndex + 1] || null;
-    const prevVideo = vidIndex > 0 ? sortedVideos[vidIndex - 1] : null;
-    // This is a mock completion count for now. Will be replaced with firestore data.
-    const completedCount = sortedVideos.slice(0, vidIndex + 1).length;
-    return { currentVideoIndex: vidIndex, nextVideo: nxtVideo, previousVideo: prevVideo, completedVideosCount: completedCount };
+    return {
+      currentVideoIndex: vidIndex,
+      nextVideo: sortedVideos[vidIndex + 1] || null,
+      previousVideo: sortedVideos[vidIndex - 1] || null,
+    };
   }, [selectedVideo, sortedVideos]);
 
-  const courseProgress = useMemo(() => {
-    const totalVideos = sortedVideos.length;
-    if (totalVideos === 0) return 0;
-    return (completedVideosCount / totalVideos) * 100;
-  }, [completedVideosCount, sortedVideos.length]);
-
-
+  // Effect to select first video of the module
   useEffect(() => {
-    // Set the first video as selected by default
     if (sortedVideos.length > 0 && !selectedVideo) {
       setSelectedVideo(sortedVideos[0]);
     }
   }, [sortedVideos, selectedVideo]);
   
-  const handleVideoEnd = () => {
-    // Here we will add logic to mark video as complete in Firestore
-    toast({ title: "Leçon terminée !", description: `"${selectedVideo?.titre}" marquée comme terminée.`});
+  const videoProgressMap = useMemo(() => {
+      if (!enrollment || !enrollment.modules || !enrollment.modules[moduleId]) return {};
+      return enrollment.modules[moduleId].videos || {};
+  }, [enrollment, moduleId]);
 
+  // Effect to handle seeking to last position
+   useEffect(() => {
+    if (selectedVideo && playerRef.current && videoProgressMap[selectedVideo.id!]?.lastPosition) {
+      const lastPosition = videoProgressMap[selectedVideo.id!]?.lastPosition!;
+      playerRef.current.seekTo(lastPosition, 'seconds');
+    }
+  }, [selectedVideo, videoProgressMap]);
+
+  // Handlers
+  const handleProgress = async ({ played, playedSeconds }: { played: number; playedSeconds: number }) => {
+    if (!user || !db || !selectedVideo || !enrollment) return;
+    const videoId = selectedVideo.id!;
+    const videoProg = videoProgressMap[videoId];
+
+    // Mark as watched
+    if (played > 0.9 && !videoProg?.watched) {
+      await updateVideoProgress(videoId, { watched: true, watchedAt: serverTimestamp() as any });
+      toast({ title: "Leçon terminée !", description: `"${selectedVideo.titre}" marquée comme terminée.`});
+    }
+    
+    // Save last position periodically
+    if (playedSeconds > 5 && Math.round(playedSeconds) % 10 === 0) {
+      await updateVideoProgress(videoId, { lastPosition: playedSeconds });
+    }
+  };
+
+  const handleVideoEnd = () => {
     if (nextVideo) {
       setSelectedVideo(nextVideo);
     } else if (nextModule) {
@@ -89,19 +184,48 @@ export default function ModulePage({ params }: ModulePageProps) {
         description: "Vous avez terminé cette formation. Vous pouvez maintenant consulter votre certificat.",
         duration: 8000,
       });
-      router.push(`/dashboard/certificate/${courseId}`);
+      // Ensure final progress is 100%
+      if (enrollment) {
+        updateDoc(doc(db, 'users', user!.uid, 'enrollments', courseId), { progression: 100 });
+      }
+      router.push(`/dashboard/certificates`);
     }
   };
   
-  const handleNext = () => {
-      if(nextVideo) setSelectedVideo(nextVideo);
-  }
-  
-  const handlePrevious = () => {
-      if(previousVideo) setSelectedVideo(previousVideo);
+  const updateVideoProgress = async (videoId: string, data: Partial<VideoProgress>) => {
+      if (!user || !db || !enrollment) return;
+      
+      const newVideoProgress = { ...videoProgressMap[videoId], ...data };
+      const newModulesData = { 
+        ...enrollment.modules,
+        [moduleId]: {
+            ...enrollment.modules?.[moduleId],
+            videos: {
+                ...enrollment.modules?.[moduleId]?.videos,
+                [videoId]: newVideoProgress,
+            }
+        }
+      };
+
+      const watchedCount = Object.values(newModulesData[moduleId].videos).filter(v => v.watched).length;
+      const totalVideosInModule = sortedVideos.length;
+      const moduleProgress = totalVideosInModule > 0 ? (watchedCount / totalVideosInModule) * 100 : 0;
+      newModulesData[moduleId].progress = moduleProgress;
+      
+      const totalModuleProgress = Object.values(newModulesData).reduce((sum, mod) => sum + (mod.progress || 0), 0);
+      const totalModules = sortedModules.length;
+      const courseProgress = totalModules > 0 ? (totalModuleProgress / (totalModules * 100)) * 100 : 0;
+
+      await updateDoc(doc(db, 'users', user.uid, 'enrollments', courseId), {
+          modules: newModulesData,
+          progression: courseProgress
+      });
   }
 
-  const loading = courseLoading || modulesLoading || videosLoading;
+  const handleNext = () => nextVideo && setSelectedVideo(nextVideo);
+  const handlePrevious = () => previousVideo && setSelectedVideo(previousVideo);
+
+  const loading = courseLoading || modulesLoading || userLoading || videosLoading || enrollmentLoading;
 
   if (loading) {
     return (
@@ -112,7 +236,7 @@ export default function ModulePage({ params }: ModulePageProps) {
     );
   }
   
-  if (!courseId || !moduleId || !course || !currentModule) {
+  if (!courseId || !moduleId || !course || !currentModule || !user) {
     notFound();
   }
 
@@ -131,7 +255,12 @@ export default function ModulePage({ params }: ModulePageProps) {
             </h1>
             <p className='text-sm text-muted-foreground'>Leçon {currentModuleIndex + 1} / {sortedModules.length}</p>
         </div>
-        <div className="w-48"></div>
+         <div className="w-48 flex flex-col items-center">
+            <Progress value={enrollment?.progression || 0} className="h-2 w-full" />
+            <p className='text-center text-xs text-muted-foreground mt-1'>
+                Progression totale: {Math.round(enrollment?.progression || 0)}%
+            </p>
+        </div>
        </header>
 
       <div className="flex-grow flex flex-col md:flex-row">
@@ -139,19 +268,15 @@ export default function ModulePage({ params }: ModulePageProps) {
              <div className="aspect-video bg-black rounded-lg overflow-hidden mb-6 shadow-lg">
              {selectedVideo?.url ? (
                 <ReactPlayer
+                    ref={playerRef}
                     url={selectedVideo.url}
                     controls
                     width="100%"
                     height="100%"
                     playing={true}
+                    onProgress={handleProgress}
                     onEnded={handleVideoEnd}
-                    config={{
-                        file: {
-                            attributes: {
-                                controlsList: 'nodownload' // prevent download
-                            }
-                        }
-                    }}
+                    config={{ file: { attributes: { controlsList: 'nodownload' }}}}
                 />
              ) : (
                 <div className='w-full h-full bg-muted flex items-center justify-center text-center p-4'>
@@ -167,8 +292,10 @@ export default function ModulePage({ params }: ModulePageProps) {
                         <ChevronLeft className="mr-2 h-4 w-4" /> Précédent
                     </Button>
                      <div className="w-full max-w-xs mx-4">
-                        <Progress value={courseProgress} />
-                        <p className='text-center text-sm text-muted-foreground mt-1'>{Math.round(courseProgress)}% terminé</p>
+                        <Progress value={enrollment?.modules?.[moduleId]?.progress || 0} />
+                        <p className='text-center text-sm text-muted-foreground mt-1'>
+                            Module: {Math.round(enrollment?.modules?.[moduleId]?.progress || 0)}% terminé
+                        </p>
                     </div>
                     <Button onClick={handleNext} disabled={!nextVideo}>
                         Suivant <ChevronRight className="ml-2 h-4 w-4" />
@@ -192,7 +319,9 @@ export default function ModulePage({ params }: ModulePageProps) {
                         <div className="flex items-start gap-3">
                             <span className='font-mono text-muted-foreground text-xs pt-1'>{String(index + 1).padStart(2, '0')}</span>
                             <span className="font-medium flex-grow">{video.titre}</span>
-                            <CheckCircle className={cn('h-5 w-5 text-green-500 flex-shrink-0', index < currentVideoIndex ? 'opacity-100' : 'opacity-0')} />
+                            {videoProgressMap[video.id!]?.watched && (
+                                <CheckCircle className='h-5 w-5 text-green-500 flex-shrink-0' />
+                            )}
                         </div>
                     </button>
                     </li>

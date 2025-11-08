@@ -26,11 +26,11 @@ import { Timestamp } from 'firebase/firestore';
 export default function MyCertificatesPage() {
   const { user } = useUser();
   const { data: enrollments, loading, error } = useCollection<Enrollment>(
-    user ? `users/${user.uid}/enrollments` : null
+    user ? `users/${user.uid}/enrollments` : undefined
   );
 
   const completedCourses = useMemo(() => {
-    return (enrollments || []).filter(e => (e.progression || 0) === 100);
+    return (enrollments || []).filter(e => (e.progression || 0) >= 100);
   }, [enrollments]);
 
   const formatDate = (date: any) => {

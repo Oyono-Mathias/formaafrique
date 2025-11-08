@@ -24,7 +24,7 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 export default function MyCoursesPage() {
   const { user } = useUser();
   const { data: enrollments, loading, error } = useCollection<Enrollment>(
-      user ? `users/${user.uid}/enrollments` : null
+      user ? `users/${user.uid}/enrollments` : undefined
   );
 
   const { inProgressCourses, completedCourses } = useMemo(() => {
@@ -81,12 +81,11 @@ export default function MyCoursesPage() {
                     <CardTitle className="text-base font-bold leading-tight flex-grow hover:text-primary">
                         <Link href={`/courses/${enrollment.courseId}`}>{enrollment.courseTitle}</Link>
                     </CardTitle>
-                    <p className="text-sm text-muted-foreground mt-1">{enrollment.studentName}</p>
                 </CardContent>
                 <CardFooter className="p-4 pt-0 flex flex-col items-start gap-3">
                     <div className='w-full'>
                         <Progress value={progression} className="h-2" />
-                        <p className="text-xs text-muted-foreground mt-1.5">{progression}% terminé</p>
+                        <p className="text-xs text-muted-foreground mt-1.5">{Math.round(progression)}% terminé</p>
                     </div>
                     <Button asChild variant="default" className="w-full" size="sm">
                     { progression < 100 ? (
@@ -94,7 +93,7 @@ export default function MyCoursesPage() {
                             Continuer <ArrowRight className="ml-2 h-4 w-4" />
                         </Link>
                     ) : (
-                        <Link href={`/dashboard/certificate/${enrollment.courseId}`}>
+                        <Link href={`/dashboard/certificates`}>
                             Voir le certificat
                         </Link>
                     )}
