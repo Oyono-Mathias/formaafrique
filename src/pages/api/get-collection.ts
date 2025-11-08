@@ -1,7 +1,12 @@
-import { collection, getDocs, query, where, QueryConstraint } from 'firebase/firestore';
+import { collection, getDocs, query, where, QueryConstraint, CollectionReference, DocumentData } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { NextApiRequest, NextApiResponse } from 'next';
-import { GetCollectionApiRequest } from '@/lib/types';
+
+interface GetCollectionApiRequest {
+    path: string;
+    where?: [string, any, any];
+}
+
 
 // This is a temporary workaround to fetch data from the client
 // when using a combination of server/client components and firebase
@@ -10,28 +15,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
-  const { path, filters } = req.query as unknown as GetCollectionApiRequest;
+  const { path, where: whereFilter } = req.query as unknown as GetCollectionApiRequest;
 
   if (!path) {
     return res.status(400).json({ message: 'Collection path is required' });
   }
 
   try {
-    const constraints: QueryConstraint[] = [];
-    if (filters && Array.isArray(filters)) {
-      filters.forEach(filter => {
-         let value = filter.value;
-        // Basic type conversion
-        if (value === 'true') value = true;
-        if (value === 'false') value = false;
-        constraints.push(where(filter.field, filter.op, value));
-      });
-    }
-
     const collectionRef = collection(db, path);
-    const q = query(collectionRef, ...constraints);
-    const snapshot = await getDocs(q);
+    let q: Query<DocumentData> | CollectionReference<DocumentData> = collectionRef;
+
+    if (whereFilter && Array.isArray(whereFilter) && whereFilter.length === 3) {
+      q = query(collectionRef, where(whereFilter[0], whereFilter[1], whereFilter[2]));
+    }
     
+    const snapshot = await getDocs(q);
     const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
     res.status(200).json(data);

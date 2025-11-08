@@ -24,7 +24,7 @@ type ModulePageProps = {
 type ModuleWithVideos = Module & { videos: Video[] };
 
 export default function ModulePage({ params }: ModulePageProps) {
-  const { id: courseId, moduleId } = params;
+  const { id: courseId, moduleId } = use(params);
   const router = useRouter();
   const db = useFirestore();
   const { user } = useUser();
@@ -33,7 +33,7 @@ export default function ModulePage({ params }: ModulePageProps) {
   const { data: modulesData, loading: modulesLoading } = useCollection<Module>(
     courseId ? `courses/${courseId}/modules` : null
   );
-
+  
   const [videosByModule, setVideosByModule] = useState<Record<string, Video[]>>({});
   const [videosLoading, setVideosLoading] = useState(true);
   
@@ -41,7 +41,7 @@ export default function ModulePage({ params }: ModulePageProps) {
 
   // Fetch videos for all modules once
   useEffect(() => {
-    if (!modulesData || modulesData.length === 0 || !courseId) {
+    if (!modulesData || modulesData.length === 0 || !courseId || !db) {
       if (!modulesLoading) setVideosLoading(false);
       return;
     }
@@ -51,16 +51,11 @@ export default function ModulePage({ params }: ModulePageProps) {
       const allVideos: Record<string, Video[]> = {};
       for (const module of modulesData) {
         if (module.id) {
-          const videosCollection = `courses/${courseId}/modules/${module.id}/videos`;
-          
+          const videosCollectionRef = collection(db, `courses/${courseId}/modules/${module.id}/videos`);
           try {
-            const response = await fetch(`/api/get-collection?path=${encodeURIComponent(videosCollection)}`);
-             if (response.ok) {
-                const videos = (await response.json()) as Video[];
-                allVideos[module.id] = videos.filter(v => v.publie).sort((a, b) => a.ordre - b.ordre);
-            } else {
-                allVideos[module.id] = [];
-            }
+            const snapshot = await getDocs(videosCollectionRef);
+            const videos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Video[];
+            allVideos[module.id] = videos.filter(v => v.publie).sort((a, b) => a.ordre - b.ordre);
           } catch(e) {
             console.error("Failed to fetch videos for module:", module.id, e);
             allVideos[module.id] = [];
@@ -72,7 +67,7 @@ export default function ModulePage({ params }: ModulePageProps) {
     };
 
     fetchAllVideos();
-  }, [modulesData, courseId, modulesLoading]);
+  }, [modulesData, courseId, db, modulesLoading]);
 
 
   const { sortedModulesWithVideos, currentModule, currentModuleIndex, currentVideoIndex } = useMemo(() => {
@@ -82,10 +77,12 @@ export default function ModulePage({ params }: ModulePageProps) {
       videos: videosByModule[mod.id!] || []
     }));
     const currentIndex = modsWithVideos.findIndex(m => m.id === moduleId);
-    const currentVidIndex = currentModule?.videos.findIndex(v => v.id === selectedVideo?.id) ?? -1;
+    const currentMod = currentIndex !== -1 ? modsWithVideos[currentIndex] : null;
+    const currentVidIndex = currentMod?.videos.findIndex(v => v.id === selectedVideo?.id) ?? -1;
+    
     return { 
         sortedModulesWithVideos: modsWithVideos, 
-        currentModule: modsWithVideos[currentIndex],
+        currentModule: currentMod,
         currentModuleIndex: currentIndex,
         currentVideoIndex: currentVidIndex
     };
@@ -94,8 +91,11 @@ export default function ModulePage({ params }: ModulePageProps) {
 
   // Effect to select the first video of the current module by default
   useEffect(() => {
-    if (currentModule && currentModule.videos.length > 0 && !selectedVideo) {
-      setSelectedVideo(currentModule.videos[0]);
+    if (currentModule && currentModule.videos.length > 0) {
+        // Only set default if no video is selected or if the selected one is not in the current module
+        if (!selectedVideo || !currentModule.videos.some(v => v.id === selectedVideo.id)) {
+             setSelectedVideo(currentModule.videos[0]);
+        }
     } else if (currentModule && currentModule.videos.length === 0) {
       setSelectedVideo(null);
     }
@@ -106,9 +106,8 @@ export default function ModulePage({ params }: ModulePageProps) {
 
     // --- Save Progress ---
     if(user && db) {
-        const enrollmentQuery = `users/${user.uid}/enrollments`;
+        const enrollmentRef = doc(db, `users/${user.uid}/enrollments`, courseId);
         try {
-            const enrollmentRef = doc(db, enrollmentQuery, courseId);
             const enrollmentSnap = await getDoc(enrollmentRef);
             if (enrollmentSnap.exists()) {
                 const totalVideos = sortedModulesWithVideos.reduce((acc, mod) => acc + mod.videos.length, 0);
