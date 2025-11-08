@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -33,7 +34,7 @@ export default function WishlistPage() {
   const { toast } = useToast();
   
   const { data: wishlistItems, loading: wishlistLoading, error: wishlistError } = useCollection<WishlistItem>(
-    user ? 'wishlist' : null,
+    user?.uid ? 'wishlist' : null,
     user?.uid ? { where: ['userId', '==', user.uid] } : undefined
   );
 

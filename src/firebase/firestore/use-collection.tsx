@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,15 +9,22 @@ interface Options {
     where?: [string, any, any];
 }
 
-export function useCollection<T>(collectionName: string, options?: Options) {
+export function useCollection<T>(collectionName: string | null, options?: Options) {
     const db = useFirestore();
     const [data, setData] = useState<T[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
 
     useEffect(() => {
-        if (!db) {
+        if (!db || !collectionName) {
             setLoading(false);
+            return;
+        }
+        
+        // Ensure where clause is valid before creating query
+        if (options?.where && options.where.some(val => val === undefined)) {
+            setLoading(false);
+            // It's a valid state to have no data while waiting for a value, so no error.
             return;
         }
 
