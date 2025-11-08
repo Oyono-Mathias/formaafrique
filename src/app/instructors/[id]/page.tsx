@@ -1,11 +1,10 @@
-
 'use client';
 
 import { useDoc, useCollection, useUser } from '@/firebase';
 import type { InstructorProfile, Course } from '@/lib/types';
 import { notFound } from 'next/navigation';
 import { use } from 'react';
-import { Loader2, BookOpen, Star, Users, Linkedin } from 'lucide-react';
+import { Loader2, BookOpen, Star, Users, Linkedin, MessageSquare } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,6 +15,7 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useMemo } from 'react';
 import FollowButton from '@/components/social/follow-button';
 import FriendRequestButton from '@/components/social/friend-request-button';
+import { getOrCreateChat } from '@/actions/chat';
 
 export default function InstructorProfilePage({ params }: { params: { id: string } }) {
     const { id: instructorId } = use(params);
@@ -49,6 +49,8 @@ export default function InstructorProfilePage({ params }: { params: { id: string
     if (instructorError || !instructor || instructor.role !== 'formateur') {
         notFound();
     }
+    
+    const startChatAction = getOrCreateChat.bind(null, user?.uid || '', instructor.id!);
 
     return (
         <div className="bg-primary/5">
@@ -71,10 +73,17 @@ export default function InstructorProfilePage({ params }: { params: { id: string
                                    </div>
                                 )}
                                 
-                                <div className="flex items-center gap-4 mt-6">
-                                    <FollowButton targetUserId={instructorId} />
-                                    <FriendRequestButton targetUserId={instructorId} />
-                                </div>
+                                {user && user.uid !== instructor.id && (
+                                    <div className="flex flex-col sm:flex-row items-center gap-2 mt-6">
+                                        <FollowButton targetUserId={instructorId} />
+                                        <FriendRequestButton targetUserId={instructorId} />
+                                        <form action={startChatAction}>
+                                            <Button type="submit" variant="outline" size="sm">
+                                                <MessageSquare className="mr-2 h-4 w-4" /> Message
+                                            </Button>
+                                        </form>
+                                    </div>
+                                )}
 
 
                                 {(instructor as any).linkedin && (
