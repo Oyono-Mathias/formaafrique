@@ -28,7 +28,7 @@ const CourseCard = ({ course }: { course: Course }) => {
     const isFree = course.prix === 0;
 
     return (
-        <Card className="flex flex-col h-full overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-1 border-white/10 bg-white/5">
+        <Card className="flex flex-col h-full overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-1 bg-card">
             <CardHeader className="p-0">
                 <Link href={`/courses/${course.id}`} className="block aspect-video relative bg-muted">
                 {courseImage && (
@@ -86,8 +86,8 @@ const CourseCarousel = ({ title, courses }: { title: string, courses: Course[] }
                     </CarouselItem>
                 ))}
                 </CarouselContent>
-                <CarouselPrevious className="hidden lg:flex bg-background/50"/>
-                <CarouselNext className="hidden lg:flex bg-background/50"/>
+                <CarouselPrevious className="hidden lg:flex bg-card/50"/>
+                <CarouselNext className="hidden lg:flex bg-card/50"/>
             </Carousel>
         </div>
     )
@@ -140,7 +140,7 @@ export default function DashboardPage() {
                 <h2 className="text-2xl font-bold mb-4 text-foreground">Catégories populaires</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {categories.slice(0, 8).map(cat => (
-                        <Button key={cat} variant="secondary" asChild className="h-16 text-base justify-start text-left bg-white/5 hover:bg-white/10 border border-white/10">
+                        <Button key={cat} variant="secondary" asChild className="h-16 text-base justify-start text-left">
                             <Link href={`/courses?category=${encodeURIComponent(cat)}`}>{cat}</Link>
                         </Button>
                     ))}

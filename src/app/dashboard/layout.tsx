@@ -78,7 +78,7 @@ function NavLink({
         'flex items-center gap-4 px-4 py-3 rounded-lg transition-colors',
         isActive
           ? 'bg-primary text-primary-foreground'
-          : 'text-foreground/70 hover:bg-muted/10 hover:text-foreground',
+          : 'text-foreground/70 hover:bg-muted hover:text-foreground',
       )}
     >
       <Icon className="h-5 w-5" />
@@ -98,8 +98,8 @@ function SidebarContent() {
   };
 
   return (
-    <div className="flex h-full flex-col text-white">
-      <div className="p-6 border-b border-white/10">
+    <div className="flex h-full flex-col">
+      <div className="p-6 border-b border-border">
         <Link href="/" aria-label="Retour à la page d'accueil">
           <Logo />
         </Link>
@@ -109,10 +109,10 @@ function SidebarContent() {
           <NavLink key={link.href} {...link} />
         ))}
       </nav>
-      <div className="p-4 mt-auto border-t border-white/10">
+      <div className="p-4 mt-auto border-t border-border">
         <Link
             href="/dashboard/settings"
-            className="flex items-center gap-4 px-4 py-3 rounded-lg text-foreground/70 hover:bg-muted/10 hover:text-foreground transition-colors"
+            className="flex items-center gap-4 px-4 py-3 rounded-lg text-foreground/70 hover:bg-muted hover:text-foreground transition-colors"
         >
           <Settings className="h-5 w-5" />
           <span className="font-medium">Paramètres</span>
@@ -167,7 +167,7 @@ export default function DashboardLayout({
 
   if (loading || !user || !userProfile || userProfile.role !== 'etudiant') {
     return (
-      <div className="flex justify-center items-center h-screen bg-neutral-950 text-white">
+      <div className="flex justify-center items-center h-screen bg-background text-foreground">
         <Loader2 className="h-8 w-8 animate-spin" />
         <p className="flex items-center gap-2 text-lg ml-4">
           Vérification de votre accès...
@@ -184,15 +184,15 @@ export default function DashboardLayout({
 
 
   return (
-    <div className="min-h-screen w-full bg-neutral-950 text-white flex flex-col lg:flex-row">
+    <div className="min-h-screen w-full bg-background text-foreground flex flex-col lg:flex-row">
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:block w-64 flex-shrink-0 border-r border-white/10 bg-neutral-900/50">
+      <aside className="hidden lg:block w-64 flex-shrink-0 border-r border-border bg-card">
         <SidebarContent />
       </aside>
 
       <div className="flex flex-col flex-1 overflow-hidden">
         {/* Header */}
-        <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-white/10 bg-neutral-950/80 backdrop-blur-sm px-4 lg:px-8">
+        <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-border bg-background/80 backdrop-blur-sm px-4 lg:px-8">
            <div className="lg:hidden">
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
@@ -200,7 +200,7 @@ export default function DashboardLayout({
                   <Menu className="h-6 w-6" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-64 bg-neutral-950 border-r-white/10 p-0">
+              <SheetContent side="left" className="w-64 bg-card border-r p-0">
                 <SidebarContent />
               </SheetContent>
             </Sheet>
