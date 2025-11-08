@@ -46,8 +46,7 @@ export default function ApercuPage({ params }: ApercuPageProps) {
   const { currentModule, sortedVideos } = useMemo(() => {
       const allVideos = videosData || [];
       const currentMod = modules.find(m => m.id === currentModuleId);
-      // On affiche uniquement les vidéos publiées dans l'aperçu
-      const sortedVids = [...allVideos].filter(v => v.publie).sort((a,b) => a.ordre - b.ordre);
+      const sortedVids = [...allVideos].sort((a,b) => a.ordre - b.ordre);
       return { currentModule: currentMod, sortedVideos: sortedVids };
   }, [modules, videosData, currentModuleId]);
 

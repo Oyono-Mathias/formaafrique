@@ -201,7 +201,6 @@ export default function AdminManageModulesPage({
         await addDoc(videosCollectionRef, {
           ...videoData,
           ordre: nextOrder,
-          publie: false,
         });
         toast({ title: 'Vidéo ajoutée !' });
       }
@@ -542,25 +541,6 @@ function ModuleVideos({
     return videos.sort((a, b) => a.ordre - b.ordre);
   }, [videosData]);
 
-
-  const handlePublishToggle = async (video: Video) => {
-    if (!db || !courseId || !moduleId || !video.id) return;
-    const videoRef = doc(db, `courses/${courseId}/modules/${moduleId}/videos`, video.id);
-    try {
-      await updateDoc(videoRef, { publie: !video.publie });
-      toast({
-        title: `Vidéo ${video.publie ? 'dépubliée' : 'publiée'}`,
-        description: `Le statut de la vidéo "${video.titre}" a été mis à jour.`
-      });
-    } catch (e) {
-      toast({
-        variant: 'destructive',
-        title: 'Erreur',
-        description: "Impossible de changer le statut de la vidéo.",
-      });
-    }
-  };
-
   const handleDeleteVideo = async (videoId: string) => {
     if (!db || !courseId || !moduleId) return;
 
@@ -613,17 +593,8 @@ function ModuleVideos({
               <div className="flex items-center gap-3">
                 <VideoIcon className="h-5 w-5 text-primary" />
                 <p className="font-medium text-sm">{video.titre}</p>
-                 <Badge variant={video.publie ? 'default' : 'secondary'}>
-                  {video.publie ? 'Publiée' : 'Non publiée'}
-                </Badge>
               </div>
               <div className="flex gap-2 items-center">
-                 <div className="flex items-center space-x-2">
-                     <Button variant={video.publie ? "destructive" : "default"} size="sm" onClick={() => handlePublishToggle(video)}>
-                        {video.publie ? <X className="mr-2 h-4 w-4" /> : <Check className="mr-2 h-4 w-4" />}
-                        {video.publie ? 'Dépublier' : 'Publier'}
-                    </Button>
-                </div>
                  <Button
                   variant="ghost"
                   size="icon"
