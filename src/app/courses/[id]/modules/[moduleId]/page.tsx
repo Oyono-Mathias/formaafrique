@@ -126,28 +126,30 @@ export default function ModulePage({ params }: ModulePageProps) {
     if (!url) return null;
     let videoId: string | null = null;
     try {
-        const urlObj = new URL(url);
-        if (urlObj.hostname.includes('youtube.com')) {
-            videoId = urlObj.searchParams.get('v');
-        } else if (urlObj.hostname.includes('youtu.be')) {
-            videoId = urlObj.pathname.slice(1);
-        } else if (urlObj.hostname.includes('drive.google.com')) {
-            const match = url.match(/file\/d\/([a-zA-Z0-9_-]+)/);
-            return match ? `https://drive.google.com/file/d/${match[1]}/preview` : url;
-        }
-
+      const urlObj = new URL(url);
+      if (urlObj.hostname.includes('youtube.com') || urlObj.hostname.includes('youtu.be')) {
+        videoId = urlObj.hostname.includes('youtu.be')
+          ? urlObj.pathname.slice(1)
+          : urlObj.searchParams.get('v');
+        
         if (videoId) {
-            const embedUrl = new URL(`https://www.youtube.com/embed/${videoId}`);
-            embedUrl.searchParams.append('rel', '0'); // Disable related videos
-            embedUrl.searchParams.append('showinfo', '0'); // Deprecated but for compatibility
-            embedUrl.searchParams.append('modestbranding', '1'); // Less prominent YouTube logo
-            embedUrl.searchParams.append('iv_load_policy', '3'); // Disable annotations
-            return embedUrl.toString();
+          const searchParams = new URLSearchParams({
+            rel: '0',
+            showinfo: '0',
+            modestbranding: '1',
+            iv_load_policy: '3',
+            autoplay: '1'
+          });
+          return `https://www.youtube.com/embed/${videoId}?${searchParams.toString()}`;
         }
-        return url;
+      } else if (urlObj.hostname.includes('drive.google.com')) {
+        const match = url.match(/file\/d\/([a-zA-Z0-9_-]+)/);
+        return match ? `https://drive.google.com/file/d/${match[1]}/preview` : null;
+      }
+      return url; // Fallback for other video providers or direct links
     } catch (error) {
-        console.error("Invalid URL:", error);
-        return url; // Fallback to original URL if parsing fails
+      console.error("Invalid URL:", error);
+      return null;
     }
   };
   
