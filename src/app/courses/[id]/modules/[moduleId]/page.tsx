@@ -124,32 +124,33 @@ export default function ModulePage({ params }: ModulePageProps) {
 
   const getEmbedUrl = (url: string): string | null => {
     if (!url) return null;
-    let videoId: string | null = null;
     try {
-      const urlObj = new URL(url);
-      if (urlObj.hostname.includes('youtube.com') || urlObj.hostname.includes('youtu.be')) {
-        videoId = urlObj.hostname.includes('youtu.be')
-          ? urlObj.pathname.slice(1)
-          : urlObj.searchParams.get('v');
-        
-        if (videoId) {
-          const searchParams = new URLSearchParams({
-            rel: '0',
-            showinfo: '0',
-            modestbranding: '1',
-            iv_load_policy: '3',
-            autoplay: '1'
-          });
-          return `https://www.youtube.com/embed/${videoId}?${searchParams.toString()}`;
+        const urlObj = new URL(url);
+        let videoId: string | null = null;
+        if (urlObj.hostname.includes('youtube.com') || urlObj.hostname.includes('youtu.be')) {
+            videoId = urlObj.hostname.includes('youtu.be')
+              ? urlObj.pathname.slice(1)
+              : urlObj.searchParams.get('v');
+            
+            if (videoId) {
+              const searchParams = new URLSearchParams({
+                rel: '0', // Disable related videos
+                showinfo: '0', // Deprecated, but doesn't hurt
+                modestbranding: '1', // Reduce YouTube logo
+                iv_load_policy: '3', // Disable annotations
+                autoplay: '1' // Autoplay the video
+              });
+              return `https://www.youtube.com/embed/${videoId}?${searchParams.toString()}`;
+            }
+
+        } else if (urlObj.hostname.includes('drive.google.com')) {
+            const match = url.match(/file\/d\/([a-zA-Z0-9_-]+)/);
+            return match ? `https://drive.google.com/file/d/${match[1]}/preview` : null;
         }
-      } else if (urlObj.hostname.includes('drive.google.com')) {
-        const match = url.match(/file\/d\/([a-zA-Z0-9_-]+)/);
-        return match ? `https://drive.google.com/file/d/${match[1]}/preview` : null;
-      }
-      return url; // Fallback for other video providers or direct links
+        return url; // Fallback for other providers
     } catch (error) {
-      console.error("Invalid URL:", error);
-      return null;
+        console.error("Invalid URL:", error);
+        return null;
     }
   };
   
