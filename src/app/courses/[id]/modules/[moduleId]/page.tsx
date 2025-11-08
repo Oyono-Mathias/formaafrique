@@ -1,3 +1,4 @@
+
 'use client';
 
 import { notFound, useRouter } from 'next/navigation';
@@ -12,7 +13,7 @@ import { Separator } from '@/components/ui/separator';
 import { useUser, useDoc, useCollection, useFirestore } from '@/firebase';
 import type { Course, Module, Video } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, getDocs } from 'firebase/firestore';
 
 type ModulePageProps = {
   params: {
