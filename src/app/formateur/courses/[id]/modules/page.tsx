@@ -61,6 +61,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import ReactPlayer from 'react-player';
+import { formatVideoUrl } from '@/lib/video-utils';
 
 const moduleSchema = z.object({
   titre: z
@@ -172,6 +173,8 @@ export default function ManageModulesPage({
   async function onVideoSubmit(values: z.infer<typeof videoSchema>) {
     if (!db || !courseId || !selectedModule?.id) return;
     
+    const formattedUrl = formatVideoUrl(values.url);
+
     try {
       const videosCollectionRef = collection(
         db,
@@ -180,15 +183,19 @@ export default function ManageModulesPage({
       
       const videosSnapshot = await getDocs(videosCollectionRef);
       const nextOrder = (videosSnapshot.docs.length || 0) + 1;
+      
+      const videoData = {
+          titre: values.titre,
+          url: formattedUrl
+      };
 
       if (editingVideo) {
         const videoRef = doc(db, `courses/${courseId}/modules/${selectedModule.id}/videos`, editingVideo.id!);
-        await updateDoc(videoRef, values);
+        await updateDoc(videoRef, videoData);
         toast({ title: 'Vidéo mise à jour !' });
       } else {
         await addDoc(videosCollectionRef, {
-          titre: values.titre,
-          url: values.url,
+          ...videoData,
           ordre: nextOrder,
           publie: false,
         });
@@ -219,19 +226,15 @@ export default function ManageModulesPage({
     const videosRef = collection(moduleRef, 'videos');
 
     try {
-      // Get all videos in the subcollection
       const videosSnapshot = await getDocs(videosRef);
       const batch = writeBatch(db);
 
-      // Add all video deletions to the batch
       videosSnapshot.forEach((videoDoc) => {
         batch.delete(videoDoc.ref);
       });
 
-      // Add the module deletion to the batch
       batch.delete(moduleRef);
 
-      // Commit the batch
       await batch.commit();
       
       toast({

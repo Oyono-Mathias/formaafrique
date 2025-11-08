@@ -65,6 +65,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import ReactPlayer from 'react-player';
+import { formatVideoUrl } from '@/lib/video-utils';
 
 const moduleSchema = z.object({
   titre: z
@@ -175,6 +176,8 @@ export default function AdminManageModulesPage({
 
   async function onVideoSubmit(values: z.infer<typeof videoSchema>) {
     if (!db || !courseId || !selectedModule?.id) return;
+    
+    const formattedUrl = formatVideoUrl(values.url);
 
     try {
       const videosCollectionRef = collection(
@@ -184,14 +187,19 @@ export default function AdminManageModulesPage({
       
       const videosSnapshot = await getDocs(videosCollectionRef);
       const nextOrder = (videosSnapshot.docs.length || 0) + 1;
+      
+      const videoData = {
+          titre: values.titre,
+          url: formattedUrl
+      };
 
       if (editingVideo) {
         const videoRef = doc(db, `courses/${courseId}/modules/${selectedModule.id}/videos`, editingVideo.id!);
-        await updateDoc(videoRef, values);
+        await updateDoc(videoRef, videoData);
         toast({ title: 'Vidéo mise à jour !' });
       } else {
         await addDoc(videosCollectionRef, {
-          ...values,
+          ...videoData,
           ordre: nextOrder,
           publie: false,
         });
@@ -212,29 +220,25 @@ export default function AdminManageModulesPage({
 
   const handleDeleteModule = async (moduleId: string) => {
     if (!db || !courseId) return;
-  
+
     const confirmed = window.confirm(
       'Voulez-vous vraiment supprimer ce module et toutes ses vidéos ? Cette action est irréversible.'
     );
     if (!confirmed) return;
-  
+
     const moduleRef = doc(db, 'courses', courseId, 'modules', moduleId);
     const videosRef = collection(moduleRef, 'videos');
-  
+
     try {
-      // Get all videos in the subcollection
       const videosSnapshot = await getDocs(videosRef);
       const batch = writeBatch(db);
-  
-      // Add all video deletions to the batch
+
       videosSnapshot.forEach((videoDoc) => {
         batch.delete(videoDoc.ref);
       });
-  
-      // Add the module deletion to the batch
+
       batch.delete(moduleRef);
-  
-      // Commit the batch
+
       await batch.commit();
       
       toast({

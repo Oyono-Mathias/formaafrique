@@ -4,7 +4,7 @@ import { notFound, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { PlayCircle, CheckCircle, Lock, Loader2, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import React, { use, useMemo, useState, useEffect, useRef } from 'react';
-import ReactPlayer from 'react-player/youtube';
+import ReactPlayer from 'react-player';
 import {
   collection,
   doc,
@@ -240,6 +240,21 @@ export default function ModulePage({ params }: ModulePageProps) {
     notFound();
   }
 
+  const playerConfig = {
+    youtube: {
+      playerVars: {
+        showinfo: 0,
+        rel: 0,
+        modestbranding: 1,
+      },
+    },
+    file: {
+        attributes: {
+            controlsList: 'nodownload',
+        }
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-[calc(100vh-4rem)] bg-background">
        <header className="p-4 border-b flex justify-between items-center bg-card">
@@ -276,7 +291,7 @@ export default function ModulePage({ params }: ModulePageProps) {
                     playing={true}
                     onProgress={handleProgress}
                     onEnded={handleVideoEnd}
-                    config={{ file: { attributes: { controlsList: 'nodownload' }}}}
+                    config={playerConfig}
                 />
              ) : (
                 <div className='w-full h-full bg-muted flex items-center justify-center text-center p-4'>
