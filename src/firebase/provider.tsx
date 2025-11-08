@@ -4,7 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { Auth, User } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
 import type { FirebaseStorage } from 'firebase/storage';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 
 // Auth context
@@ -50,21 +50,48 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+      setLoading(true);
       if (firebaseUser) {
         setUser(firebaseUser);
+        const userDocRef = doc(db, 'users', firebaseUser.uid);
         try {
-          const userDocRef = doc(db, 'users', firebaseUser.uid);
+          await setDoc(userDocRef, { online: true, lastSeen: serverTimestamp() }, { merge: true });
           const userDoc = await getDoc(userDocRef);
           if (userDoc.exists()) {
-            setUserProfile(userDoc.data() as UserProfile);
+            setUserProfile({ id: userDoc.id, ...userDoc.data() } as UserProfile);
           } else {
-            setUserProfile(null);
+            // This case might happen if the doc creation failed on signup.
+            // We can attempt to recreate it.
+            const newUserProfile: Omit<UserProfile, 'createdAt' | 'photoURL'> & { createdAt: any, photoURL: string | null } = {
+                name: firebaseUser.displayName || 'Nouvel Utilisateur',
+                email: firebaseUser.email!,
+                createdAt: serverTimestamp(),
+                role: 'etudiant',
+                status: 'actif',
+                paysOrigine: '',
+                paysActuel: '',
+                bio: '',
+                skills: [],
+                friends: [],
+                followers: [],
+                following: [],
+                online: true,
+                lastSeen: serverTimestamp(),
+                photoURL: firebaseUser.photoURL || null,
+            };
+            await setDoc(userDocRef, newUserProfile);
+            setUserProfile({ id: userDocRef.id, ...newUserProfile } as UserProfile);
           }
         } catch (error) {
-          console.error("Failed to fetch user profile:", error);
+          console.error("Failed to fetch or update user profile:", error);
           setUserProfile(null);
         }
       } else {
+        if (user) {
+            // User is signing out
+            const userDocRef = doc(db, 'users', user.uid);
+            setDoc(userDocRef, { online: false, lastSeen: serverTimestamp() }, { merge: true });
+        }
         setUser(null);
         setUserProfile(null);
       }
@@ -72,7 +99,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     return () => unsubscribe();
-  }, [auth, db]);
+  }, [auth, db, user]);
 
   return (
     <UserContext.Provider value={{ user, userProfile, loading }}>
