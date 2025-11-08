@@ -80,7 +80,7 @@ export default function ManageModulesPage({
 }: {
   params: { id: string };
 }) {
-  const { id: courseId } = use(params);
+  const courseId = params.id;
   
   const { data: course, loading: courseLoading } = useDoc<Course>(
     'courses',
@@ -213,25 +213,24 @@ export default function ManageModulesPage({
     );
     if (!confirmed) return;
 
-    const moduleRef = doc(db, `courses/${courseId}/modules`, moduleId);
-    const videosRef = collection(db, `courses/${courseId}/modules/${moduleId}/videos`);
-
     try {
-      // Start a batch write
+      const moduleRef = doc(db, `courses/${courseId}/modules`, moduleId);
+      const videosRef = collection(moduleRef, 'videos');
+      
+      // Use a batch to delete all videos and the module itself
       const batch = writeBatch(db);
-
-      // Get all videos in the module
+      
+      // Get all videos to delete
       const videosSnapshot = await getDocs(videosRef);
       videosSnapshot.forEach((videoDoc) => {
         batch.delete(videoDoc.ref);
       });
-
-      // Delete the module itself
+      
+      // Delete the module
       batch.delete(moduleRef);
-
-      // Commit the batch
+      
       await batch.commit();
-
+      
       toast({ title: 'Module supprimé', description: 'Le module et toutes ses vidéos ont été supprimés.' });
     } catch (error) {
       console.error('Error deleting module:', error);
@@ -640,5 +639,3 @@ function ModuleVideos({
     </div>
   );
 }
-
-    
