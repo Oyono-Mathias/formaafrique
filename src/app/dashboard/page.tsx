@@ -68,7 +68,7 @@ const CourseCarousel = ({ title, courses }: { title: string, courses: Course[] }
     return (
         <div>
             <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold">{title}</h2>
+                <h2 className="text-2xl font-bold text-foreground">{title}</h2>
                 <Button asChild variant="link">
                     <Link href="/courses">Afficher tout</Link>
                 </Button>
@@ -118,7 +118,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-12">
       <div>
-        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
           Accueil
         </h1>
         <p className="text-muted-foreground mt-2 text-lg">
@@ -137,7 +137,7 @@ export default function DashboardPage() {
             )}
 
             <div>
-                <h2 className="text-2xl font-bold mb-4">Catégories populaires</h2>
+                <h2 className="text-2xl font-bold mb-4 text-foreground">Catégories populaires</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {categories.slice(0, 8).map(cat => (
                         <Button key={cat} variant="secondary" asChild className="h-16 text-base justify-start text-left bg-white/5 hover:bg-white/10 border border-white/10">
