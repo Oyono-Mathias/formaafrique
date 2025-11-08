@@ -1,12 +1,11 @@
-
 'use client';
 
-import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, where, Query, DocumentData } from 'firebase/firestore';
+import { useState, useEffect, useMemo } from 'react';
+import { collection, onSnapshot, query, where, Query, DocumentData, WhereFilterOp } from 'firebase/firestore';
 import { useFirestore } from '@/firebase/provider';
 
 interface Options {
-    where?: [string, any, any];
+    where?: [string, WhereFilterOp, any];
 }
 
 export function useCollection<T>(collectionName: string | null, options?: Options) {
@@ -15,24 +14,31 @@ export function useCollection<T>(collectionName: string | null, options?: Option
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
 
+    // Memoize the where clause to prevent re-renders from creating new array instances
+    const whereClause = useMemo(() => options?.where, [options?.where]);
+
     useEffect(() => {
         if (!db || !collectionName) {
             setLoading(false);
             return;
         }
-        
-        // Ensure where clause is valid before creating query
-        if (options?.where && options.where.some(val => val === undefined)) {
-            setLoading(false);
-            // It's a valid state to have no data while waiting for a value, so no error.
-            return;
-        }
+
+        // A more robust check for a valid where clause
+        const isValidWhereClause = whereClause && 
+                                   Array.isArray(whereClause) && 
+                                   whereClause.length === 3 && 
+                                   !whereClause.some(val => val === undefined);
 
         let q: Query<DocumentData>;
         const collectionRef = collection(db, collectionName);
 
-        if (options?.where) {
-            q = query(collectionRef, where(...options.where));
+        if (isValidWhereClause) {
+            q = query(collectionRef, where(...whereClause));
+        } else if (options?.where) {
+            // If where is provided but invalid, don't query.
+            setLoading(false);
+            setData([]);
+            return;
         } else {
             q = query(collectionRef);
         }
@@ -43,6 +49,7 @@ export function useCollection<T>(collectionName: string | null, options?: Option
                 const items = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as T[];
                 setData(items);
                 setLoading(false);
+                setError(null);
             },
             (err) => {
                 console.error(`Error fetching collection ${collectionName}:`, err);
@@ -52,7 +59,7 @@ export function useCollection<T>(collectionName: string | null, options?: Option
         );
 
         return () => unsubscribe();
-    }, [db, collectionName, options?.where]);
+    }, [db, collectionName, whereClause]);
 
     return { data, loading, error };
 }
