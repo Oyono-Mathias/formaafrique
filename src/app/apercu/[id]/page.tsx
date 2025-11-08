@@ -1,11 +1,10 @@
-
 'use client';
 
 import { notFound, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { PlayCircle, CheckCircle, Lock, Loader2, ArrowLeft } from 'lucide-react';
 import { use } from 'react';
-import YouTube from 'react-youtube';
+import ReactPlayer from 'react-player';
 
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -21,13 +20,6 @@ type ApercuPageProps = {
   params: {
     id: string;
   };
-};
-
-const extractYouTubeId = (url: string): string | null => {
-  if (!url) return null;
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-  const match = url.match(regExp);
-  return (match && match[2].length === 11) ? match[2] : null;
 };
 
 export default function ApercuPage({ params }: ApercuPageProps) {
@@ -80,20 +72,7 @@ export default function ApercuPage({ params }: ApercuPageProps) {
   if (!courseId || !course) {
     notFound();
   }
-
-  const videoId = selectedVideo ? extractYouTubeId(selectedVideo.url) : null;
-  const youtubePlayerOptions = {
-    height: '100%',
-    width: '100%',
-    playerVars: {
-      autoplay: 1,
-      controls: 1,
-      rel: 0,
-      modestbranding: 1,
-    },
-  };
   
-  const videoPlaceholder = PlaceHolderImages.find((img) => img.id === 'video-placeholder');
   const currentModuleIndex = modules.findIndex(m => m.id === currentModuleId);
 
   return (
@@ -109,11 +88,13 @@ export default function ApercuPage({ params }: ApercuPageProps) {
             </Button>
           </div>
           <div className="aspect-video bg-black rounded-lg overflow-hidden mb-6 shadow-lg">
-             {videoId ? (
-                <YouTube
-                    videoId={videoId}
-                    opts={youtubePlayerOptions}
-                    className="w-full h-full"
+             {selectedVideo?.url ? (
+                <ReactPlayer
+                    url={selectedVideo.url}
+                    controls
+                    width="100%"
+                    height="100%"
+                    playing
                 />
              ) : (
                 <div className='w-full h-full bg-muted flex items-center justify-center text-center p-4'>

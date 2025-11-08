@@ -1,11 +1,10 @@
-
 'use client';
 
 import { notFound, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { PlayCircle, CheckCircle, Lock, Loader2, ArrowLeft } from 'lucide-react';
 import React, { use, useMemo, useState, useEffect } from 'react';
-import YouTube from 'react-youtube';
+import ReactPlayer from 'react-player/lazy';
 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { cn } from '@/lib/utils';
@@ -24,14 +23,6 @@ type ModulePageProps = {
 };
 
 type ModuleWithVideos = Module & { videos: Video[] };
-
-const extractYouTubeId = (url: string): string | null => {
-  if (!url) return null;
-  // Regex to handle youtu.be, youtube.com/watch, youtube.com/embed, etc.
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-  const match = url.match(regExp);
-  return (match && match[2].length === 11) ? match[2] : null;
-};
 
 export default function ModulePage({ params }: ModulePageProps) {
   const { id: courseId, moduleId } = use(params);
@@ -145,22 +136,6 @@ export default function ModulePage({ params }: ModulePageProps) {
   if (!courseId || !moduleId || !course || !currentModule) {
     notFound();
   }
-  
-  const videoId = selectedVideo ? extractYouTubeId(selectedVideo.url) : null;
-  const youtubePlayerOptions = {
-    height: '100%',
-    width: '100%',
-    playerVars: {
-      autoplay: 1,
-      controls: 1,
-      rel: 0,
-      modestbranding: 1,
-      showinfo: 0,
-      iv_load_policy: 3,
-      fs: 1,
-      disablekb: 1,
-    },
-  };
 
   const handleVideoSelect = (video: Video, module: ModuleWithVideos) => {
     if(module.id !== moduleId) {
@@ -182,12 +157,14 @@ export default function ModulePage({ params }: ModulePageProps) {
             </Button>
           </div>
           <div className="aspect-video bg-black rounded-lg overflow-hidden mb-6 shadow-lg">
-             {videoId ? (
-                <YouTube
-                    videoId={videoId}
-                    opts={youtubePlayerOptions}
-                    onEnd={handleVideoEnd}
-                    className="w-full h-full"
+             {selectedVideo?.url ? (
+                <ReactPlayer
+                    url={selectedVideo.url}
+                    controls
+                    width="100%"
+                    height="100%"
+                    playing={true}
+                    onEnded={handleVideoEnd}
                 />
              ) : (
                 <div className='w-full h-full bg-muted flex items-center justify-center text-center p-4'>

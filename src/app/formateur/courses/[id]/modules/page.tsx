@@ -14,8 +14,9 @@ import {
   updateDoc,
   getDocs,
 } from 'firebase/firestore';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
-import { useFirestore, useCollection, useDoc } from '@/firebase';
+import { useFirestore, useCollection, useDoc, useStorage } from '@/firebase';
 import type { Course, Module, Video } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -26,6 +27,7 @@ import {
   Trash2,
   Edit,
   PlaySquare,
+  UploadCloud,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -57,6 +59,8 @@ import {
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import ReactPlayer from 'react-player';
+import { Progress } from '@/components/ui/progress';
 
 const moduleSchema = z.object({
   titre: z
@@ -71,18 +75,6 @@ const videoSchema = z.object({
   titre: z.string().min(3, 'Titre requis.'),
   url: z.string().url('URL de vidéo valide requise.'),
 });
-
-async function isValidVideoUrl(url: string) {
-    try {
-        const response = await fetch(url, { method: 'HEAD', mode: 'no-cors' });
-        // no-cors returns an opaque response, but a successfull fetch means the URL is likely reachable
-        return true;
-    } catch (error) {
-        console.warn("URL validation failed:", error);
-        return false;
-    }
-}
-
 
 export default function ManageModulesPage({
   params,
@@ -180,17 +172,6 @@ export default function ManageModulesPage({
   async function onVideoSubmit(values: z.infer<typeof videoSchema>) {
     if (!db || !courseId || !selectedModule?.id) return;
     
-    const isUrlValid = await isValidVideoUrl(values.url);
-    if (!isUrlValid) {
-        toast({
-            variant: 'destructive',
-            title: 'URL de vidéo invalide',
-            description: "Le lien de la vidéo est invalide ou inaccessible. Veuillez vérifier et réessayer.",
-        });
-        return;
-    }
-
-
     try {
       const videosCollectionRef = collection(
         db,
@@ -200,14 +181,14 @@ export default function ManageModulesPage({
       const videosSnapshot = await getDocs(videosCollectionRef);
       const nextOrder = (videosSnapshot.docs.length || 0) + 1;
 
-
       if (editingVideo) {
         const videoRef = doc(db, `courses/${courseId}/modules/${selectedModule.id}/videos`, editingVideo.id!);
         await updateDoc(videoRef, values);
         toast({ title: 'Vidéo mise à jour !' });
       } else {
         await addDoc(videosCollectionRef, {
-          ...values,
+          titre: values.titre,
+          url: values.url,
           ordre: nextOrder,
           publie: false,
         });
@@ -246,6 +227,7 @@ export default function ManageModulesPage({
   const openVideoDialog = (module: Module, video: Video | null = null) => {
     setSelectedModule(module);
     setEditingVideo(video);
+    videoForm.reset({ titre: video?.titre || '', url: video?.url || '' });
     setIsVideoModalOpen(true);
   };
 
@@ -429,47 +411,86 @@ export default function ManageModulesPage({
         form={videoForm}
         onSubmit={onVideoSubmit}
         isEditing={!!editingVideo}
-        moduleTitle={selectedModule?.titre || ''}
+        module={selectedModule}
+        courseId={courseId}
       />
     </div>
   );
 }
 
-function VideoDialog({ isOpen, setIsOpen, form, onSubmit, isEditing, moduleTitle }: any) {
-  const getEmbedUrl = (url: string): string | null => {
-    if (!url) return null;
-    try {
-        const urlObj = new URL(url);
-        let videoId = null;
-        if (urlObj.hostname.includes('youtube.com')) {
-            videoId = urlObj.searchParams.get('v');
-        } else if (urlObj.hostname.includes('youtu.be')) {
-            videoId = urlObj.pathname.slice(1);
-        } else if (urlObj.hostname.includes('drive.google.com')) {
-            const match = url.match(/file\/d\/([a-zA-Z0-9_-]+)/);
-            return match ? `https://drive.google.com/file/d/${match[1]}/preview` : null;
-        }
-        
-        return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
-    } catch (error) {
-        return null;
+function VideoDialog({ isOpen, setIsOpen, form, onSubmit, isEditing, module, courseId }: any) {
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [file, setFile] = useState<File | null>(null);
+  const storage = useStorage();
+  const { toast } = useToast();
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const selectedFile = e.target.files[0];
+      if (selectedFile.type.startsWith('video/')) {
+        setFile(selectedFile);
+        form.setValue('titre', selectedFile.name.replace(/\.[^/.]+$/, ""));
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Fichier invalide',
+          description: 'Veuillez sélectionner un fichier vidéo.',
+        });
+      }
     }
   };
 
-  const urlValue = form.watch('url');
-  const embedUrl = getEmbedUrl(urlValue);
+  const handleUpload = async () => {
+    if (!file || !storage || !courseId || !module?.id) return;
+
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    const storageRef = ref(storage, `courses/${courseId}/${module.id}/${Date.now()}_${file.name}`);
+    const uploadTask = uploadBytesResumable(storageRef, file);
+
+    uploadTask.on(
+      'state_changed',
+      (snapshot) => {
+        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        setUploadProgress(progress);
+      },
+      (error) => {
+        console.error("Upload failed", error);
+        toast({ variant: 'destructive', title: 'Erreur de téléversement' });
+        setIsUploading(false);
+      },
+      async () => {
+        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+        form.setValue('url', downloadURL);
+        setIsUploading(false);
+        toast({ title: 'Téléversement réussi!' });
+      }
+    );
+  };
+  
+  const videoUrl = form.watch('url');
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+        setIsOpen(open);
+        if (!open) {
+            setFile(null);
+            setUploadProgress(0);
+            setIsUploading(false);
+            form.reset();
+        }
+    }}>
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>
             {isEditing
               ? 'Modifier la vidéo'
-              : `Ajouter une vidéo à "${moduleTitle}"`}
+              : `Ajouter une vidéo à "${module?.titre}"`}
           </DialogTitle>
           <DialogDescription>
-            Entrez les détails de la vidéo ci-dessous. Collez un lien YouTube ou Google Drive pour voir un aperçu.
+            {isEditing ? "Modifiez les détails de la vidéo." : "Téléversez une vidéo ou collez une URL existante."}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -477,6 +498,20 @@ function VideoDialog({ isOpen, setIsOpen, form, onSubmit, isEditing, moduleTitle
             onSubmit={form.handleSubmit(onSubmit)}
             className="space-y-4 py-4"
           >
+            {!isEditing && (
+              <div className="space-y-2">
+                <Label htmlFor="video-upload">Fichier Vidéo</Label>
+                <div className="flex items-center gap-4">
+                  <Input id="video-upload" type="file" accept="video/*" onChange={handleFileChange} className="flex-grow"/>
+                  <Button type="button" onClick={handleUpload} disabled={!file || isUploading}>
+                    {isUploading ? <Loader2 className="animate-spin" /> : <UploadCloud />}
+                  </Button>
+                </div>
+                {isUploading && <Progress value={uploadProgress} className="w-full h-2" />}
+                {file && !isUploading && <p className='text-sm text-muted-foreground'>Prêt à uploader: {file.name}</p>}
+              </div>
+            )}
+            
             <FormField
               control={form.control}
               name="titre"
@@ -495,39 +530,30 @@ function VideoDialog({ isOpen, setIsOpen, form, onSubmit, isEditing, moduleTitle
               name="url"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>URL de la vidéo (YouTube, G-Drive)</FormLabel>
+                  <FormLabel>URL de la vidéo</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="https://www.youtube.com/watch?v=..." />
+                    <Input {...field} placeholder="L'URL sera remplie après l'upload" readOnly={!isEditing && !!videoUrl} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
             
-            {embedUrl && (
+            {videoUrl && (
               <div className="space-y-2">
                 <Label>Prévisualisation</Label>
-                <div className="relative aspect-video w-full overflow-hidden rounded-md border">
-                  <iframe
-                    className="w-full h-full"
-                    src={embedUrl}
-                    title="Prévisualisation de la vidéo"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  ></iframe>
+                <div className="relative aspect-video w-full overflow-hidden rounded-md border bg-muted">
+                    <ReactPlayer url={videoUrl} controls width="100%" height="100%" />
                 </div>
               </div>
             )}
 
-
             <DialogFooter>
               <DialogClose asChild>
-                <Button type="button" variant="secondary">
-                  Annuler
-                </Button>
+                <Button type="button" variant="secondary">Annuler</Button>
               </DialogClose>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting && (
+              <Button type="submit" disabled={form.formState.isSubmitting || isUploading}>
+                {(form.formState.isSubmitting || isUploading) && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
                 {isEditing ? 'Enregistrer les modifications' : 'Ajouter la vidéo'}
@@ -539,7 +565,6 @@ function VideoDialog({ isOpen, setIsOpen, form, onSubmit, isEditing, moduleTitle
     </Dialog>
   );
 }
-
 
 function ModuleVideos({
   courseId,
@@ -673,5 +698,3 @@ function ModuleVideos({
     </div>
   );
 }
-
-    
