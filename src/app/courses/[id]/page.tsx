@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { CheckCircle, Clock, BarChart, Users, PlayCircle, Loader2, BookOpen, Heart } from 'lucide-react';
-import { use, useMemo, useState } from 'react';
+import { use, useMemo, useState, useEffect } from 'react';
 
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,44 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { collection, query, where, getDocs, doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+
+
+// Nouveau composant pour afficher les vidéos d'un module
+function ModuleVideos({ courseId, moduleId }: { courseId: string; moduleId: string }) {
+  const { data: videosData, loading, error } = useCollection<Video>(
+    `courses/${courseId}/modules/${moduleId}/videos`
+  );
+
+  const sortedVideos = useMemo(() => {
+    return (videosData || []).sort((a, b) => a.ordre - b.ordre);
+  }, [videosData]);
+
+  if (loading) {
+    return <div className="p-4 text-sm text-muted-foreground">Chargement des leçons...</div>;
+  }
+  if (error) {
+    return <div className="p-4 text-sm text-destructive">Erreur de chargement des leçons.</div>;
+  }
+  if (sortedVideos.length === 0) {
+    return <div className="p-4 text-sm text-muted-foreground">Aucune leçon dans ce module.</div>;
+  }
+
+  return (
+    <ul className="list-none p-0 m-0">
+      {sortedVideos.map((video) => (
+        <li key={video.id} className="flex items-center justify-between p-3 border-t">
+          <div className="flex items-center gap-3">
+            <PlayCircle className="h-5 w-5 text-muted-foreground" />
+            <span className="text-sm text-foreground">{video.titre}</span>
+          </div>
+          {/* Vous pouvez ajouter la durée de la vidéo ici si disponible */}
+          {/* <span className="text-sm text-muted-foreground">03:13</span> */}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 
 type CoursePageProps = {
   params: {
@@ -203,18 +241,17 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
             {/* Modules */}
             <div>
               <h2 className="font-headline text-2xl text-primary mb-4">Contenu du cours</h2>
-                <Accordion type="single" collapsible className="w-full">
+                <Accordion type="multiple" className="w-full space-y-2">
                  {sortedModules.length > 0 ? sortedModules.map((module, index) => (
-                    <AccordionItem value={`item-${index}`} key={module.id}>
-                        <AccordionTrigger>
+                    <AccordionItem value={`item-${index}`} key={module.id} className="border-b-0 rounded-lg bg-primary/5">
+                        <AccordionTrigger className="p-4 hover:no-underline">
                             <div className="flex justify-between w-full items-center">
-                                <span className="font-bold text-left">{module.titre}</span>
-                                {/* <span className="text-sm text-muted-foreground mr-4">X leçons</span> */}
+                                <span className="font-bold text-left text-primary">{module.titre}</span>
                             </div>
                         </AccordionTrigger>
-                        <AccordionContent>
-                           <p className="text-muted-foreground px-4 py-2">{module.description}</p>
-                            {/* Future place for videos list */}
+                        <AccordionContent className="p-0">
+                           <p className="text-muted-foreground px-4 pb-4 text-sm">{module.description}</p>
+                           {module.id && <ModuleVideos courseId={course.id!} moduleId={module.id} />}
                         </AccordionContent>
                     </AccordionItem>
                  )) : (
