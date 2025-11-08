@@ -17,6 +17,7 @@ import type { Course, Module, Video, InstructorProfile, Enrollment } from '@/lib
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { collection, query, where, getDocs, doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 type CoursePageProps = {
   params: {
