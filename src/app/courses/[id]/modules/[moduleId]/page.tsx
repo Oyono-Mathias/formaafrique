@@ -13,7 +13,7 @@ import { Separator } from '@/components/ui/separator';
 import { useUser, useDoc, useCollection, useFirestore } from '@/firebase';
 import type { Course, Module, Video } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { doc, getDoc, updateDoc, collection, getDocs, writeBatch } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
 type ModulePageProps = {
@@ -27,6 +27,7 @@ type ModuleWithVideos = Module & { videos: Video[] };
 
 const extractYouTubeId = (url: string): string | null => {
   if (!url) return null;
+  // Regex to handle youtu.be, youtube.com/watch, youtube.com/embed, etc.
   const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
   const match = url.match(regExp);
   return (match && match[2].length === 11) ? match[2] : null;
@@ -78,20 +79,32 @@ export default function ModulePage({ params }: ModulePageProps) {
     fetchAllVideos();
   }, [modulesData, courseId, db, modulesLoading]);
 
-  const { sortedModulesWithVideos, currentModule, currentModuleIndex, currentVideoIndex } = useMemo(() => {
+  const { sortedModulesWithVideos, currentModule, currentModuleIndex } = useMemo(() => {
     const sortedMods = (modulesData || []).sort((a, b) => a.ordre - b.ordre);
     const modsWithVideos = sortedMods.map(mod => ({ ...mod, videos: videosByModule[mod.id!] || [] }));
     const currentIndex = modsWithVideos.findIndex(m => m.id === moduleId);
     const currentMod = currentIndex !== -1 ? modsWithVideos[currentIndex] : null;
-    const currentVidIndex = currentMod?.videos.findIndex(v => v.id === selectedVideo?.id) ?? -1;
     
     return { 
         sortedModulesWithVideos: modsWithVideos, 
         currentModule: currentMod,
         currentModuleIndex: currentIndex,
-        currentVideoIndex: currentVidIndex
     };
-  }, [modulesData, videosByModule, moduleId, selectedVideo]);
+  }, [modulesData, videosByModule, moduleId]);
+
+  const { currentVideoIndex, nextVideo, nextModule } = useMemo(() => {
+      if (!currentModule) return { currentVideoIndex: -1, nextVideo: null, nextModule: null };
+      
+      const vidIndex = currentModule.videos.findIndex(v => v.id === selectedVideo?.id);
+      const nxtVideo = currentModule.videos[vidIndex + 1] || null;
+      const nxtModule = !nxtVideo ? sortedModulesWithVideos[currentModuleIndex + 1] : null;
+
+      return {
+          currentVideoIndex: vidIndex,
+          nextVideo: nxtVideo,
+          nextModule: nxtModule
+      }
+  }, [currentModule, selectedVideo, sortedModulesWithVideos, currentModuleIndex]);
 
   useEffect(() => {
     if (currentModule && currentModule.videos.length > 0) {
@@ -103,29 +116,18 @@ export default function ModulePage({ params }: ModulePageProps) {
     }
   }, [currentModule, selectedVideo]);
   
-  const handleVideoEnded = async () => {
-    if (!currentModule || !selectedVideo || !course) return;
-
-    if (user && db) {
-      // ... (Progress saving logic can be refined here)
-    }
-
-    const nextVideo = currentModule.videos[currentVideoIndex + 1];
-
+  const handleVideoEnd = () => {
     if (nextVideo) {
       setSelectedVideo(nextVideo);
+    } else if (nextModule) {
+      router.push(`/courses/${courseId}/modules/${nextModule.id}`);
     } else {
-      const nextModule = sortedModulesWithVideos[currentModuleIndex + 1];
-      if (nextModule && nextModule.videos.length > 0) {
-        router.push(`/courses/${courseId}/modules/${nextModule.id}`);
-      } else {
-        toast({
-            title: "🎉 Félicitations !",
-            description: "Vous avez terminé cette formation.",
-            duration: 5000,
-        });
-        router.push(`/dashboard/certificate/${courseId}`);
-      }
+      toast({
+        title: "🎉 Félicitations !",
+        description: "Vous avez terminé cette formation. Vous pouvez maintenant consulter votre certificat.",
+        duration: 8000,
+      });
+      router.push(`/dashboard/certificate/${courseId}`);
     }
   };
 
@@ -153,6 +155,9 @@ export default function ModulePage({ params }: ModulePageProps) {
       controls: 1,
       rel: 0,
       modestbranding: 1,
+      showinfo: 0,
+      iv_load_policy: 3,
+      fs: 1,
       disablekb: 1,
     },
   };
@@ -181,7 +186,7 @@ export default function ModulePage({ params }: ModulePageProps) {
                 <YouTube
                     videoId={videoId}
                     opts={youtubePlayerOptions}
-                    onEnd={handleVideoEnded}
+                    onEnd={handleVideoEnd}
                     className="w-full h-full"
                 />
              ) : (
