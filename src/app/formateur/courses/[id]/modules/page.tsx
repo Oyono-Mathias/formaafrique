@@ -446,7 +446,8 @@ export default function ManageModulesPage({
 }
 
 function VideoDialog({ isOpen, setIsOpen, form, onSubmit, isEditing, module }: any) {
-  const videoUrl = form.watch('url');
+  const rawVideoUrl = form.watch('url');
+  const formattedVideoUrl = formatVideoUrl(rawVideoUrl);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -493,11 +494,11 @@ function VideoDialog({ isOpen, setIsOpen, form, onSubmit, isEditing, module }: a
               )}
             />
             
-            {videoUrl && ReactPlayer.canPlay(videoUrl) && (
+            {rawVideoUrl && ReactPlayer.canPlay(formattedVideoUrl) && (
               <div className="space-y-2">
                 <Label>Prévisualisation</Label>
                 <div className="relative aspect-video w-full overflow-hidden rounded-md border bg-muted">
-                    <ReactPlayer url={videoUrl} controls width="100%" height="100%" />
+                    <ReactPlayer url={formattedVideoUrl} controls width="100%" height="100%" />
                 </div>
               </div>
             )}
@@ -651,5 +652,7 @@ function ModuleVideos({
     </div>
   );
 }
+
+    
 
     
