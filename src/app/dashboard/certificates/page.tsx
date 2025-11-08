@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -79,16 +80,10 @@ export default function MyCertificatesPage() {
                     <TableCell className="hidden sm:table-cell">{formatDate(enrollment.enrollmentDate)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex gap-2 justify-end">
-                        <Button asChild variant="outline" size="icon">
+                        <Button asChild variant="outline" size="sm">
                           <Link href={`/dashboard/certificate/${enrollment.courseId}`}>
-                            <Eye className="h-4 w-4" />
-                            <span className="sr-only">Voir</span>
-                          </Link>
-                        </Button>
-                        <Button asChild variant="secondary" size="icon">
-                           <Link href={`/dashboard/certificate/${enrollment.courseId}`}>
-                            <Download className="h-4 w-4" />
-                             <span className="sr-only">Télécharger</span>
+                            <Eye className="h-4 w-4 mr-2" />
+                            Voir
                           </Link>
                         </Button>
                       </div>

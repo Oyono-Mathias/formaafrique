@@ -31,7 +31,7 @@ export default function MyCoursesPage() {
     const enrolls = enrollments || [];
     return {
       inProgressCourses: enrolls.filter(e => (e.progression || 0) < 100),
-      completedCourses: enrolls.filter(e => (e.progression || 0) === 100),
+      completedCourses: enrolls.filter(e => (e.progression || 0) >= 100),
     };
   }, [enrollments]);
 
@@ -65,6 +65,8 @@ export default function MyCoursesPage() {
         {enrollmentsList.map((enrollment) => {
             const courseImage = PlaceHolderImages.find(img => img.id === 'course-project-management'); // Fallback image
             const progression = enrollment.progression || 0;
+            const firstModuleId = enrollment.modules ? Object.keys(enrollment.modules)[0] : null;
+
             return (
               <Card key={enrollment.id} className="flex flex-col overflow-hidden h-full shadow-sm hover:shadow-lg transition-shadow">
                 <CardHeader className="p-0">
@@ -87,13 +89,13 @@ export default function MyCoursesPage() {
                         <Progress value={progression} className="h-2" />
                         <p className="text-xs text-muted-foreground mt-1.5">{Math.round(progression)}% terminé</p>
                     </div>
-                    <Button asChild variant="default" className="w-full" size="sm">
+                    <Button asChild variant="default" className="w-full" size="sm" disabled={!firstModuleId && progression < 100}>
                     { progression < 100 ? (
-                        <Link href={`/courses/${enrollment.courseId}`}>
-                            Continuer <ArrowRight className="ml-2 h-4 w-4" />
+                        <Link href={`/courses/${enrollment.courseId}/modules/${firstModuleId}`}>
+                            {progression > 0 ? 'Continuer' : 'Commencer'} <ArrowRight className="ml-2 h-4 w-4" />
                         </Link>
                     ) : (
-                        <Link href={`/dashboard/certificates`}>
+                        <Link href={`/dashboard/certificate/${enrollment.courseId}`}>
                             Voir le certificat
                         </Link>
                     )}
