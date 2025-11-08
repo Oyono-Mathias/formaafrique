@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { useToast } from '@/hooks/use-toast';
+import NotificationBell from '@/components/notifications/notification-bell';
 
 const navLinks = [
     { href: '/dashboard', label: 'Accueil', icon: Home },
@@ -214,10 +215,7 @@ export default function DashboardLayout({
                 <span className="sr-only">Rechercher</span>
               </Link>
             </Button>
-            <Button variant="ghost" size="icon">
-              <Bell className="h-5 w-5" />
-              <span className="sr-only">Notifications</span>
-            </Button>
+            <NotificationBell />
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

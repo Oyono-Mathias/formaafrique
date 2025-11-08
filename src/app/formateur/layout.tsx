@@ -25,6 +25,7 @@ import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/s
 import { cn } from '@/lib/utils';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import NotificationBell from '@/components/notifications/notification-bell';
 
 const formateurNavLinks = [
   { href: '/formateur', label: 'Dashboard', icon: LayoutDashboard },
@@ -159,7 +160,9 @@ export default function FormateurLayout({
           <div className="flex-1">
             {/* Can be used for a page title later */}
           </div>
-          <DropdownMenu>
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar>
@@ -176,6 +179,7 @@ export default function FormateurLayout({
                 <DropdownMenuItem onClick={handleSignOut} className="text-destructive">Déconnexion</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+          </div>
         </header>
         <main className="flex-1 bg-background p-4 sm:p-6 lg:p-8 animate-fade-in">
           {children}

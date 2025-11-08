@@ -493,6 +493,20 @@
         }
       },
       "required": ["from", "text", "timestamp", "seen"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "Represents a notification for a user.",
+      "type": "object",
+      "properties": {
+        "toUid": { "type": "string", "description": "The UID of the user receiving the notification." },
+        "fromUid": { "type": "string", "description": "The UID of the user who triggered the notification." },
+        "type": { "type": "string", "enum": ["friend_request", "new_message", "course_update"], "description": "The type of notification." },
+        "payload": { "type": "object", "description": "Additional data related to the notification." },
+        "read": { "type": "boolean", "description": "Whether the notification has been read." },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["toUid", "fromUid", "type", "read", "createdAt"]
     }
   },
   "auth": {
@@ -570,6 +584,10 @@
     "/chats/{chatId}/messages/{messageId}": {
       "schema": { "$ref": "#/entities/Message" },
       "description": "Stores all messages for a specific chat."
+    },
+    "/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/Notification" },
+      "description": "Stores notifications for users, such as friend requests."
     }
   }
 }

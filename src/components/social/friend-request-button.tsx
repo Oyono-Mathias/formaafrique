@@ -78,14 +78,32 @@ export default function FriendRequestButton({ targetUserId }: FriendRequestButto
     if (!user || !db) return;
     setIsLoading(true);
     try {
-        const newRequestRef = await addDoc(collection(db, 'friendRequests'), {
+        const batch = writeBatch(db);
+
+        // Create the friend request
+        const newRequestRef = doc(collection(db, 'friendRequests'));
+        batch.set(newRequestRef, {
             from: user.uid,
             to: targetUserId,
             status: 'pending',
             createdAt: serverTimestamp(),
         });
-        setStatus('request_sent');
         setRequestId(newRequestRef.id);
+
+        // Create a notification for the target user
+        const notificationRef = doc(collection(db, 'notifications'));
+        batch.set(notificationRef, {
+            toUid: targetUserId,
+            fromUid: user.uid,
+            type: 'friend_request',
+            payload: { fromName: user.displayName || 'Quelqu\'un' },
+            read: false,
+            createdAt: serverTimestamp(),
+        });
+
+        await batch.commit();
+
+        setStatus('request_sent');
         toast({ title: "Demande d'ami envoyée." });
     } catch (error) {
         console.error(error);

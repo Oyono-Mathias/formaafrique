@@ -11,7 +11,6 @@ export interface Video {
   titre: string;
   url: string;
   ordre: number;
-  duration?: number;
 }
 
 export interface Module {
@@ -53,6 +52,11 @@ export interface UserProfile {
   paysActuel: string;
   bio?: string;
   skills?: string[];
+  followers?: string[];
+  following?: string[];
+  friends?: string[];
+  online?: boolean;
+  lastSeen?: Timestamp;
 }
 
 export interface InstructorProfile extends UserProfile {
@@ -162,6 +166,28 @@ export interface CommunityPost {
     commentCount: number;
     voteCount: number;
 }
+
+export interface FriendRequest {
+  id?: string;
+  from: string;
+  to: string;
+  status: 'pending' | 'accepted' | 'declined';
+  createdAt: Timestamp;
+}
+
+export interface Notification {
+  id?: string;
+  toUid: string;
+  fromUid: string;
+  type: 'friend_request' | 'new_message' | 'course_update';
+  payload: {
+    fromName?: string;
+    [key: string]: any;
+  };
+  read: boolean;
+  createdAt: Timestamp;
+}
+
 
 // This is a temporary API route to fetch collections from the client side
 // as server components are not fully supported with the current firebase setup

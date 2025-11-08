@@ -36,6 +36,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import NotificationBell from '@/components/notifications/notification-bell';
 
 const adminNavLinks = [
   { href: '/admin', label: 'Tableau de bord', icon: LayoutDashboard },
@@ -166,10 +167,7 @@ export default function AdminLayout({
             {/* Can be used for a search bar later */}
           </div>
           <div className="flex items-center gap-4">
-             <Button variant="ghost" size="icon">
-                <Bell className="h-5 w-5" />
-                <span className="sr-only">Notifications</span>
-              </Button>
+             <NotificationBell />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
