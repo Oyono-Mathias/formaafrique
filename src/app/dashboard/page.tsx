@@ -13,7 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useUser, useCollection } from '@/firebase';
-import type { Course } from '@/lib/types';
+import type { Course, Enrollment } from '@/lib/types';
 import { useMemo, useRef } from 'react';
 import { categories } from '@/lib/categories';
 import { Badge } from '@/components/ui/badge';
@@ -65,6 +65,8 @@ const CourseCarousel = ({ title, courses }: { title: string, courses: Course[] }
         Autoplay({ delay: 5000, stopOnInteraction: true })
     )
 
+    if (courses.length === 0) return null;
+
     return (
         <div>
             <div className="flex justify-between items-center mb-4">
@@ -97,11 +99,17 @@ const CourseCarousel = ({ title, courses }: { title: string, courses: Course[] }
 export default function DashboardPage() {
   const { user, userProfile } = useUser();
   const {data: coursesData, loading: coursesLoading} = useCollection<Course>("courses", { where: ['publie', '==', true]});
+  const {data: enrollmentsData, loading: enrollmentsLoading} = useCollection<Enrollment>(user ? `users/${user.uid}/enrollments` : undefined);
+  
   const allCourses = coursesData || [];
+  const enrollments = enrollmentsData || [];
 
-  const { recommendedCourses, popularCourses, newCourses } = useMemo(() => {
-    // This is a simplified logic. In a real app, this would be based on user data and real metrics.
+  const { recommendedCourses, popularCourses, newCourses, inProgressCourses } = useMemo(() => {
     const shuffled = [...allCourses].sort(() => 0.5 - Math.random());
+    const inProgress = enrollments
+      .filter(e => (e.progression || 0) > 0 && (e.progression || 0) < 100)
+      .sort((a,b) => b.progression - a.progression);
+
     return {
         recommendedCourses: shuffled.slice(0, 10),
         popularCourses: shuffled.slice(10, 20),
@@ -110,10 +118,13 @@ export default function DashboardPage() {
             const dateB = b.date_creation instanceof Timestamp ? b.date_creation.toMillis() : new Date(b.date_creation as string).getTime();
             return dateB - dateA;
         }).slice(0, 10),
+        inProgressCourses: inProgress,
     }
-  }, [allCourses]);
+  }, [allCourses, enrollments]);
   
-  const loading = coursesLoading;
+  const loading = coursesLoading || enrollmentsLoading;
+  
+  const firstModuleId = (enrollment: Enrollment) => enrollment.modules ? Object.keys(enrollment.modules)[0] : null;
 
   return (
     <div className="space-y-12">
@@ -132,9 +143,35 @@ export default function DashboardPage() {
         </div>
       ) : (
         <div className="space-y-12">
-            {recommendedCourses.length > 0 && (
-                <CourseCarousel title="Recommandé pour vous" courses={recommendedCourses} />
+            {inProgressCourses.length > 0 && (
+                <div>
+                     <h2 className="text-2xl font-bold text-foreground mb-4">Reprendre là où vous vous êtes arrêté</h2>
+                     <div className="grid gap-6 md:grid-cols-2">
+                        {inProgressCourses.slice(0, 2).map(enrollment => (
+                            <Card key={enrollment.id}>
+                                <CardHeader>
+                                    <CardTitle className="text-lg hover:text-primary">
+                                        <Link href={`/courses/${enrollment.courseId}`}>{enrollment.courseTitle}</Link>
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <Progress value={enrollment.progression || 0} />
+                                     <p className="text-sm text-muted-foreground mt-2">{Math.round(enrollment.progression || 0)}% terminé</p>
+                                </CardContent>
+                                <CardFooter>
+                                     <Button asChild disabled={!firstModuleId(enrollment)}>
+                                        <Link href={`/courses/${enrollment.courseId}/modules/${firstModuleId(enrollment)}`}>
+                                            Continuer la formation <ArrowRight className="ml-2 h-4 w-4" />
+                                        </Link>
+                                    </Button>
+                                </CardFooter>
+                            </Card>
+                        ))}
+                     </div>
+                </div>
             )}
+
+            <CourseCarousel title="Recommandé pour vous" courses={recommendedCourses} />
 
             <div>
                 <h2 className="text-2xl font-bold mb-4 text-foreground">Catégories populaires</h2>
@@ -147,13 +184,9 @@ export default function DashboardPage() {
                 </div>
             </div>
 
-            {popularCourses.length > 0 && (
-                <CourseCarousel title="Populaire en Développement Web" courses={popularCourses} />
-            )}
+            <CourseCarousel title="Populaire en Développement Web" courses={popularCourses} />
 
-            {newCourses.length > 0 && (
-                <CourseCarousel title="Nouveautés sur FormaAfrique" courses={newCourses} />
-            )}
+            <CourseCarousel title="Nouveautés sur FormaAfrique" courses={newCourses} />
         </div>
       )}
     </div>
