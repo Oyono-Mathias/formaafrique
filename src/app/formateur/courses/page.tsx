@@ -132,9 +132,10 @@ export default function FormateurCoursesPage() {
        {loading && (
           <div className="flex justify-center items-center h-64">
               <Loader2 className="h-8 w-8 animate-spin" />
+              <p className="ml-2">Chargement de vos formations...</p>
           </div>
        )}
-       {!loading && error && <p className="text-destructive">Erreur de chargement des cours.</p>}
+       {!loading && error && <p className="text-destructive text-center py-12">Erreur de chargement des cours.</p>}
        
        {!loading && courses.length === 0 && (
            <Card className="flex flex-col items-center justify-center p-12 rounded-2xl border-dashed mt-8">
