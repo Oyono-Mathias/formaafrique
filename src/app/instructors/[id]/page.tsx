@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useDoc, useCollection } from '@/firebase';
+import { useDoc, useCollection, useUser } from '@/firebase';
 import type { InstructorProfile, Course } from '@/lib/types';
 import { notFound } from 'next/navigation';
 import { use } from 'react';
@@ -14,11 +14,14 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useMemo } from 'react';
+import FollowButton from '@/components/social/follow-button';
+import FriendRequestButton from '@/components/social/friend-request-button';
 
 export default function InstructorProfilePage({ params }: { params: { id: string } }) {
     const { id: instructorId } = use(params);
+    const { user } = useUser();
     
-    const { data: instructor, loading: instructorLoading, error: instructorError } = useDoc<InstructorProfile>('instructors', instructorId);
+    const { data: instructor, loading: instructorLoading, error: instructorError } = useDoc<InstructorProfile>('users', instructorId);
     
     const coursesQueryOptions = useMemo(() => {
         if (!instructorId) return undefined;
@@ -43,7 +46,7 @@ export default function InstructorProfilePage({ params }: { params: { id: string
         );
     }
 
-    if (instructorError || !instructor) {
+    if (instructorError || !instructor || instructor.role !== 'formateur') {
         notFound();
     }
 
@@ -60,11 +63,19 @@ export default function InstructorProfilePage({ params }: { params: { id: string
                                     <AvatarFallback className="text-5xl">{instructor.name?.charAt(0)}</AvatarFallback>
                                 </Avatar>
                                 <h1 className="text-3xl font-bold font-headline">{instructor.name}</h1>
-                                <p className="text-lg text-primary font-semibold mt-1">{instructor.headline || 'Formateur Expert'}</p>
+                                <p className="text-lg text-primary font-semibold mt-1">{(instructor as any).headline || 'Formateur Expert'}</p>
                                 
-                                {instructor.specialite && (
-                                   <p className="text-muted-foreground mt-2">{instructor.specialite}</p>
+                                {instructor.skills && instructor.skills.length > 0 && (
+                                   <div className="flex flex-wrap gap-2 justify-center mt-4">
+                                        {instructor.skills.map(skill => <Badge key={skill} variant="secondary">{skill}</Badge>)}
+                                   </div>
                                 )}
+                                
+                                <div className="flex items-center gap-4 mt-6">
+                                    <FollowButton targetUserId={instructorId} />
+                                    <FriendRequestButton targetUserId={instructorId} />
+                                </div>
+
 
                                 {(instructor as any).linkedin && (
                                      <Button variant="outline" size="sm" asChild className="mt-4">
@@ -133,6 +144,11 @@ export default function InstructorProfilePage({ params }: { params: { id: string
                                 <p className="mt-2 text-sm text-muted-foreground">Ce formateur n'a pas encore publié de formation.</p>
                             </div>
                         )}
+                         <div className="mt-8 text-center">
+                            <Button variant="outline" asChild>
+                                <Link href="/instructors">Voir tous les formateurs</Link>
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </div>

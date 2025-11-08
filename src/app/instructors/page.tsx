@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useCollection } from '@/firebase';
@@ -8,7 +9,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
 
 export default function InstructorsPage() {
-    const { data: instructorsData, loading, error } = useCollection<InstructorProfile>('instructors');
+    const { data: instructorsData, loading, error } = useCollection<InstructorProfile>(
+        'users',
+        { where: ['role', '==', 'formateur'] }
+    );
     const instructors = instructorsData || [];
 
     return (
@@ -42,8 +46,8 @@ export default function InstructorsPage() {
                                         <AvatarFallback className="text-4xl">{instructor.name?.charAt(0)}</AvatarFallback>
                                     </Avatar>
                                     <h3 className="text-xl font-bold font-headline">{instructor.name}</h3>
-                                    <p className="text-primary mt-1 font-medium">{instructor.headline || 'Formateur Expert'}</p>
-                                    <p className="text-muted-foreground text-sm mt-2 flex-grow">{instructor.specialite || 'Spécialités variées'}</p>
+                                    <p className="text-primary mt-1 font-medium">{(instructor as any).headline || 'Formateur Expert'}</p>
+                                    <p className="text-muted-foreground text-sm mt-2 flex-grow">{instructor.skills?.join(', ') || 'Spécialités variées'}</p>
                                 </CardContent>
                             </Card>
                         </Link>
@@ -58,4 +62,3 @@ export default function InstructorsPage() {
         </div>
     );
 }
-    
