@@ -42,12 +42,16 @@ export default function FormateurStudentsPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (coursesLoading) {
+      // Attendre la fin du chargement des cours
+      setLoading(true);
+      return;
+    }
+    
     if (!db || !user) {
         setLoading(false);
         return;
     }
-    // Wait for courses to be loaded before fetching enrollments
-    if (coursesLoading) return;
 
     if (!coursesData || coursesData.length === 0) {
         setLoading(false);
@@ -57,6 +61,9 @@ export default function FormateurStudentsPage() {
 
     const unsubscribes: Unsubscribe[] = [];
     const userProfilesCache = new Map<string, UserProfile>();
+
+    let listenersInitialized = 0;
+    const totalCourses = coursesData.length;
 
     coursesData.forEach(course => {
         if (course.id) {
@@ -100,21 +107,25 @@ export default function FormateurStudentsPage() {
                     });
                     return newEnrollments;
                 });
-
-                setLoading(false);
+                
+                // Only set loading to false when all listeners have fired at least once
+                if (++listenersInitialized === totalCourses) {
+                    setLoading(false);
+                }
 
             }, (err) => {
                 console.error("Error with snapshot listener:", err);
                 setError("Impossible de charger les étudiants en temps réel.");
-                setLoading(false);
+                if (++listenersInitialized === totalCourses) {
+                    setLoading(false);
+                }
             });
             
             unsubscribes.push(unsubscribe);
         }
     });
 
-    // This handles the case where a formateur might have courses but no enrollments yet.
-    if (unsubscribes.length === 0) {
+    if (totalCourses === 0) {
         setLoading(false);
     }
 
@@ -133,6 +144,7 @@ export default function FormateurStudentsPage() {
   }
 
   const getStatus = (enrollment: Enrollment) => {
+      if(!enrollment.progression) return "Pas commencé";
       if(enrollment.progression === 100) return "Terminé";
       return "En cours";
   }
