@@ -15,6 +15,7 @@ import {
   updateDoc,
   getDocs,
   writeBatch,
+  query,
 } from 'firebase/firestore';
 
 import { useFirestore, useCollection, useDoc } from '@/firebase';
@@ -215,13 +216,13 @@ export default function ManageModulesPage({
     const confirmed = window.confirm('Voulez-vous vraiment supprimer ce module et toutes ses vidéos ? Cette action est irréversible.');
     if (!confirmed) return;
 
+    const moduleRef = doc(db, `courses/${courseId}/modules`, moduleId);
+    const videosQuery = query(collection(moduleRef, 'videos'));
+
     try {
-      const moduleRef = doc(db, `courses/${courseId}/modules`, moduleId);
-      const videosRef = collection(moduleRef, 'videos');
-      
+      const videosSnapshot = await getDocs(videosQuery);
       const batch = writeBatch(db);
       
-      const videosSnapshot = await getDocs(videosRef);
       videosSnapshot.forEach((videoDoc) => {
         batch.delete(videoDoc.ref);
       });
@@ -536,12 +537,8 @@ function ModuleVideos({
     );
     if (!confirmed) return;
     
-    const videoRef = doc(
-      db,
-      `courses/${courseId}/modules/${moduleId}/videos`,
-      videoId
-    );
     try {
+      const videoRef = doc(db, `courses/${courseId}/modules/${moduleId}/videos`, videoId);
       await deleteDoc(videoRef);
       toast({ title: 'Vidéo supprimée ! ✅' });
     } catch (e) {

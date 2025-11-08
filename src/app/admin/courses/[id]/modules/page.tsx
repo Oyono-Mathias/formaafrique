@@ -218,13 +218,13 @@ export default function AdminManageModulesPage({
     const confirmed = window.confirm('Voulez-vous vraiment supprimer ce module et toutes ses vidéos ? Cette action est irréversible.');
     if (!confirmed) return;
 
+    const moduleRef = doc(db, `courses/${courseId}/modules`, moduleId);
+    const videosQuery = query(collection(moduleRef, 'videos'));
+
     try {
-      const moduleRef = doc(db, `courses/${courseId}/modules`, moduleId);
-      const videosRef = collection(moduleRef, 'videos');
-      
+      const videosSnapshot = await getDocs(videosQuery);
       const batch = writeBatch(db);
       
-      const videosSnapshot = await getDocs(videosRef);
       videosSnapshot.forEach((videoDoc) => {
         batch.delete(videoDoc.ref);
       });
@@ -546,14 +546,14 @@ function ModuleVideos({
 
   const handleDeleteVideo = async (videoId: string) => {
     if (!db || !courseId || !moduleId) {
-        toast({ variant: 'destructive', title: 'Erreur', description: 'Configuration de la base de données invalide.' });
-        return;
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Configuration de la base de données invalide.' });
+      return;
     }
     const confirmed = window.confirm('Voulez-vous vraiment supprimer cette vidéo ?');
     if (!confirmed) return;
-    
-    const videoRef = doc(db, `courses/${courseId}/modules/${moduleId}/videos`, videoId);
+
     try {
+      const videoRef = doc(db, `courses/${courseId}/modules/${moduleId}/videos`, videoId);
       await deleteDoc(videoRef);
       toast({ title: 'Vidéo supprimée ! ✅' });
     } catch (e) {
