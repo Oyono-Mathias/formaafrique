@@ -80,9 +80,16 @@ export default function ApercuPage({ params }: ApercuPageProps) {
         const videoId = urlObj.hostname.includes('youtu.be')
           ? urlObj.pathname.slice(1)
           : urlObj.searchParams.get('v');
-        return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+        if (!videoId) return null;
+        // Ajout des paramètres pour un lecteur plus professionnel
+        const embedUrl = new URL(`https://www.youtube.com/embed/${videoId}`);
+        embedUrl.searchParams.append('rel', '0'); // Désactiver les vidéos similaires à la fin
+        embedUrl.searchParams.append('showinfo', '0'); // Déprécié, mais on le garde pour compatibilité
+        embedUrl.searchParams.append('modestbranding', '1'); // Logo YouTube moins visible
+        embedUrl.searchParams.append('iv_load_policy', '3'); // Désactiver les annotations
+        return embedUrl.toString();
       }
-       if (urlObj.hostname.includes('drive.google.com')) {
+      if (urlObj.hostname.includes('drive.google.com')) {
         const match = url.match(/file\/d\/([a-zA-Z0-9_-]+)/);
         const fileId = match ? match[1] : null;
         return fileId ? `https://drive.google.com/file/d/${fileId}/preview` : null;
@@ -192,5 +199,3 @@ export default function ApercuPage({ params }: ApercuPageProps) {
     </div>
   );
 }
-
-    
