@@ -65,8 +65,8 @@ export default function CommunityPage() {
                 <div className="container px-4">
                     <div className="grid md:grid-cols-2 gap-8 items-center">
                         <div>
-                            <h1 className="text-4xl font-bold font-headline text-primary">Bienvenue dans votre communauté</h1>
-                            <p className="mt-2 text-lg text-muted-foreground">Posez des questions, trouvez des réponses, partagez votre expérience.</p>
+                            <h1 className="text-4xl font-bold font-headline text-primary">Bienvenue dans la Communauté</h1>
+                            <p className="mt-2 text-lg text-muted-foreground">Posez des questions, trouvez des réponses, partagez votre expérience et collaborez avec d'autres apprenants et formateurs.</p>
                             <div className="mt-6 flex gap-2">
                                 <div className="relative flex-grow">
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -76,43 +76,31 @@ export default function CommunityPage() {
                             </div>
                         </div>
                         <div className="hidden md:block text-center">
-                           {heroImage && <Image src="https://images.unsplash.com/photo-1521737852583-3d3b6b79c3b1?w=800&q=80" alt="Communauté" width={400} height={250} className="mx-auto" />}
+                           {heroImage && 
+                             <Image 
+                                src="https://images.unsplash.com/photo-1521737852583-3d3b6b79c3b1?w=800&q=80" 
+                                alt="Communauté d'apprenants" 
+                                width={400} 
+                                height={250} 
+                                className="mx-auto rounded-lg" 
+                                data-ai-hint="learning community"
+                              />
+                            }
                         </div>
                     </div>
                 </div>
             </section>
             
             <main className="container px-4 py-12">
-                 {/* Explore Community Section */}
-                <section className="text-center mb-16">
-                    <h2 className="text-3xl font-bold font-headline mb-8">Explorer la communauté</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                        <Card className="hover:shadow-lg transition-shadow">
-                            <CardContent className="p-6 flex flex-col items-center gap-4">
-                                <MessageCircle className="h-10 w-10 text-primary"/>
-                                <h3 className="text-xl font-bold">Discussions</h3>
-                                <p className="text-muted-foreground">Participez à des conversations, posez des questions et partagez votre expertise.</p>
-                                <Button variant="outline">Voir les discussions</Button>
-                            </CardContent>
-                        </Card>
-                        <Card className="hover:shadow-lg transition-shadow">
-                            <CardContent className="p-6 flex flex-col items-center gap-4">
-                                <Library className="h-10 w-10 text-primary"/>
-                                <h3 className="text-xl font-bold">Annonces et ressources</h3>
-                                <p className="text-muted-foreground">Restez informé des dernières nouvelles, des mises à jour de la plateforme et des ressources.</p>
-                                <Button variant="outline">Consulter les ressources</Button>
-                            </CardContent>
-                        </Card>
-                    </div>
-                </section>
-
-
                 <div className="grid lg:grid-cols-12 gap-12">
                     {/* Main Content */}
                     <div className="lg:col-span-8">
                         <div className="flex justify-between items-center mb-4">
-                             <h2 className="text-2xl font-bold font-headline">Toute l'activité de la Communauté</h2>
-                            <Button>Nouveau Message</Button>
+                             <h2 className="text-2xl font-bold font-headline">Discussions Récentes</h2>
+                            <Button>
+                                <MessageSquare className="mr-2 h-4 w-4"/>
+                                Nouvelle Discussion
+                            </Button>
                         </div>
                         <Tabs defaultValue="recent" className="w-full">
                             <TabsList>
@@ -124,13 +112,13 @@ export default function CommunityPage() {
                                 {communityPosts.map((post, index) => {
                                     const authorImg = PlaceHolderImages.find(img => img.id === post.authorImage);
                                     return (
-                                    <Card key={index} className="hover:bg-muted/50">
+                                    <Card key={index} className="hover:bg-muted/50 transition-colors">
                                         <CardContent className="p-4 flex gap-4">
                                             <Avatar>
                                                 {authorImg && <AvatarImage src={authorImg.imageUrl} />}
                                                 <AvatarFallback>{post.author.charAt(0)}</AvatarFallback>
                                             </Avatar>
-                                            <div>
+                                            <div className="flex-grow">
                                                 <h3 className="font-semibold text-lg hover:text-primary"><Link href="#">{post.title}</Link></h3>
                                                 <div className="flex flex-wrap gap-2 my-2">
                                                     {post.tags.map(tag => <Badge key={tag} variant="secondary">{tag}</Badge>)}
@@ -149,22 +137,31 @@ export default function CommunityPage() {
                             </TabsContent>
                         </Tabs>
                          <div className="mt-8 text-center">
-                            <Button variant="outline">Voir toutes les discussions de la communauté</Button>
+                            <Button variant="outline">Voir toutes les discussions</Button>
                         </div>
                     </div>
 
                     {/* Sidebar */}
                     <aside className="lg:col-span-4 space-y-8">
                          <Card>
-                            <CardHeader><CardTitle>Ressources de la communauté</CardTitle></CardHeader>
+                            <CardHeader>
+                                <CardTitle>Règles et Ressources</CardTitle>
+                                <CardDescription>Consultez les bonnes pratiques de la communauté.</CardDescription>
+                            </CardHeader>
                             <CardContent className="space-y-2">
-                                <Link href="#" className="block text-primary hover:underline">Objectifs et valeurs</Link>
-                                <Link href="#" className="block text-primary hover:underline">Principes de la Communauté</Link>
-                                <Link href="#" className="block text-primary hover:underline">Comment participer</Link>
+                                <Link href="#" className="flex items-center text-sm text-primary hover:underline p-2 rounded-md hover:bg-primary/5">
+                                    <Book className="mr-3 h-4 w-4"/> Objectifs et valeurs de la communauté
+                                </Link>
+                                <Link href="#" className="flex items-center text-sm text-primary hover:underline p-2 rounded-md hover:bg-primary/5">
+                                    <Users className="mr-3 h-4 w-4"/> Principes et code de conduite
+                                </Link>
+                                <Link href="#" className="flex items-center text-sm text-primary hover:underline p-2 rounded-md hover:bg-primary/5">
+                                    <HelpCircle className="mr-3 h-4 w-4"/> Comment poser une bonne question ?
+                                </Link>
                             </CardContent>
                         </Card>
                          <Card>
-                            <CardHeader><CardTitle>Rencontrez vos modérateurs</CardTitle></CardHeader>
+                            <CardHeader><CardTitle>Modérateurs</CardTitle></CardHeader>
                             <CardContent className="space-y-3">
                                 {moderators.map(mod => {
                                     const img = PlaceHolderImages.find(i => i.id === mod.image);
@@ -179,12 +176,12 @@ export default function CommunityPage() {
                             </CardContent>
                         </Card>
                          <Card>
-                            <CardHeader><CardTitle>Qui est en ligne ?</CardTitle></CardHeader>
+                            <CardHeader><CardTitle>Membres en ligne</CardTitle></CardHeader>
                             <CardContent className="flex flex-wrap gap-2">
                                 {onlineUsers.map(userId => {
                                     const userImg = PlaceHolderImages.find(i => i.id === userId);
                                     return (
-                                        <Avatar key={userId}>
+                                        <Avatar key={userId} className="h-9 w-9">
                                             {userImg && <AvatarImage src={userImg.imageUrl} />}
                                             <AvatarFallback>U</AvatarFallback>
                                         </Avatar>
@@ -194,40 +191,6 @@ export default function CommunityPage() {
                         </Card>
                     </aside>
                 </div>
-
-                 {/* Instructor Resources */}
-                <section className="mt-20">
-                     <h2 className="text-3xl font-bold font-headline text-center mb-8">Ressources formateur</h2>
-                     <div className="grid md:grid-cols-3 gap-8">
-                        <Card>
-                            <CardHeader className="items-center text-center">
-                                <HelpCircle className="h-10 w-10 text-primary mb-2" />
-                                <CardTitle>Aide et support</CardTitle>
-                            </CardHeader>
-                            <CardContent className="text-center">
-                                <p className="text-muted-foreground">Vous avez une question ? Consultez nos articles d'aide pour trouver des réponses.</p>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader className="items-center text-center">
-                                <Book className="h-10 w-10 text-primary mb-2" />
-                                <CardTitle>Le Teaching Center</CardTitle>
-                            </CardHeader>
-                            <CardContent className="text-center">
-                                <p className="text-muted-foreground">Apprenez à créer des cours et à en faire la promotion auprès des participants.</p>
-                            </CardContent>
-                        </Card>
-                         <Card>
-                            <CardHeader className="items-center text-center">
-                                <LayoutDashboard className="h-10 w-10 text-primary mb-2" />
-                                <CardTitle>Tableau de bord des performances</CardTitle>
-                            </CardHeader>
-                            <CardContent className="text-center">
-                                <p className="text-muted-foreground">Découvrez le succès que rencontrent vos cours publiés.</p>
-                            </CardContent>
-                        </Card>
-                     </div>
-                </section>
             </main>
         </div>
     );
