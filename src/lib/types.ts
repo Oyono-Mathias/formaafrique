@@ -18,6 +18,7 @@ export interface Module {
   titre: string;
   description: string;
   ordre: number;
+  videos?: string[];
 }
 
 export interface Course {
@@ -173,6 +174,23 @@ export interface FriendRequest {
   to: string;
   status: 'pending' | 'accepted' | 'declined';
   createdAt: Timestamp;
+}
+
+export interface Chat {
+    id?: string;
+    members: string[];
+    lastMessage: string;
+    lastTimestamp: Timestamp;
+    unreadCounts: { [uid: string]: number };
+}
+
+export interface Message {
+    id?: string;
+    from: string;
+    text: string;
+    attachments: string[]; // Array of URLs
+    timestamp: Timestamp;
+    seen: boolean;
 }
 
 export interface Notification {

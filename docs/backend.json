@@ -205,7 +205,12 @@
         "properties": {
             "titre": { "type": "string" },
             "description": { "type": "string" },
-            "ordre": { "type": "number" }
+            "ordre": { "type": "number" },
+            "videos": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "List of video IDs in this module."
+            }
         }
     },
     "Video": {
