@@ -1,11 +1,12 @@
 
 'use server';
 
-import { db, auth } from '@/firebase/config';
-import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
-import type { User } from 'firebase/auth';
+import { db } from '@/firebase/config';
+import { collection, doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import type { UserProfile } from '@/lib/types';
 
 interface RequestPayload {
+  uid: string;
   specialite: string;
   motivation: string;
   videoUrl: string;
@@ -16,32 +17,38 @@ interface RequestPayload {
 }
 
 export async function createInstructorRequest(payload: RequestPayload) {
-  // This is a server action, auth().currentUser won't work.
-  // In a real app, you'd get the user from a session or by passing the UID.
-  // For now, we'll assume this can only be called by a logged-in user and proceed without direct auth check here.
-  // The check is performed on the client-side before calling this action.
-
-  // A more robust way would be to use Next-Auth or verify an ID token.
-  // We simulate getting user info that would have been passed from the client.
+  if (!payload.uid) {
+    throw new Error("L'ID de l'utilisateur est manquant.");
+  }
   
-  // This is a placeholder. In a real app, you'd get this from a proper session management.
-  // const user = await getSessionUser(); // Fictional function
-  // if (!user) throw new Error("Utilisateur non authentifié.");
+  const userDocRef = doc(db, 'users', payload.uid);
+  const userDoc = await getDoc(userDocRef);
 
-  const { specialite, motivation, videoUrl, ...socialLinks } = payload;
+  if (!userDoc.exists()) {
+    throw new Error("Utilisateur non trouvé.");
+  }
+
+  const userProfile = userDoc.data() as UserProfile;
+  const { uid, ...formData } = payload;
   
   try {
-    await addDoc(collection(db, 'instructor_requests'), {
-      // userId: user.uid,
-      // userName: user.name,
-      // userEmail: user.email,
-      specialite,
-      motivation,
-      videoUrl,
-      socialLinks: socialLinks || {},
+    const requestDocRef = doc(db, 'instructor_requests', uid);
+    await setDoc(requestDocRef, {
+      userId: uid,
+      userName: userProfile.name,
+      userEmail: userProfile.email,
+      specialite: formData.specialite,
+      motivation: formData.motivation,
+      videoUrl: formData.videoUrl,
+      socialLinks: {
+        facebookUrl: formData.facebookUrl || '',
+        instagramUrl: formData.instagramUrl || '',
+        twitterUrl: formData.twitterUrl || '',
+        youtubeUrl: formData.youtubeUrl || '',
+      },
       requestDate: serverTimestamp(),
       status: 'pending',
-      scoreReputation: 0, // Placeholder
+      scoreReputation: userProfile.scoreReputation || 0,
     });
   } catch (error) {
     console.error("Error creating instructor request:", error);

@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A Genkit flow to evaluate a student's profile to determine their eligibility to become an instructor.
@@ -9,25 +10,23 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
+import { doc, getDoc, collection, getDocs, updateDoc } from 'firebase/firestore';
+import { db } from '@/firebase/config';
+import type { UserProfile, Enrollment, InstructorRequest } from '@/lib/types';
+
 
 // 1. Input Schema: We only need the user's ID to start the evaluation.
 export const CandidateEvaluationInputSchema = z.object({
   uid: z.string().describe("The unique ID of the student being evaluated."),
-  // We'll add the raw data inside the flow for the prompt.
 });
 export type CandidateEvaluationInput = z.infer<typeof CandidateEvaluationInputSchema>;
 
 // 2. Output Schema: This precisely matches the requested JSON output structure.
 export const CandidateEvaluationOutputSchema = z.object({
-  uid: z.string().describe("The user's ID."),
-  nom: z.string().describe("The user's full name."),
-  formations_terminees: z.number().describe("The number of courses the user has completed."),
-  note_moyenne: z.number().describe("The user's average score or reputation."),
-  reseaux_connectes: z.array(z.string()).describe("A list of connected social media platforms."),
   score_final: z.number().describe("The final calculated eligibility score."),
   statut: z.enum(['éligible', 'en_attente', 'refusé']).describe("The final eligibility status."),
+  message_feedback: z.string().describe("A personalized and encouraging feedback message for the candidate."),
   badge: z.string().optional().describe("A special badge if applicable, like 'Formateur YouTube'."),
-  feedback_message: z.string().describe("A personalized and encouraging feedback message for the candidate."),
 });
 export type CandidateEvaluationOutput = z.infer<typeof CandidateEvaluationOutputSchema>;
 
@@ -44,72 +43,51 @@ export async function evaluateCandidate(input: CandidateEvaluationInput): Promis
 // 3. Define the Prompt for the AI
 const evaluationPrompt = ai.definePrompt({
   name: 'candidateEvaluationPrompt',
-  // The prompt's input will be a richer object containing all the data the AI needs.
   input: { schema: z.object({
-      uid: z.string(),
       nom: z.string(),
-      email_verifie: z.boolean(),
-      photo_presente: z.boolean(),
       biographie: z.string(),
       formations_terminees: z.number(),
       note_moyenne: z.number(),
-      reseaux_sociaux: z.object({
-          Facebook: z.boolean(),
-          Instagram: z.boolean(),
-          Twitter: z.boolean(),
-          YouTube: z.boolean(),
+      reseaux: z.object({
+          facebook: z.boolean(),
+          instagram: z.boolean(),
+          twitter: z.boolean(),
+          youtube: z.boolean(),
       })
   }) },
   output: { schema: CandidateEvaluationOutputSchema },
-  prompt: `Tu es l’assistant IA de FormaAfrique, chargé d’analyser les profils des étudiants pour déterminer s’ils peuvent devenir formateurs.
+  prompt: `Tu es FormaIA, l'évaluateur intelligent de FormaAfrique. Ton rôle est d'analyser une candidature pour devenir formateur et de retourner un score, un statut, et un feedback constructif.
 
-  **Objectif :**
-  Évalue le profil de l'étudiant fourni ci-dessous en fonction de critères stricts et retourne un objet JSON complet contenant le statut, le score, les détails et un message de feedback.
-
-  **Données de l'étudiant :**
+  **Données du candidat :**
   - Nom : {{nom}}
-  - UID : {{uid}}
-  - Email vérifié : {{email_verifie}}
-  - Photo de profil présente : {{photo_presente}}
   - Biographie : "{{biographie}}"
-  - Formations terminées (score > 80%) : {{formations_terminees}}
+  - Nombre de formations terminées : {{formations_terminees}}
   - Note moyenne (réputation) : {{note_moyenne}}/5
-  - Réseaux connectés : Facebook: {{reseaux_sociaux.Facebook}}, Instagram: {{reseaux_sociaux.Instagram}}, Twitter/X: {{reseaux_sociaux.Twitter}}, YouTube: {{reseaux_sociaux.YouTube}}
+  - Réseaux connectés : Facebook: {{reseaux.facebook}}, Instagram: {{reseaux.instagram}}, Twitter/X: {{reseaux.twitter}}, YouTube: {{reseaux.youtube}}
 
-  **Critères d'évaluation :**
-  1.  **Prérequis (obligatoires) :**
-      - Email vérifié.
-      - Photo de profil présente.
-      - Biographie d'au moins 100 caractères.
-  2.  **Performance (doit remplir au moins une des deux conditions) :**
-      - Avoir terminé au moins 3 formations.
-      - Avoir un score global (note moyenne) de 4.5/5 ou plus.
-  3.  **Professionnalisme :**
-      - Avoir connecté au moins 2 réseaux professionnels (Facebook, Instagram, Twitter/X).
-  4.  **Bonus :**
-      - Si YouTube est connecté, un badge "Formateur YouTube" est attribué.
+  **Règles de notation :**
+  1.  Biographie ≥ 100 caractères = +20 points
+  2.  ≥ 3 formations terminées = +20 points
+  3.  Note moyenne ≥ 4.5/5 = +20 points
+  4.  Au moins 2 réseaux sociaux connectés (Facebook, Instagram, Twitter/X) = +20 points
+  5.  YouTube ajouté = +10 points (bonus)
+  6.  Facebook ET Instagram actifs = +10 points (bonus)
+  Le score maximum est 100.
 
-  **Calcul du statut :**
-  - **éligible :** TOUS les critères (Prérequis, Performance, Professionnalisme) sont remplis.
-  - **refusé :** Un ou plusieurs des "Prérequis" manquent.
-  - **en_attente :** Les "Prérequis" sont remplis, mais le critère "Performance" ou "Professionnalisme" ne l'est pas.
-
-  **Calcul du Score Final (sur 100) :**
-  Score = (Note_Moyenne * 12) + (Formations_Terminées * 4) + (Biographie_OK * 10) + (Réseaux_OK * 10)
-  - "Biographie_OK" vaut 1 si la bio a ≥ 100 caractères, sinon 0.
-  - "Réseaux_OK" vaut 1 si au moins 2 réseaux sont connectés, sinon 0.
-  Le score est un indicateur, le statut prime.
+  **Règles de statut :**
+  - **éligible :** Score final ≥ 70
+  - **en_attente :** 50 ≤ Score final < 70
+  - **refusé :** Score final < 50
 
   **Instructions de sortie :**
-  1.  Analyse les données et les critères.
-  2.  Calcule le `score_final`.
-  3.  Détermine le `statut` ('éligible', 'en_attente', 'refusé').
-  4.  Attribue le `badge` si le critère YouTube est rempli.
-  5.  **Rédige un `feedback_message` personnalisé et motivant :**
-      - Si 'éligible' : Félicite le candidat et invite-le à postuler.
-      - Si 'en_attente' : Encourage-le et liste clairement les 1 ou 2 points principaux à améliorer pour devenir éligible (ex: "Termine encore une formation" ou "Connecte un réseau social de plus").
-      - Si 'refusé' : Sois bienveillant, explique poliment que les prérequis ne sont pas remplis (ex: "Complète ta biographie et ajoute une photo de profil"), et encourage-le à revenir.
-  6.  Retourne un unique objet JSON valide avec tous les champs requis.
+  1.  Calcule le \`score_final\` en appliquant rigoureusement le barème.
+  2.  Détermine le \`statut\` ('éligible', 'en_attente', 'refusé') en fonction du score.
+  3.  Si le critère YouTube est rempli, attribue le \`badge\` "Formateur YouTube".
+  4.  **Rédige un \`message_feedback\` personnalisé, positif et motivant :**
+      - Si 'éligible' : Félicite le candidat pour son excellent profil et indique que son dossier est transmis pour validation finale.
+      - Si 'en_attente' : Encourage-le, mentionne son bon score et liste 1 ou 2 points spécifiques à améliorer pour atteindre le statut éligible (ex: "Termine encore une formation" ou "Connecte un réseau social de plus pour renforcer ton profil.").
+      - Si 'refusé' : Sois bienveillant. Explique que le profil a du potentiel mais nécessite des améliorations. Liste clairement les points les plus importants à travailler (ex: "Complète ta biographie et termine quelques formations pour montrer ton expertise.").
+  5.  Retourne un unique objet JSON valide avec tous les champs requis.
   `,
 });
 
@@ -122,35 +100,56 @@ const evaluateCandidateFlow = ai.defineFlow(
     outputSchema: CandidateEvaluationOutputSchema,
   },
   async (input) => {
-    // In a real application, you would fetch this data from Firestore based on the input.uid.
-    // For this example, we use mock data.
-    console.log(`Evaluating candidate with UID: ${input.uid}`);
-    
-    // MOCK DATA - Remplacer par des appels Firestore
-    const studentData = {
-      uid: input.uid,
-      nom: "Jean Dupont",
-      email_verifie: true,
-      photo_presente: true,
-      biographie: "Passionné par la technologie et l'éducation, je souhaite partager mes connaissances pour aider les autres à grandir. J'ai 5 ans d'expérience en développement web.",
-      formations_terminees: 4,
-      note_moyenne: 4.7,
-      reseaux_sociaux: {
-        Facebook: true,
-        Instagram: false,
-        Twitter: false,
-        YouTube: true,
-      },
+    if (!db) throw new Error("Firestore is not initialized.");
+
+    // Step 1: Fetch all required data from Firestore
+    const userDocRef = doc(db, 'users', input.uid);
+    const enrollmentsColRef = collection(db, 'users', input.uid, 'enrollments');
+    const requestDocRef = doc(db, 'instructor_requests', input.uid);
+
+    const [userDoc, enrollmentsSnap, requestDoc] = await Promise.all([
+        getDoc(userDocRef),
+        getDocs(enrollmentsColRef),
+        getDoc(requestDocRef),
+    ]);
+
+    if (!userDoc.exists() || !requestDoc.exists()) {
+        throw new Error(`User profile or instructor request not found for UID: ${input.uid}`);
+    }
+
+    const userProfile = userDoc.data() as UserProfile;
+    const enrollments = enrollmentsSnap.docs.map(d => d.data() as Enrollment);
+    const request = requestDoc.data() as InstructorRequest;
+
+    // Step 2: Prepare data for the AI prompt
+    const promptInput = {
+        nom: userProfile.name,
+        biographie: userProfile.bio || '',
+        formations_terminees: enrollments.filter(e => (e.progression || 0) >= 100).length,
+        note_moyenne: userProfile.scoreReputation || 4.0, // Default to 4.0 if not set
+        reseaux: {
+            facebook: !!request.socialLinks?.facebookUrl,
+            instagram: !!request.socialLinks?.instagramUrl,
+            twitter: !!request.socialLinks?.twitterUrl,
+            youtube: !!request.socialLinks?.youtubeUrl,
+        }
     };
 
-    // Call the AI prompt with the fetched/mocked data.
-    const { output } = await evaluationPrompt(studentData);
+    // Step 3: Call the AI prompt with the prepared data
+    const { output } = await evaluationPrompt(promptInput);
 
     if (!output) {
       throw new Error("Candidate evaluation flow failed to produce an output.");
     }
     
-    console.log("Evaluation result:", output);
+    // Step 4: Update the instructor request document with the AI's evaluation
+    await updateDoc(requestDocRef, {
+        scoreFinal: output.score_final,
+        statut: output.statut, // Update status based on AI evaluation
+        feedbackMessage: output.message_feedback,
+    });
+    
+    console.log(`Evaluation for ${userProfile.name} completed. Score: ${output.score_final}, Status: ${output.statut}`);
     return output;
   }
 );

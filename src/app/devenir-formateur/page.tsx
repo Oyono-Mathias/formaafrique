@@ -7,9 +7,9 @@ import { Lightbulb, Rocket, Award, Users, Languages, Star, Globe, TrendingUp, Lo
 import { useLanguage } from '@/contexts/language-context';
 import { useUser, useCollection } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type { InstructorRequest, Enrollment, UserProfile } from '@/lib/types';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Input } from '@/components/ui/input';
@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import Link from 'next/link';
 import { createInstructorRequest } from '@/actions/instructor-request';
+import { evaluateCandidate, CandidateEvaluationOutput } from '@/ai/flows/evaluate-candidate-flow';
 
 const requestSchema = z.object({
   specialite: z.string().min(5, { message: "Veuillez décrire votre spécialité (min. 5 caractères)." }),
@@ -33,6 +34,7 @@ export default function BecomeInstructorPage() {
     const { user, userProfile } = useUser();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [evaluationResult, setEvaluationResult] = useState<CandidateEvaluationOutput | null>(null);
 
     const form = useForm<z.infer<typeof requestSchema>>({
       resolver: zodResolver(requestSchema),
@@ -90,10 +92,24 @@ export default function BecomeInstructorPage() {
             return;
         }
         setIsSubmitting(true);
+        setEvaluationResult(null);
+        
         try {
-            await createInstructorRequest(values);
-            toast({ title: 'Candidature envoyée !', description: 'Votre demande a été envoyée pour validation. Nous vous contacterons bientôt.' });
-            form.reset();
+            // 1. Submit the application to Firestore
+            await createInstructorRequest({ uid: user.uid, ...values });
+            toast({ title: 'Candidature envoyée !', description: "Analyse par l'IA en cours..." });
+            
+            // 2. Trigger AI evaluation
+            const result = await evaluateCandidate({ uid: user.uid });
+            setEvaluationResult(result);
+            
+            // Optionally, show a toast based on result
+            if(result.statut === 'éligible') {
+                 toast({ title: 'Évaluation terminée : Éligible !', description: 'Votre dossier va être transmis pour validation finale.' });
+            } else {
+                 toast({ variant: 'default', title: 'Évaluation terminée', description: result.message_feedback });
+            }
+
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Erreur', description: error.message || 'Une erreur est survenue.' });
         } finally {
@@ -107,6 +123,45 @@ export default function BecomeInstructorPage() {
         { label: "Inscriptions", value: "1.1Mds", icon: Star },
         { label: "Pays", value: "+ de 180", icon: Globe },
     ];
+    
+    const renderResultCard = () => {
+        if (!evaluationResult) return null;
+
+        const statusConfig = {
+            éligible: {
+                title: "Félicitations, vous êtes éligible !",
+                Icon: CheckCircle,
+                color: "green",
+            },
+            en_attente: {
+                title: "Votre dossier est presque prêt !",
+                Icon: AlertCircle,
+                color: "amber",
+            },
+            refusé: {
+                title: "Quelques ajustements nécessaires",
+                Icon: AlertCircle,
+                color: "red",
+            },
+        };
+
+        const config = statusConfig[evaluationResult.statut];
+
+        return (
+             <Card className={`border-${config.color}-500 bg-${config.color}-50`}>
+                <CardHeader>
+                    <div className="flex items-center gap-3">
+                        <config.Icon className={`w-8 h-8 text-${config.color}-600`} />
+                        <CardTitle className={`text-${config.color}-800`}>{config.title}</CardTitle>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <p className={`text-${config.color}-700`}>{evaluationResult.message_feedback}</p>
+                    {evaluationResult.statut === 'éligible' && <p className='mt-4 font-semibold'>Votre candidature a été transmise à notre équipe pour une validation finale. Vous serez notifié(e) par email.</p>}
+                </CardContent>
+            </Card>
+        )
+    }
 
     const renderCallToActionSection = () => {
         if (!user) {
@@ -176,6 +231,7 @@ export default function BecomeInstructorPage() {
                                     {!prerequisites.hasCompletedThreeCourses && <Button asChild size="sm" variant="outline"><Link href="/courses">Explorer</Link></Button>}
                                 </CardContent>
                             </Card>
+                             {evaluationResult && renderResultCard()}
                         </div>
                         {/* Application Form */}
                         <div className="space-y-6">
@@ -194,7 +250,7 @@ export default function BecomeInstructorPage() {
                                 </div>
                                 <Button type="submit" size="lg" className="w-full" disabled={isSubmitting || !prerequisites.canApply}>
                                     {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-                                    {prerequisites.canApply ? "Soumettre ma candidature" : "Conditions non remplies"}
+                                    {isSubmitting ? "Analyse en cours..." : prerequisites.canApply ? "Soumettre ma candidature" : "Conditions non remplies"}
                                 </Button>
                             </form>
                         </div>
