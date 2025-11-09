@@ -58,6 +58,8 @@ export interface UserProfile {
   friends?: string[];
   online?: boolean;
   lastSeen?: Timestamp;
+  formationId?: string;
+  moduleLevel?: string;
 }
 
 export interface InstructorProfile extends UserProfile {
@@ -182,6 +184,7 @@ export interface Chat {
     lastMessage: string;
     lastTimestamp: Timestamp;
     unreadCounts: { [uid: string]: number };
+    formationId: string; // ID of the formation this chat belongs to
 }
 
 export interface Message {

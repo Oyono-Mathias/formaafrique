@@ -417,9 +417,13 @@
           "type": "object",
           "additionalProperties": { "type": "number" },
           "description": "Map of user UIDs to their unread message count in this chat."
+        },
+        "formationId": {
+            "type": "string",
+            "description": "ID of the formation this chat belongs to."
         }
       },
-      "required": ["members", "lastTimestamp"]
+      "required": ["members", "lastTimestamp", "formationId"]
     },
     "Message": {
       "title": "Message",

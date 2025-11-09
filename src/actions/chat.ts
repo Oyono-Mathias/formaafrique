@@ -77,6 +77,7 @@ export async function getOrCreateChat(uid1: string, uid2: string) {
                     [uid1]: 0,
                     [uid2]: 0,
                 },
+                formationId: user1Profile.formationId, // Add formationId
             });
             console.log(`Created new chat with ID: ${newChatDoc.id}`);
             redirect(`/messages/${newChatDoc.id}`);

@@ -15,13 +15,24 @@ import { doc, getDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ChatList() {
-  const { user } = useUser();
+  const { user, userProfile } = useUser();
   const { chatId: activeChatId } = useParams();
   const db = useFirestore();
 
+  const collectionOptions = useMemo(() => {
+    if (!user?.uid || !userProfile?.formationId) return undefined;
+    return {
+        where: [
+            ['members', 'array-contains', user.uid],
+            ['formationId', '==', userProfile.formationId]
+        ]
+    };
+  }, [user?.uid, userProfile?.formationId]);
+
+
   const { data: chats, loading: chatsLoading } = useCollection<Chat>(
     'chats',
-    user ? { where: ['members', 'array-contains', user.uid] } : undefined
+    collectionOptions
   );
   
   const [otherUsers, setOtherUsers] = useState<Record<string, UserProfile>>({});
