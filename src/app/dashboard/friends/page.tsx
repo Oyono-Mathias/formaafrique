@@ -58,7 +58,15 @@ export default function FriendsPage() {
     const [sentRequests, setSentRequests] = useState<{ request: FriendRequest, toUser: UserProfile }[]>([]);
     const [loading, setLoading] = useState(true);
 
-    const { data: allUsers, loading: usersLoading } = useCollection<UserProfile>('users');
+    const sameFormationUsersOptions = useMemo(() => {
+        if (!userProfile?.formationId) return undefined;
+        return { where: ['formationId', '==', userProfile.formationId] as [string, '==', string]};
+    }, [userProfile?.formationId]);
+
+    const { data: allUsers, loading: usersLoading } = useCollection<UserProfile>(
+        userProfile?.formationId ? 'users' : null,
+        sameFormationUsersOptions
+    );
     
     // Fetch friend requests
     const { data: requestsData, loading: requestsLoading } = useCollection<FriendRequest>('friendRequests', user?.uid ? { where: [['to', '==', user.uid], ['status', '==', 'pending']] } : undefined);
