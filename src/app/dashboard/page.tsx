@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, BookCopy, Loader2, Star, Users } from 'lucide-react';
+import { ArrowRight, BookCopy, Loader2, Star, Users, Bot } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -137,20 +137,33 @@ export default function DashboardPage() {
           Bienvenue, {user?.displayName || 'cher étudiant'} ! Prêt à apprendre ?
         </p>
       </div>
-      
-      {userProfile?.formationId && (
-        <Link href="/community">
-            <Card className="p-4 bg-primary/10 hover:bg-primary/20 transition rounded-2xl cursor-pointer flex items-center gap-4">
-                <div className='p-3 bg-primary/20 rounded-lg'>
-                    <Users className='h-6 w-6 text-primary'/>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        {userProfile?.formationId && (
+            <Link href="/community">
+                <Card className="p-4 bg-primary/10 hover:bg-primary/20 transition rounded-2xl cursor-pointer flex items-center gap-4 h-full">
+                    <div className='p-3 bg-primary/20 rounded-lg'>
+                        <Users className='h-6 w-6 text-primary'/>
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-bold text-primary">Communauté {userProfile.formationId}</h3>
+                        <p className="text-sm text-primary/80">Rejoignez le groupe de discussion de votre formation.</p>
+                    </div>
+                </Card>
+            </Link>
+        )}
+        <Link href="/chatbot">
+            <Card className="p-4 bg-accent/50 hover:bg-accent/80 transition rounded-2xl cursor-pointer flex items-center gap-4 h-full">
+                <div className='p-3 bg-accent/60 rounded-lg'>
+                    <Bot className='h-6 w-6 text-accent-foreground'/>
                 </div>
                 <div>
-                    <h3 className="text-lg font-bold text-primary">Communauté {userProfile.formationId}</h3>
-                    <p className="text-sm text-primary/80">Rejoignez le groupe de discussion public de votre formation pour échanger avec vos camarades.</p>
+                    <h3 className="text-lg font-bold text-accent-foreground">Tuteur IA</h3>
+                    <p className="text-sm text-foreground/80">Posez vos questions sur les cours à notre assistant intelligent.</p>
                 </div>
             </Card>
         </Link>
-      )}
+      </div>
 
       {loading ? (
         <div className="flex justify-center items-center h-64">
