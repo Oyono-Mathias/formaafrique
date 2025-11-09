@@ -50,37 +50,11 @@ Répétez les scénarios ci-dessus sur un appareil mobile ou en utilisant les ou
 
 ---
 
-## 2. Stratégie de Tests Automatisés
-
-### A. Tests Unitaires & d'Intégration (Jest & React Testing Library)
-
-**Objectif :** Tester des composants et des hooks de manière isolée pour garantir leur logique interne.
-
-**Exemples de tests :**
-
-1.  **`FollowButton.test.tsx`**
-    *   Le bouton affiche "Suivre" si l'utilisateur ne suit pas la cible.
-    *   Le bouton affiche "Suivi" si l'utilisateur suit déjà la cible.
-    *   Simuler un clic et vérifier que la fonction Firestore `updateDoc` est appelée avec les bons arguments (`arrayUnion` ou `arrayRemove`).
-    *   Le bouton affiche un `Loader` pendant l'opération.
-
-2.  **`FriendRequestButton.test.tsx`**
-    *   Tester l'affichage correct pour chaque statut : `not_friends`, `request_sent`, `request_received`, `friends`.
-    *   Simuler un clic sur "Ajouter comme ami" et vérifier que `addDoc` et `writeBatch` sont appelés pour créer la demande et la notification.
-    *   Simuler un clic sur "Accepter" et vérifier que `updateDoc` est appelé pour mettre à jour les listes d'amis.
-
-3.  **`useUser.test.tsx`**
-    *   Tester le hook pour s'assurer qu'il récupère et met à jour correctement le profil utilisateur depuis Firestore lorsque l'état d'authentification change.
-
-### B. Tests de Bout en Bout (End-to-End avec Playwright)
+## 2. Stratégie de Tests Automatisés (E2E)
 
 **Objectif :** Simuler des parcours utilisateur complets dans un vrai navigateur pour valider l'intégration de toutes les parties (UI, Firebase).
 
-**Prérequis :**
-*   Installer Playwright : `npm install --save-dev @playwright/test`
-*   Configurer Playwright pour votre projet : `npx playwright install`
-
-**Exemple de fichier de test (`tests/social.spec.ts`) :**
+**Exemple de fichier de test (`tests/social.spec.ts` avec Playwright) :**
 
 ```typescript
 import { test, expect } from '@playwright/test';
@@ -103,56 +77,84 @@ test.describe('Social Features', () => {
     
     // Étape 1: Les deux utilisateurs se connectent
     await pageA.goto('/login');
-    await pageA.fill('input[name="email"]', USER_A_EMAIL);
-    await pageA.fill('input[name="password"]', USER_A_PASSWORD);
-    await pageA.click('button[type="submit"]');
-    await expect(pageA).toHaveURL('/dashboard');
-    
+    // ...
     await pageB.goto('/login');
-    await pageB.fill('input[name="email"]', USER_B_EMAIL);
-    await pageB.fill('input[name="password"]', USER_B_PASSWORD);
-    await pageB.click('button[type="submit"]');
-    await expect(pageB).toHaveURL('/dashboard');
+    // ...
 
     // Étape 2: L'Utilisateur A envoie une demande d'ami à B
-    await pageA.goto('/friends'); // Supposons une page pour trouver des utilisateurs
-    await pageA.fill('input[placeholder*="Rechercher"]', USER_B_EMAIL);
-    await pageA.click(`text=${USER_B_EMAIL}`); // Navigue vers le profil de B
-    await pageA.click('button:has-text("Ajouter comme ami")');
-    await expect(pageA.locator('button:has-text("Demande envoyée")')).toBeVisible();
-
+    // ...
+    
     // Étape 3: L'Utilisateur B accepte la demande
-    await pageB.goto('/friends');
-    await pageB.click('button[role="tab"]:has-text("Demandes")');
-    await expect(pageB.locator(`text=${USER_A_EMAIL}`)).toBeVisible();
-    await pageB.click('button:has-text("Accepter")');
-    await expect(pageB.locator('button:has-text("Amis")')).toBeVisible();
+    // ...
 
-    // Étape 4: L'Utilisateur A vérifie que B est son ami et envoie un message
-    await pageA.reload();
-    await pageA.goto('/friends');
-    await expect(pageA.locator(`text=${USER_B_EMAIL}`)).toBeVisible();
-    await pageA.locator(`:text("${USER_B_EMAIL}") >> .. >> button:has-text("Message")`).click();
-    await expect(pageA).toHaveURL(/\/messages\/.+/);
+    // Étape 4: L'Utilisateur A envoie un message à B
+    // ...
     
-    const messageToSend = `Bonjour B, c'est un test ! ${Date.now()}`;
-    await pageA.fill('input[placeholder*="message"]', messageToSend);
-    await pageA.click('button:has-text("Send")'); // ou l'icône
-    
-    // Étape 5: L'Utilisateur B reçoit le message en temps réel
-    const chatUrl = pageA.url();
-    await pageB.goto(chatUrl);
-    await expect(pageB.locator(`text=${messageToSend}`)).toBeVisible();
+    // Étape 5: L'Utilisateur B reçoit le message
+    // ...
   });
-
 });
 ```
 
-**Commande pour lancer les tests E2E :**
-```bash
-# Lancer les tests en mode headless (sans interface graphique)
-npx playwright test
+---
 
-# Lancer les tests avec l'interface de débogage de Playwright
-npx playwright test --ui
+## 3. Tests du Tuteur IA et de la Recherche Sémantique
+
+**Objectif :** Valider que le tuteur IA fournit des réponses pertinentes, sécurisées et basées sur le contenu le plus à jour.
+
+### ✅ Checklist de Tests Manuels
+
+| Scénario de Test                                       | Étapes à suivre                                                                                                                                                                                                                                                          | Résultat Attendu                                                                                                                                                                                                                                                          |
+| :----------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Pertinence de la Réponse**                           | 1. Connectez-vous en tant qu'étudiant.<br/>2. Allez sur la page `/chatbot`.<br/>3. Posez une question très spécifique sur une vidéo ou un module (ex: "Comment on calcule le fonds de roulement dans le cours de comptabilité ?").<br/>4. Posez une question plus générale sur une formation. | La réponse doit être directement liée à la question. Le premier lien source proposé doit être le bon module/vidéo dans au moins 80% des cas. La réponse doit être pédagogique et proposer un CTA pertinent.                                                  |
+| **Test de Contenu Inconnu**                            | 1. Posez une question sur un sujet complètement absent de vos formations (ex: "Quelle est la meilleure recette de couscous ?").                                                                                                                                             | L'IA doit répondre poliment qu'elle n'a pas trouvé d'information à ce sujet dans les cours disponibles, sans inventer de réponse.                                                                                                                                   |
+| **Test de Synchronisation (Nouvelle Vidéo)**           | 1. **(Admin)** Allez sur la page de gestion d'une formation et ajoutez une nouvelle vidéo avec un titre très distinctif (ex: "La Formule Secrète de la Photosynthèse Inversée").<br/>2. Attendez **2 minutes**.<br/>3. **(Étudiant)** Posez une question sur "la photosynthèse inversée". | L'IA doit trouver la nouvelle vidéo et baser sa réponse dessus. La nouvelle vidéo doit apparaître dans les sources proposées. Cela valide que le trigger de génération d'embedding fonctionne.                                                                       |
+| **Test de Sécurité (Isolation des Formations)**        | 1. Créez deux étudiants : Étudiant A (formation "Python") et Étudiant B (formation "Comptabilité").<br/>2. **(Étudiant A)** Posez une question sur la comptabilité.<br/>3. **(Étudiant B)** Posez une question sur Python.                                                         | Dans les deux cas, l'IA doit répondre qu'elle n'a pas d'information sur le sujet, car la recherche doit être limitée à la formation de l'utilisateur. Aucune fuite d'information entre les formations ne doit se produire.                                          |
+| **Feedback Utilisateur**                              | 1. Posez une question et obtenez une réponse.<br/>2. Cliquez sur le bouton "Signaler une réponse incorrecte" (icône pouce vers le bas).<br/>3. **(Admin)** Allez sur la page `/admin/tutor-feedback`.                                                                           | Une nouvelle entrée doit apparaître dans la liste des feedbacks, contenant votre question et la réponse de l'IA.                                                                                                                                           |
+
+### ✅ Tests Automatisés (Exemples de requêtes `cURL`)
+
+Ces exemples supposent que vos Cloud Functions sont déployées et accessibles via une URL. Remplacez `YOUR_FUNCTION_URL` et les `placeholders`.
+
+**1. Tester `vectorSearch`**
+
+```bash
+# Test de recherche simple
+curl -X POST "https://YOUR_REGION-YOUR_PROJECT_ID.cloudfunctions.net/vectorSearch" \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "Qu\'est-ce qu\'un bilan comptable ?",
+  "topK": 3
+}'
+
+# Test de recherche filtrée par formation
+curl -X POST "https://YOUR_REGION-YOUR_PROJECT_ID.cloudfunctions.net/vectorSearch" \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "les bases de python",
+  "topK": 3,
+  "formationId": "id_de_la_formation_python"
+}'
 ```
+**Résultat Attendu :** Un JSON contenant un tableau `results` avec les documents les plus pertinents, incluant `id`, `type`, `score`, et `meta`.
+
+**2. Tester `tutorAnswer` (le flow complet)**
+
+```bash
+# Test d'une question d'un utilisateur
+curl -X POST "https://YOUR_REGION-YOUR_PROJECT_ID.cloudfunctions.net/tutorAnswer" \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer YOUR_USER_ID_TOKEN" \ # Sécurité importante
+-d '{
+  "userId": "id_de_l_utilisateur_test",
+  "query": "Comment je crée une fonction en Python ?",
+  "formationId": "id_de_la_formation_python"
+}'
+```
+**Résultat Attendu :** Un JSON contenant `answer` (la réponse textuelle de l'IA) et `sources` (les documents utilisés pour générer la réponse).
+
+### ✅ Mesures et Rapports
+
+*   **Latence :** Utilisez des outils comme Postman ou des scripts de test pour mesurer le temps de réponse moyen de votre endpoint `tutorAnswer`. Un objectif raisonnable serait de rester sous les 3-5 secondes.
+*   **Taux de Faux Positifs :** Après une semaine d'utilisation, analysez la collection `tutorFeedback`. Le nombre de feedbacks négatifs divisé par le nombre total de requêtes vous donnera un score de satisfaction à améliorer.
+*   **Logs d'Erreur :** Surveillez les logs de vos Cloud Functions dans la console Firebase/Google Cloud pour détecter les erreurs inattendues (ex: échec d'appel à l'API d'embedding, timeouts, etc.).
