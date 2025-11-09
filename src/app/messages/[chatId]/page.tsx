@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
@@ -17,6 +18,9 @@ import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { moderateText } from '@/ai/flows/moderate-text-flow';
+import { autoReply } from '@/ai/flows/auto-reply-flow';
+
 
 // --- WebRTC Call Modal ---
 function CallModal({ localStream, remoteStream, onHangup, callType }: { localStream: MediaStream | null, remoteStream: MediaStream | null, onHangup: () => void, callType: 'video' | 'audio' }) {
@@ -53,7 +57,7 @@ function CallModal({ localStream, remoteStream, onHangup, callType }: { localStr
 // --- Main Chat Page Component ---
 export default function ChatPage() {
     const { chatId } = useParams() as { chatId: string };
-    const { user, loading: userLoading } = useUser();
+    const { user, userProfile, loading: userLoading } = useUser();
     const router = useRouter();
     const db = useFirestore();
     const storage = useStorage();
@@ -69,6 +73,7 @@ export default function ChatPage() {
     const [newMessage, setNewMessage] = useState('');
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -188,31 +193,67 @@ export default function ChatPage() {
 
 
     const handleSendMessage = async () => {
-        if ((!newMessage.trim() && !imageFile) || !user || !db) return;
+        const messageText = newMessage.trim();
+        if ((!messageText && !imageFile) || !user || !db || !chatData) return;
         
-        let imageUrl = '';
-        if (imageFile) {
-            setIsUploading(true);
-            const storageRef = ref(storage, `chat_images/${chatId}/${Date.now()}_${imageFile.name}`);
-            const uploadTask = uploadBytesResumable(storageRef, imageFile);
-            try {
+        setIsProcessing(true);
+        setNewMessage('');
+        
+        try {
+            // Step 1: Moderate Text
+            const moderationResult = await moderateText({
+                text: messageText,
+                formationId: chatData.formationId
+            });
+
+            // Log moderation
+            const modLogRef = doc(collection(db, 'moderationLogs'));
+            addDoc(collection(db, 'moderationLogs'), {
+                chatId: chatId,
+                fromUid: user.uid,
+                text: messageText,
+                verdict: moderationResult.verdict,
+                category: moderationResult.category,
+                score: moderationResult.score,
+                action: 'none',
+                timestamp: serverTimestamp(),
+            });
+            
+            // Step 2: Handle verdict
+            if (moderationResult.verdict !== 'allowed') {
+                 // Flag the message
+                 addDoc(collection(db, 'aiFlags'), {
+                    chatId: chatId,
+                    fromUid: user.uid,
+                    reason: moderationResult.category,
+                    severity: moderationResult.score > 0.8 ? 'high' : 'medium',
+                    status: 'pending_review',
+                    timestamp: serverTimestamp(),
+                });
+                toast({
+                    variant: 'destructive',
+                    title: 'Message bloqué par la modération',
+                    description: `Motif : ${moderationResult.reason}. Votre message est en cours de révision.`
+                });
+                setIsProcessing(false);
+                return;
+            }
+            
+            // If allowed, proceed to send message and trigger auto-reply
+            
+            let imageUrl = '';
+            if (imageFile) {
+                setIsUploading(true);
+                const storageRef = ref(storage, `chat_images/${chatId}/${Date.now()}_${imageFile.name}`);
+                const uploadTask = uploadBytesResumable(storageRef, imageFile);
                 await uploadTask;
                 imageUrl = await getDownloadURL(uploadTask.snapshot.ref);
                 setImageFile(null);
-            } catch (error) {
-                toast({ variant: 'destructive', title: "L'envoi de l'image a échoué." });
-                setIsUploading(false);
-                return;
-            } finally {
                 setIsUploading(false);
             }
-        }
-        
-        const messageText = newMessage.trim();
-        setNewMessage('');
-
-        try {
-            await addDoc(collection(db, `chats/${chatId}/messages`), {
+            
+            // Send user message
+            const userMessageRef = await addDoc(collection(db, `chats/${chatId}/messages`), {
                 from: user.uid,
                 text: messageText,
                 attachments: imageUrl ? [imageUrl] : [],
@@ -225,8 +266,37 @@ export default function ChatPage() {
                 lastTimestamp: serverTimestamp(),
                 [`unreadCounts.${otherUserId}`]: (chatData?.unreadCounts[otherUserId!] || 0) + 1,
             });
+
+            // Step 3: Trigger Auto-Reply
+            const reply = await autoReply({
+                text: messageText,
+                fromUid: user.uid,
+                chatId: chatId,
+                formationId: chatData.formationId,
+            });
+
+            if (reply.reply) {
+                 await addDoc(collection(db, `chats/${chatId}/messages`), {
+                    from: 'FormaAI',
+                    text: reply.reply,
+                    attachments: [],
+                    timestamp: serverTimestamp(),
+                    seen: false,
+                    auto: true,
+                });
+                await updateDoc(doc(db, 'chats', chatId), {
+                    lastMessage: reply.reply,
+                    lastTimestamp: serverTimestamp(),
+                     [`unreadCounts.${otherUserId}`]: (chatData?.unreadCounts[otherUserId!] || 0) + 2, // +1 for user msg, +1 for bot
+                });
+            }
+
         } catch (error) {
+            console.error("Error during message pipeline:", error);
             toast({ variant: 'destructive', title: "L'envoi du message a échoué." });
+        } finally {
+            setIsProcessing(false);
+            setIsUploading(false);
         }
     };
     
@@ -283,9 +353,15 @@ export default function ChatPage() {
             <CardContent className="flex-1 p-4 overflow-y-auto space-y-4">
                 {(messages || []).map((message, index) => {
                     const isSender = message.from === user.uid;
+                    const isBot = message.from === 'FormaAI';
                     return (
                         <div key={message.id || index} className={`flex ${isSender ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`p-3 rounded-lg max-w-sm ${isSender ? 'bg-primary text-primary-foreground' : 'bg-card shadow-sm'}`}>
+                            <div className={cn('p-3 rounded-lg max-w-sm', 
+                                isSender && 'bg-primary text-primary-foreground',
+                                !isSender && !isBot && 'bg-card shadow-sm',
+                                isBot && 'bg-blue-100 text-blue-900'
+                            )}>
+                                {isBot && <p className='font-bold text-xs mb-1'>FormaAfrique Assistant</p>}
                                 {message.text && <p className="text-sm">{message.text}</p>}
                                 {message.attachments && message.attachments[0] && (
                                      <Image src={message.attachments[0]} alt="Pièce jointe" width={200} height={200} className="rounded-md mt-2 cursor-pointer" onClick={() => window.open(message.attachments[0], '_blank')}/>
@@ -310,7 +386,7 @@ export default function ChatPage() {
                  )}
                 <div className="flex items-center gap-2 w-full">
                      <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*"/>
-                     <Button variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+                     <Button variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} disabled={isUploading || isProcessing}>
                         <Paperclip className="h-5 w-5"/>
                      </Button>
                     <Input
@@ -318,10 +394,10 @@ export default function ChatPage() {
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                        disabled={isUploading}
+                        disabled={isUploading || isProcessing}
                     />
-                    <Button size="icon" onClick={handleSendMessage} disabled={(!newMessage.trim() && !imageFile) || isUploading}>
-                        {isUploading ? <Loader2 className="h-4 w-4 animate-spin"/> : <Send/>}
+                    <Button size="icon" onClick={handleSendMessage} disabled={(!newMessage.trim() && !imageFile) || isUploading || isProcessing}>
+                        {isProcessing || isUploading ? <Loader2 className="h-4 w-4 animate-spin"/> : <Send/>}
                     </Button>
                 </div>
             </CardFooter>

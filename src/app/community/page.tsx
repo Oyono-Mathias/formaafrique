@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
@@ -14,7 +15,8 @@ import { collection, query, where, getDocs, addDoc, serverTimestamp, orderBy, on
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { categories } from '@/lib/categories';
-
+import { moderateText } from '@/ai/flows/moderate-text-flow';
+import { autoReply } from '@/ai/flows/auto-reply-flow';
 
 const getFormationName = (formationId: string | undefined) => {
     if (!formationId) return "Communauté";
@@ -32,14 +34,13 @@ export default function CommunityPage() {
     const [messages, setMessages] = useState<GroupMessage[]>([]);
     const [newMessage, setNewMessage] = useState('');
     const [loading, setLoading] = useState(true);
-    const [sending, setSending] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
     
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const isInitialLoad = useRef(true);
     const formationId = userProfile?.formationId;
     const formationName = getFormationName(formationId);
     
-    // Effect to find or create the group chat for the user's formation
     useEffect(() => {
         if (!formationId || !db) {
             setLoading(false);
@@ -52,8 +53,6 @@ export default function CommunityPage() {
             const chatSnap = await getDocs(q);
             
             if (chatSnap.empty) {
-                // If it doesn't exist, an admin should create it.
-                // For now, we'll show a message.
                 console.log(`No group chat found for formation: ${formationId}`);
                 setGroupChat(null);
             } else {
@@ -65,7 +64,6 @@ export default function CommunityPage() {
         findOrCreateChat();
     }, [formationId, db]);
 
-    // Effect to listen for new messages
     useEffect(() => {
         if (!groupChat?.id || !db) {
             setLoading(false);
@@ -107,32 +105,76 @@ export default function CommunityPage() {
         }
     }, [groupChat, db, toast, user?.uid]);
     
-     // Scroll to bottom effect
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
 
     const handleSendMessage = async () => {
-        if (!newMessage.trim() || !user || !userProfile || !groupChat || !db) return;
+        const messageText = newMessage.trim();
+        if (!messageText || !user || !userProfile || !groupChat || !db) return;
 
-        setSending(true);
-        const messagesCollection = collection(db, `group_chats/${groupChat.id}/messages`);
-
+        setIsProcessing(true);
+        setNewMessage('');
+        
         try {
-            await addDoc(messagesCollection, {
+            // Moderation
+            const moderationResult = await moderateText({
+                text: messageText,
+                formationId: groupChat.formationId
+            });
+
+             if (moderationResult.verdict !== 'allowed') {
+                addDoc(collection(db, 'aiFlags'), {
+                    chatId: groupChat.id,
+                    fromUid: user.uid,
+                    reason: moderationResult.category,
+                    severity: moderationResult.score > 0.8 ? 'high' : 'medium',
+                    status: 'pending_review',
+                    timestamp: serverTimestamp(),
+                });
+                toast({
+                    variant: 'destructive',
+                    title: 'Message non envoyé',
+                    description: `Votre message a été bloqué par la modération. Motif: ${moderationResult.reason}.`
+                });
+                setIsProcessing(false);
+                return;
+            }
+
+            // Send user message if allowed
+            await addDoc(collection(db, `group_chats/${groupChat.id}/messages`), {
                 authorId: user.uid,
                 authorName: userProfile.name,
                 authorImage: userProfile.photoURL || '',
-                text: newMessage.trim(),
+                text: messageText,
                 timestamp: serverTimestamp(),
             });
-            setNewMessage('');
+
+            // Trigger auto-reply
+             const reply = await autoReply({
+                text: messageText,
+                fromUid: user.uid,
+                chatId: groupChat.id!,
+                formationId: groupChat.formationId,
+            });
+
+            if (reply.reply) {
+                 await addDoc(collection(db, `group_chats/${groupChat.id}/messages`), {
+                    authorId: 'FormaAI',
+                    authorName: 'FormaAfrique Assistant',
+                    authorImage: '', // Add a URL to a bot avatar if you have one
+                    text: reply.reply,
+                    timestamp: serverTimestamp(),
+                    auto: true,
+                });
+            }
+
         } catch (error) {
             console.error("Error sending message:", error);
             toast({ variant: 'destructive', title: "L'envoi du message a échoué." });
         } finally {
-            setSending(false);
+            setIsProcessing(false);
         }
     };
 
@@ -163,6 +205,7 @@ export default function CommunityPage() {
                             <div className="p-4 md:p-8 space-y-6">
                                 {messages.map((message) => {
                                     const isSender = message.authorId === user?.uid;
+                                    const isBot = message.authorId === 'FormaAI';
                                     return (
                                         <div
                                             key={message.id}
@@ -174,7 +217,7 @@ export default function CommunityPage() {
                                             {!isSender && (
                                                  <Avatar className="h-10 w-10">
                                                     <AvatarImage src={message.authorImage} alt={message.authorName} />
-                                                    <AvatarFallback>{message.authorName.charAt(0)}</AvatarFallback>
+                                                    <AvatarFallback>{isBot ? 'AI' : message.authorName.charAt(0)}</AvatarFallback>
                                                 </Avatar>
                                             )}
                                             <div className="flex flex-col">
@@ -182,9 +225,9 @@ export default function CommunityPage() {
                                                 <div
                                                     className={cn(
                                                         'max-w-md md:max-w-lg p-3 rounded-2xl shadow-sm',
-                                                        isSender
-                                                        ? 'bg-primary text-primary-foreground rounded-br-none'
-                                                        : 'bg-muted rounded-bl-none'
+                                                        isSender && 'bg-primary text-primary-foreground rounded-br-none',
+                                                        !isSender && !isBot && 'bg-muted rounded-bl-none',
+                                                        isBot && 'bg-blue-100 text-blue-900 rounded-bl-none'
                                                     )}
                                                     >
                                                     <p>{message.text}</p>
@@ -209,10 +252,10 @@ export default function CommunityPage() {
                             onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                             placeholder="Envoyer un message à la communauté..."
                             className="flex-1 h-11 rounded-full px-4"
-                            disabled={sending}
+                            disabled={isProcessing}
                         />
-                        <Button onClick={handleSendMessage} size="icon" className="h-11 w-11 flex-shrink-0 rounded-full" disabled={sending || !newMessage.trim()}>
-                            {sending ? <Loader2 className="animate-spin" /> : <Send />}
+                        <Button onClick={handleSendMessage} size="icon" className="h-11 w-11 flex-shrink-0 rounded-full" disabled={isProcessing || !newMessage.trim()}>
+                            {isProcessing ? <Loader2 className="animate-spin" /> : <Send />}
                             <span className="sr-only">Envoyer</span>
                         </Button>
                         </div>

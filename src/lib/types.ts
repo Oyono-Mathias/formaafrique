@@ -1,3 +1,4 @@
+
 import type { Timestamp } from 'firebase/firestore';
 
 export interface Category {
@@ -168,7 +169,7 @@ export interface CommunityPost {
     createdAt: Timestamp;
     commentCount: number;
     voteCount: number;
-    formationId?: string; // Add this line
+    formationId?: string;
 }
 
 export interface FriendRequest {
@@ -195,13 +196,14 @@ export interface Message {
     attachments: string[]; // Array of URLs
     timestamp: Timestamp;
     seen: boolean;
+    auto?: boolean; // True if message is from an AI agent
 }
 
 export interface Notification {
   id?: string;
   toUid: string;
   fromUid: string;
-  type: 'friend_request' | 'new_message' | 'course_update';
+  type: 'friend_request' | 'new_message' | 'course_update' | 'moderation_warning';
   payload: {
     fromName?: string;
     [key: string]: any;
@@ -225,7 +227,34 @@ export interface GroupMessage {
   authorImage: string;
   text: string;
   timestamp: Timestamp;
+  auto?: boolean; // True if message is from an AI agent
 }
+
+
+export interface ModerationLog {
+    id?: string;
+    msgId: string;
+    chatId: string;
+    fromUid: string;
+    text: string;
+    verdict: 'allowed' | 'blocked' | 'review' | 'warn' | 'quarantine' | 'escalate';
+    action: 'none' | 'flag' | 'block_and_flag';
+    category: 'none' | 'payment_request' | 'external_contact' | 'off_topic' | 'abuse';
+    score: number;
+    timestamp: Timestamp;
+}
+
+export interface AiFlag {
+    id?: string;
+    msgId: string;
+    chatId: string;
+    fromUid: string;
+    reason: string;
+    severity: 'low' | 'medium' | 'high';
+    status: 'pending_review' | 'resolved' | 'dismissed';
+    timestamp: Timestamp;
+}
+
 
 
 // This is a temporary API route to fetch collections from the client side
