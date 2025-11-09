@@ -547,6 +547,50 @@
             "createdAt": { "type": "string", "format": "date-time" }
         },
         "required": ["userId", "flagId", "reason", "status", "createdAt"]
+    },
+    "ContentIndex": {
+        "title": "Content Index",
+        "description": "A summary document of all educational content on the platform.",
+        "type": "object",
+        "properties": {
+            "lastSyncedAt": { "type": "string", "format": "date-time" },
+            "counts": {
+                "type": "object",
+                "properties": {
+                    "categories": { "type": "number" },
+                    "formations": { "type": "number" },
+                    "modules": { "type": "number" },
+                    "videos": { "type": "number" }
+                },
+                "required": ["categories", "formations", "modules", "videos"]
+            },
+            "summary": {
+                "type": "object",
+                "additionalProperties": {
+                    "type": "object",
+                    "properties": {
+                        "title": { "type": "string" },
+                        "shortSummary": { "type": "string" },
+                        "keywords": { "type": "array", "items": { "type": "string" } }
+                    },
+                    "required": ["title", "shortSummary"]
+                }
+            }
+        },
+        "required": ["lastSyncedAt", "counts", "summary"]
+    },
+    "Embedding": {
+        "title": "Embedding",
+        "description": "Represents a vector embedding for a piece of content.",
+        "type": "object",
+        "properties": {
+            "type": { "type": "string", "enum": ["video", "module", "formation"] },
+            "text": { "type": "string", "description": "The source text that was embedded." },
+            "embedding": { "type": "array", "items": { "type": "number" } },
+            "createdAt": { "type": "string", "format": "date-time" },
+            "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["type", "text", "embedding", "createdAt", "updatedAt"]
     }
   },
   "auth": {
@@ -648,6 +692,14 @@
     "/moderationAppeals/{appealId}": {
         "schema": { "$ref": "#/entities/ModerationAppeal" },
         "description": "Stores user appeals against moderation actions."
+    },
+    "/meta/contentIndex": {
+        "schema": { "$ref": "#/entities/ContentIndex" },
+        "description": "Singleton document containing a summary of all platform content."
+    },
+    "/embeddings/{embeddingId}": {
+        "schema": { "$ref": "#/entities/Embedding" },
+        "description": "Stores vector embeddings for content to be used in semantic search."
     }
   }
 }

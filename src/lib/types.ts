@@ -23,8 +23,8 @@ export interface Video {
 export interface Module {
   id?: string;
   title: string;
-  summary: string;
   order: number;
+  summary: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
@@ -55,6 +55,15 @@ export interface ContentIndex {
             keywords: string[];
         };
     };
+}
+
+export interface Embedding {
+    id?: string; // Corresponds to the source document ID (e.g., videoId, moduleId)
+    type: "video" | "module" | "formation";
+    text: string; // The concatenated text content used for embedding
+    embedding: number[]; // The vector representation
+    createdAt: Timestamp;
+    updatedAt: Timestamp;
 }
 
 
