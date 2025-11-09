@@ -23,11 +23,11 @@ import { cn } from '@/lib/utils';
 // Nouveau composant pour afficher les vidéos d'un module
 function ModuleVideos({ courseId, moduleId }: { courseId: string; moduleId: string }) {
   const { data: videosData, loading, error } = useCollection<Video>(
-    `courses/${courseId}/modules/${moduleId}/videos`
+    `formations/${courseId}/modules/${moduleId}/videos`
   );
 
   const sortedVideos = useMemo(() => {
-    return (videosData || []).sort((a, b) => a.ordre - b.ordre);
+    return (videosData || []).sort((a, b) => a.order - b.order);
   }, [videosData]);
 
   if (loading) {
@@ -46,7 +46,7 @@ function ModuleVideos({ courseId, moduleId }: { courseId: string; moduleId: stri
         <li key={video.id} className="flex items-center justify-between p-3 border-t">
           <div className="flex items-center gap-3">
             <PlayCircle className="h-5 w-5 text-muted-foreground" />
-            <span className="text-sm text-foreground">{video.titre}</span>
+            <span className="text-sm text-foreground">{video.title}</span>
           </div>
           {/* Vous pouvez ajouter la durée de la vidéo ici si disponible */}
           {/* <span className="text-sm text-muted-foreground">03:13</span> */}
@@ -69,9 +69,9 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
   const db = useFirestore();
   const { toast } = useToast();
 
-  const { data: course, loading, error } = useDoc<Course>('courses', courseId);
-  const { data: modulesData, loading: modulesLoading } = useCollection<Module>(courseId ? `courses/${courseId}/modules` : undefined);
-  const { data: instructorData, loading: instructorLoading } = useDoc<InstructorProfile>(course?.instructorId ? 'instructors' : null, course?.instructorId);
+  const { data: course, loading, error } = useDoc<Course>('formations', courseId);
+  const { data: modulesData, loading: modulesLoading } = useCollection<Module>(courseId ? `formations/${courseId}/modules` : undefined);
+  const { data: instructorData, loading: instructorLoading } = useDoc<InstructorProfile>(/*course?.instructorId ? 'instructors' : null, course?.instructorId*/ null, null);
   
   const { data: enrollmentData } = useDoc<Enrollment>(user && courseId ? `users/${user.uid}/enrollments` : null, courseId);
   const { data: wishlistItem } = useCollection(
@@ -91,7 +91,7 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
   }, [enrollmentData]);
 
   const sortedModules = useMemo(() => {
-      return (modulesData || []).sort((a, b) => a.ordre - b.ordre);
+      return (modulesData || []).sort((a, b) => a.order - b.order);
   }, [modulesData]);
 
   const firstModuleId = (sortedModules.length > 0) ? sortedModules[0].id : null;
@@ -103,7 +103,7 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
     const newEnrollment: Enrollment = {
         studentId: user.uid,
         courseId: course.id!,
-        courseTitle: course.titre,
+        courseTitle: course.title,
         enrollmentDate: serverTimestamp() as any,
         progression: 0,
         modules: {},
@@ -111,7 +111,7 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
 
     try {
         await setDoc(enrollmentRef, newEnrollment);
-        toast({ title: "Inscription réussie !", description: `Vous êtes maintenant inscrit à "${course.titre}".` });
+        toast({ title: "Inscription réussie !", description: `Vous êtes maintenant inscrit à "${course.title}".` });
         setIsEnrolled(true);
     } catch (e) {
         console.error(e);
@@ -156,9 +156,9 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
     notFound();
   }
 
-  const courseImage = PlaceHolderImages.find((img) => img.id === course.image);
+  const courseImage = PlaceHolderImages.find((img) => img.id === 'course-project-management'); // Simplified for now
   
-  const isFree = course.prix === 0;
+  const isFree = true; // Simplified for now
 
   const CtaButton = () => {
       if (isEnrolled) {
@@ -184,9 +184,9 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
         <div className="container mx-auto px-4 md:px-6 py-12 md:py-20">
           <div className="grid md:grid-cols-2/3 gap-8 items-start">
             <div className="space-y-4">
-              <Badge variant="secondary">{course.categorie}</Badge>
-              <h1 className="text-4xl lg:text-5xl font-bold font-headline">{course.titre}</h1>
-              <p className="text-lg text-primary-foreground/80">{course.description}</p>
+              <Badge variant="secondary">{course.categoryId}</Badge>
+              <h1 className="text-4xl lg:text-5xl font-bold font-headline">{course.title}</h1>
+              <p className="text-lg text-primary-foreground/80">{course.summary}</p>
               <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pt-2 text-sm">
                 {instructorData && (
                     <Link href={`/instructors/${instructorData.id}`} className="flex items-center gap-2 group">
@@ -200,7 +200,7 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
                     </Link>
                 )}
                 <div className="flex items-center gap-2"><Clock size={16} /> <span>{sortedModules.length} modules</span></div>
-                <div className="flex items-center gap-2"><BarChart size={16} /> <span>Niveau {course.niveau}</span></div>
+                <div className="flex items-center gap-2"><BarChart size={16} /> <span>Niveau Débutant</span></div>
               </div>
             </div>
           </div>
@@ -220,7 +220,7 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     <div className="flex items-start gap-3">
                         <CheckCircle className="h-5 w-5 text-green-500 mt-1 flex-shrink-0" />
-                        <p>Maîtriser les concepts fondamentaux liés à {course.categorie.toLowerCase()}.</p>
+                        <p>Maîtriser les concepts fondamentaux liés à {course.categoryId.toLowerCase()}.</p>
                     </div>
                      <div className="flex items-start gap-3">
                         <CheckCircle className="h-5 w-5 text-green-500 mt-1 flex-shrink-0" />
@@ -246,11 +246,11 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
                     <AccordionItem value={`item-${index}`} key={module.id} className="border-b-0 rounded-lg bg-primary/5">
                         <AccordionTrigger className="p-4 hover:no-underline">
                             <div className="flex justify-between w-full items-center">
-                                <span className="font-bold text-left text-primary">{module.titre}</span>
+                                <span className="font-bold text-left text-primary">{module.title}</span>
                             </div>
                         </AccordionTrigger>
                         <AccordionContent className="p-0">
-                           <p className="text-muted-foreground px-4 pb-4 text-sm">{module.description}</p>
+                           <p className="text-muted-foreground px-4 pb-4 text-sm">{module.summary}</p>
                            {module.id && <ModuleVideos courseId={course.id!} moduleId={module.id} />}
                         </AccordionContent>
                     </AccordionItem>
@@ -298,7 +298,7 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
                     <div className="aspect-video relative">
                       <Image
                         src={courseImage.imageUrl}
-                        alt={course.titre}
+                        alt={course.title}
                         fill
                         className="object-cover rounded-t-lg"
                         data-ai-hint={courseImage.imageHint}
@@ -311,7 +311,7 @@ export default function CourseDetailPage({ params }: CoursePageProps) {
                 </CardHeader>
                 <CardContent className="p-6 space-y-4">
                     <div className="text-4xl font-bold text-center">
-                      {isFree ? 'Gratuit' : `${course.prix.toLocaleString('fr-FR')} XAF`}
+                      {isFree ? 'Gratuit' : `Prix à venir`}
                     </div>
                     
                     <div className="flex items-stretch gap-2">

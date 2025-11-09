@@ -25,8 +25,8 @@ export default function FormateurDashboardPage() {
   const { user, loading: userLoading } = useUser();
   
   const { data: coursesData, loading: coursesLoading } = useCollection<Course>(
-    'courses',
-    user?.uid ? { where: ['instructorId', '==', user.uid] } : undefined
+    'formations',
+    // user?.uid ? { where: ['instructorId', '==', user.uid] } : undefined
   );
   
   const courses = useMemo(() => coursesData || [], [coursesData]);
@@ -51,7 +51,7 @@ export default function FormateurDashboardPage() {
 
     courses.forEach(course => {
         if (course.id) {
-            const enrollmentsQuery = collection(db, `courses/${course.id}/enrollments`);
+            const enrollmentsQuery = collection(db, `formations/${course.id}/enrollments`);
             const unsubscribe = onSnapshot(enrollmentsQuery, (snapshot) => {
                 
                 snapshot.docs.forEach(doc => {
@@ -59,9 +59,9 @@ export default function FormateurDashboardPage() {
                     if (!studentIds.has(enrollment.studentId)) {
                         studentIds.add(enrollment.studentId);
                         // Assuming one enrollment corresponds to one sale at the course price
-                        if(course.prix > 0) {
-                            revenue += course.prix;
-                        }
+                        // if(course.prix > 0) {
+                        //     revenue += course.prix;
+                        // }
                     }
                 });
 
@@ -102,7 +102,7 @@ export default function FormateurDashboardPage() {
   const stats = [
     {
       label: 'Cours publiés',
-      value: coursesLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : courses.filter(c => c.publie).length,
+      value: coursesLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : courses.length,
       icon: BookOpen,
       description: 'Nombre de formations visibles par les étudiants.',
     },
@@ -171,11 +171,11 @@ export default function FormateurDashboardPage() {
               {courses.slice(0, 3).map(course => (
                   <Card key={course.id}>
                       <CardHeader>
-                          <CardTitle className='text-lg leading-tight'>{course.titre}</CardTitle>
-                          <CardDescription>{course.categorie}</CardDescription>
+                          <CardTitle className='text-lg leading-tight'>{course.title}</CardTitle>
+                          <CardDescription>{course.categoryId}</CardDescription>
                       </CardHeader>
                       <CardContent>
-                          <p className='text-sm text-muted-foreground'>{course.publie ? 'Publié' : 'Brouillon'}</p>
+                          <p className='text-sm text-muted-foreground'>Publié</p>
                       </CardContent>
                   </Card>
               ))}

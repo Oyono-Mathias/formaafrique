@@ -49,7 +49,7 @@ import { useRouter } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function AdminCoursesPage() {
-  const { data: coursesData, loading: coursesLoading, error: coursesError } = useCollection<Course>('courses');
+  const { data: coursesData, loading: coursesLoading, error: coursesError } = useCollection<Course>('formations');
   const { data: usersData, loading: usersLoading, error: usersError } = useCollection<UserProfile>('users');
   
   const courses = coursesData || [];
@@ -68,17 +68,16 @@ export default function AdminCoursesPage() {
     const formateurIds = new Set(users.filter(u => u.role === 'formateur').map(u => u.id));
     
     const allCourses = courses.filter(course =>
-      course.titre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      course.auteur.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      course.categorie.toLowerCase().includes(searchTerm.toLowerCase())
+      course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      course.categoryId.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return {
-      formateurCourses: allCourses.filter(c => c.instructorId && formateurIds.has(c.instructorId)),
-      adminCourses: allCourses.filter(c => !c.instructorId || !formateurIds.has(c.instructorId)),
+      formateurCourses: allCourses, // Simplified for now
+      adminCourses: allCourses, // Simplified for now
       totalCourses: courses.length,
-      uniqueCategories: new Set(courses.map(c => c.categorie)).size,
-      totalRevenue: courses.reduce((sum, course) => sum + (course.prix > 0 ? 5 * course.prix : 0), 0) // Mock: 5 inscriptions par cours payant
+      uniqueCategories: new Set(courses.map(c => c.categoryId)).size,
+      totalRevenue: 0, // Simplified for now
     };
   }, [courses, users, searchTerm]);
 
@@ -100,10 +99,10 @@ export default function AdminCoursesPage() {
   const handleDelete = async () => {
     if (!courseToDelete || !db) return;
     try {
-      await deleteDoc(doc(db, 'courses', courseToDelete.id!));
+      await deleteDoc(doc(db, 'formations', courseToDelete.id!));
       toast({
         title: 'Cours supprimé',
-        description: `La formation "${courseToDelete.titre}" a été supprimée.`,
+        description: `La formation "${courseToDelete.title}" a été supprimée.`,
       });
     } catch (error) {
       console.error(error);
@@ -126,40 +125,20 @@ export default function AdminCoursesPage() {
           <TableHeader>
             <TableRow>
               <TableHead className='w-[350px]'>Titre</TableHead>
-              <TableHead>Auteur</TableHead>
-              <TableHead className="hidden sm:table-cell">Catégorie</TableHead>
-              <TableHead className="text-right">Prix</TableHead>
-              <TableHead className="hidden md:table-cell text-center">Statut</TableHead>
+              <TableHead>Catégorie</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {coursesToList.length > 0 ? coursesToList.map((course) => {
-              const courseImage = PlaceHolderImages.find((img) => img.id === course.image);
               return (
                 <TableRow key={course.id}>
                   <TableCell>
                       <div className="flex items-center gap-3">
-                        {courseImage && (
-                          <Image
-                              src={courseImage.imageUrl}
-                              alt={course.titre}
-                              width={80}
-                              height={45}
-                              className="rounded-md object-cover aspect-video"
-                          />
-                        )}
-                        <span className='font-medium'>{course.titre}</span>
+                        <span className='font-medium'>{course.title}</span>
                       </div>
                   </TableCell>
-                  <TableCell>{course.auteur}</TableCell>
-                  <TableCell className="hidden sm:table-cell">{course.categorie}</TableCell>
-                  <TableCell className="text-right font-mono">{course.prix === 0 ? 'Gratuit' : `${course.prix} XAF`}</TableCell>
-                  <TableCell className="hidden md:table-cell text-center">
-                      <Badge variant={course.publie ? 'default' : 'secondary'}>
-                          {course.publie ? 'Publié' : 'Brouillon'}
-                      </Badge>
-                  </TableCell>
+                  <TableCell>{course.categoryId}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -286,16 +265,12 @@ export default function AdminCoursesPage() {
               ❌ Erreur de chargement des formations.
             </div>
           ) : (
-            <Tabs defaultValue="formateurs" className="w-full">
+            <Tabs defaultValue="all" className="w-full">
               <TabsList>
-                <TabsTrigger value="formateurs">Soumissions des Formateurs</TabsTrigger>
-                <TabsTrigger value="admin">Formations de l'Admin</TabsTrigger>
+                <TabsTrigger value="all">Toutes les formations</TabsTrigger>
               </TabsList>
-              <TabsContent value="formateurs" className="mt-4">
-                {renderCoursesTable(formateurCourses)}
-              </TabsContent>
-              <TabsContent value="admin" className="mt-4">
-                {renderCoursesTable(adminCourses)}
+              <TabsContent value="all" className="mt-4">
+                {renderCoursesTable(courses)}
               </TabsContent>
             </Tabs>
           )}
@@ -313,7 +288,7 @@ export default function AdminCoursesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
             <AlertDialogDescription>
-              Êtes-vous sûr de vouloir supprimer la formation "{courseToDelete?.titre}" ? Cette action est irréversible.
+              Êtes-vous sûr de vouloir supprimer la formation "{courseToDelete?.title}" ? Cette action est irréversible.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -74,13 +74,10 @@ const getImageIdFromTitle = (title: string): string => {
 
 
 const courseSchema = z.object({
-  titre: z.string().min(5, { message: 'Le titre doit avoir au moins 5 caractères.' }),
-  description: z.string().min(20, { message: 'La description doit avoir au moins 20 caractères.' }),
-  categorie: z.string().min(1, { message: 'Veuillez sélectionner une catégorie.' }),
-  niveau: z.enum(['Débutant', 'Intermédiaire', 'Avancé']),
-  prix: z.coerce.number().min(0, { message: "Le prix ne peut être négatif." }),
-  publie: z.boolean().default(false),
-  statut: z.enum(['en_attente', 'approuvee', 'rejetee']).default('en_attente'),
+  title: z.string().min(5, { message: 'Le titre doit avoir au moins 5 caractères.' }),
+  summary: z.string().min(20, { message: 'La description doit avoir au moins 20 caractères.' }),
+  categoryId: z.string().min(1, { message: 'Veuillez sélectionner une catégorie.' }),
+  keywords: z.string().optional(),
 });
 
 type CourseDialogProps = {
@@ -99,84 +96,67 @@ export default function CourseDialog({
   const { toast } = useToast();
   const router = useRouter();
   const isEditing = !!course;
-  const isAdmin = userProfile?.role === 'admin';
 
   const form = useForm<z.infer<typeof courseSchema>>({
     resolver: zodResolver(courseSchema),
     defaultValues: {
-      titre: '',
-      description: '',
-      categorie: '',
-      niveau: 'Débutant',
-      prix: 0,
-      publie: false,
-      statut: 'en_attente',
+      title: '',
+      summary: '',
+      categoryId: '',
+      keywords: '',
     },
   });
 
   useEffect(() => {
     if (isOpen && course) {
       form.reset({
-        titre: course.titre,
-        description: course.description,
-        categorie: course.categorie,
-        niveau: course.niveau,
-        prix: course.prix,
-        publie: course.publie,
-        statut: course.statut || 'en_attente',
+        title: course.title,
+        summary: course.summary,
+        categoryId: course.categoryId,
+        keywords: (course.keywords || []).join(', '),
       });
     } else if (isOpen) {
       form.reset({
-        titre: '',
-        description: '',
-        categorie: '',
-        niveau: 'Débutant',
-        prix: 0,
-        publie: false,
-        statut: 'en_attente',
+        title: '',
+        summary: '',
+        categoryId: '',
+        keywords: '',
       });
     }
   }, [isOpen, course, form]);
 
   async function onSubmit(values: z.infer<typeof courseSchema>) {
     if (!db || !user) return;
+    
+    const keywordsArray = values.keywords ? values.keywords.split(',').map(s => s.trim()).filter(s => s) : [];
 
     try {
-      const imageId = getImageIdFromTitle(values.titre);
-      
       const dataPayload = {
           ...values,
-          image: imageId,
-          // Uniquement l'admin peut changer le statut. Un formateur qui édite repasse en attente.
-          statut: isAdmin ? values.statut : 'en_attente',
-          publie: isAdmin ? (values.statut === 'approuvee') : false,
+          keywords: keywordsArray,
+          updatedAt: serverTimestamp()
       };
 
       if (isEditing && course?.id) {
         // Update existing course
-        const courseDocRef = doc(db, 'courses', course.id);
+        const courseDocRef = doc(db, 'formations', course.id);
         await updateDoc(courseDocRef, dataPayload);
         toast({
           title: 'Formation mise à jour',
-          description: `"${values.titre}" a été modifié avec succès.`,
+          description: `"${values.title}" a été modifié avec succès.`,
         });
         setIsOpen(false);
       } else {
         // Create new course
-        const docRef = await addDoc(collection(db, 'courses'), {
+        const docRef = await addDoc(collection(db, 'formations'), {
           ...dataPayload,
-          slug: slugify(values.titre),
-          auteur: user.displayName || 'Admin',
-          instructorId: user.uid,
-          date_creation: serverTimestamp(),
-          langue: 'Français',
+          createdAt: serverTimestamp(),
         });
         toast({
           title: 'Formation créée avec succès !',
-          description: 'Votre formation est en attente de validation par un administrateur.',
+          description: 'Vous pouvez maintenant ajouter des modules et des vidéos.',
         });
         setIsOpen(false);
-        // Redirect only if the current user is a formateur
         if(userProfile?.role === 'formateur') {
             router.push(`/formateur/courses/${docRef.id}/modules`);
         }
@@ -199,14 +179,14 @@ export default function CourseDialog({
             {isEditing ? 'Modifier la formation' : 'Créer une nouvelle formation'}
           </DialogTitle>
           <DialogDescription>
-            Remplissez les détails ci-dessous. L'image sera générée depuis le titre. Vous pourrez ajouter les modules après.
+            Remplissez les détails ci-dessous. Vous pourrez ajouter les modules et vidéos après cette étape.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
             <FormField
               control={form.control}
-              name="titre"
+              name="title"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Titre de la formation</FormLabel>
@@ -219,10 +199,10 @@ export default function CourseDialog({
             />
              <FormField
               control={form.control}
-              name="description"
+              name="summary"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description</FormLabel>
+                  <FormLabel>Résumé</FormLabel>
                   <FormControl>
                     <Textarea {...field} placeholder="Décrivez le contenu et les objectifs de la formation." rows={4}/>
                   </FormControl>
@@ -230,10 +210,10 @@ export default function CourseDialog({
                 </FormItem>
               )}
             />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <FormField
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               <FormField
                     control={form.control}
-                    name="categorie"
+                    name="categoryId"
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel>Catégorie</FormLabel>
@@ -247,81 +227,20 @@ export default function CourseDialog({
                         </FormItem>
                     )}
                 />
-                <FormField
+                 <FormField
                     control={form.control}
-                    name="niveau"
+                    name="keywords"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Niveau requis</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl><SelectTrigger><SelectValue placeholder="Sélectionnez..." /></SelectTrigger></FormControl>
-                                <SelectContent>
-                                    <SelectItem value="Débutant">Débutant</SelectItem>
-                                    <SelectItem value="Intermédiaire">Intermédiaire</SelectItem>
-                                    <SelectItem value="Avancé">Avancé</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="prix"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Prix (XAF)</FormLabel>
-                            <FormControl><Input type="number" {...field} placeholder="0 pour gratuit" /></FormControl>
+                            <FormLabel>Mots-clés</FormLabel>
+                            <FormControl><Input {...field} placeholder="marketing, SEO, réseaux sociaux" /></FormControl>
+                             <FormDescription>Séparez les mots-clés par une virgule.</FormDescription>
                             <FormMessage />
                         </FormItem>
                     )}
                 />
             </div>
-
-            {isAdmin && (
-               <FormField
-                  control={form.control}
-                  name="statut"
-                  render={({ field }) => (
-                      <FormItem>
-                          <FormLabel>Statut de la formation</FormLabel>
-                           <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl><SelectTrigger><SelectValue placeholder="Sélectionnez..." /></SelectTrigger></FormControl>
-                              <SelectContent>
-                                  <SelectItem value="en_attente">En attente</SelectItem>
-                                  <SelectItem value="approuvee">Approuvée</SelectItem>
-                                  <SelectItem value="rejetee">Rejetée</SelectItem>
-                              </SelectContent>
-                          </Select>
-                           <FormDescription>Le statut 'Approuvée' rendra la formation publique.</FormDescription>
-                          <FormMessage />
-                      </FormItem>
-                  )}
-              />
-            )}
             
-            <FormField
-              control={form.control}
-              name="publie"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                  <div className="space-y-0.5">
-                    <FormLabel>Publier la formation</FormLabel>
-                    <FormDescription>
-                       {isAdmin ? "Forcer la publication manuelle (remplace le statut)." : "La publication est gérée par l'admin."}
-                    </FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                      disabled={!isAdmin}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
             <DialogFooter className="pt-4 sticky bottom-0 bg-background py-4">
               <DialogClose asChild>
                 <Button type="button" variant="secondary">Annuler</Button>

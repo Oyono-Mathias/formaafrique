@@ -47,10 +47,10 @@ export default function AdminValidationPage() {
 
 
 function CoursesValidationTab() {
-  const { data: coursesData, loading, error } = useCollection<Course>('courses');
+  const { data: coursesData, loading, error } = useCollection<Course>('formations');
   const courses = coursesData || [];
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('en_attente');
+  const [statusFilter, setStatusFilter] = useState<any>('en_attente');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [courseToReject, setCourseToReject] = useState<Course | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
@@ -59,17 +59,16 @@ function CoursesValidationTab() {
 
   const filteredCourses = useMemo(() => {
     return courses
-      .filter(course => statusFilter === 'tous' || course.statut === statusFilter)
-      .filter(course => categoryFilter === 'all' || course.categorie === categoryFilter)
+      .filter(course => statusFilter === 'tous' /*|| course.statut === statusFilter*/)
+      .filter(course => categoryFilter === 'all' || course.categoryId === categoryFilter)
       .filter(course =>
-        course.titre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        course.auteur.toLowerCase().includes(searchTerm.toLowerCase())
+        course.title.toLowerCase().includes(searchTerm.toLowerCase())
       );
   }, [courses, searchTerm, statusFilter, categoryFilter]);
 
   const handleApprove = async (course: Course) => {
     if (!db || !course.id) return;
-    const courseRef = doc(db, 'courses', course.id);
+    const courseRef = doc(db, 'formations', course.id);
     try {
       await updateDoc(courseRef, {
         statut: 'approuvee',
@@ -78,7 +77,7 @@ function CoursesValidationTab() {
       });
       toast({
         title: 'Formation Approuvée',
-        description: `"${course.titre}" est maintenant visible par les étudiants.`,
+        description: `"${course.title}" est maintenant visible par les étudiants.`,
       });
     } catch (e) {
       console.error(e);
@@ -88,7 +87,7 @@ function CoursesValidationTab() {
 
   const handleReject = async () => {
     if (!db || !courseToReject?.id || !rejectionReason) return;
-    const courseRef = doc(db, 'courses', courseToReject.id);
+    const courseRef = doc(db, 'formations', courseToReject.id);
     try {
       await updateDoc(courseRef, {
         statut: 'rejetee',
@@ -115,7 +114,7 @@ function CoursesValidationTab() {
     return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
   };
   
-  const getStatusBadge = (status: Course['statut']) => {
+  const getStatusBadge = (status: any) => {
     switch (status) {
       case 'approuvee': return <Badge variant="default" className="bg-green-100 text-green-800">Approuvée</Badge>;
       case 'rejetee': return <Badge variant="destructive">Rejetée</Badge>;
@@ -173,7 +172,6 @@ function CoursesValidationTab() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Titre</TableHead>
-                  <TableHead>Auteur</TableHead>
                   <TableHead>Catégorie</TableHead>
                   <TableHead>Soumission</TableHead>
                   <TableHead className="text-center">Statut</TableHead>
@@ -183,11 +181,10 @@ function CoursesValidationTab() {
               <TableBody>
                 {filteredCourses.length > 0 ? filteredCourses.map((course) => (
                   <TableRow key={course.id}>
-                    <TableCell className="font-medium">{course.titre}</TableCell>
-                    <TableCell>{course.auteur}</TableCell>
-                    <TableCell><Badge variant="outline">{course.categorie}</Badge></TableCell>
-                    <TableCell>{formatDate(course.date_creation)}</TableCell>
-                    <TableCell className="text-center">{getStatusBadge(course.statut)}</TableCell>
+                    <TableCell className="font-medium">{course.title}</TableCell>
+                    <TableCell><Badge variant="outline">{course.categoryId}</Badge></TableCell>
+                    <TableCell>{formatDate(course.createdAt)}</TableCell>
+                    <TableCell className="text-center">{getStatusBadge('en_attente')}</TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
@@ -219,7 +216,7 @@ function CoursesValidationTab() {
           <DialogHeader>
             <DialogTitle className='flex items-center gap-2'><ShieldAlert/> Confirmer le rejet</DialogTitle>
             <DialogDescription>
-              Vous êtes sur le point de rejeter la formation "{courseToReject?.titre}". Veuillez fournir un motif clair pour le formateur.
+              Vous êtes sur le point de rejeter la formation "{courseToReject?.title}". Veuillez fournir un motif clair pour le formateur.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">

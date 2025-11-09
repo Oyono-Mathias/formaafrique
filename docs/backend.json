@@ -81,82 +81,47 @@
             "description": {
                 "type": "string",
                 "description": "A short description of the category."
+            },
+            "createdAt": {
+              "type": "string",
+              "format": "date-time"
             }
         },
-        "required": ["name", "description"]
+        "required": ["name", "description", "createdAt"]
     },
     "Course": {
-      "title": "Course",
+      "title": "Formation (Course)",
       "description": "Represents a course on the platform.",
       "type": "object",
       "properties": {
-        "titre": {
+        "title": {
           "type": "string"
         },
-        "categorie": {
+        "summary": {
+            "type": "string"
+        },
+        "categoryId": {
           "type": "string"
         },
-        "description": {
-          "type": "string"
+        "keywords": {
+          "type": "array",
+          "items": { "type": "string" }
         },
-        "image": {
-          "type": "string",
-          "format": "uri"
-        },
-        "niveau": {
-          "type": "string",
-          "enum": [
-            "Débutant",
-            "Intermédiaire",
-            "Avancé"
-          ]
-        },
-        "langue": {
-          "type": "string"
-        },
-        "prix": {
-          "type": "number"
-        },
-        "date_creation": {
+        "createdAt": {
           "type": "string",
           "format": "date-time"
         },
-        "publie": {
-          "type": "boolean"
-        },
-        "auteur": {
-          "type": "string"
-        },
-        "instructorId": {
-            "type": "string",
-            "description": "The UID of the instructor who created the course."
-        },
-        "statut": {
-            "type": "string",
-            "enum": ["en_attente", "approuvee", "rejetee"],
-            "description": "The validation status of the course."
-        },
-        "dateValidation": {
-            "type": "string",
-            "format": "date-time",
-            "description": "The timestamp when the course was validated."
-        },
-        "motifRejet": {
-            "type": "string",
-            "description": "The reason why the course was rejected."
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
         }
       },
       "required": [
-        "titre",
-        "categorie",
-        "description",
-        "niveau",
-        "prix",
-        "date_creation",
-        "publie",
-        "auteur",
-        "instructorId",
-        "statut"
+        "title",
+        "summary",
+        "categoryId",
+        "createdAt",
+        "updatedAt"
       ]
     },
     "Module": {
@@ -164,25 +129,29 @@
         "description": "Represents a module within a course.",
         "type": "object",
         "properties": {
-            "titre": { "type": "string" },
-            "description": { "type": "string" },
-            "ordre": { "type": "number" },
-            "videos": {
-                "type": "array",
-                "items": { "type": "string" },
-                "description": "List of video IDs in this module."
-            }
-        }
+            "title": { "type": "string" },
+            "summary": { "type": "string" },
+            "order": { "type": "number" },
+            "createdAt": { "type": "string", "format": "date-time" },
+            "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["title", "order", "createdAt", "updatedAt"]
     },
     "Video": {
         "title": "Video",
         "description": "Represents a video within a module.",
-        "type": "object",
+        "type": "object"
+        ,
         "properties": {
-            "titre": { "type": "string" },
-            "url": { "type": "string", "format": "uri" },
-            "ordre": { "type": "number" }
-        }
+            "title": { "type": "string" },
+            "duration": { "type": "number" },
+            "driveUrl": { "type": "string", "format": "uri" },
+            "storagePath": { "type": "string" },
+            "order": { "type": "number" },
+            "createdAt": { "type": "string", "format": "date-time" },
+            "published": { "type": "boolean" }
+        },
+        "required": ["title", "order", "createdAt", "published"]
     },
     "CourseProgress": {
       "title": "Course Progress",
@@ -600,17 +569,17 @@
         "schema": { "$ref": "#/entities/Category" },
         "description": "Stores all course categories."
     },
-    "/courses/{courseId}": {
+    "/formations/{formationId}": {
       "schema": {
         "$ref": "#/entities/Course"
       },
       "description": "Stores all the available courses on the platform."
     },
-     "/courses/{courseId}/modules/{moduleId}": {
+     "/formations/{formationId}/modules/{moduleId}": {
       "schema": { "$ref": "#/entities/Module" },
       "description": "Stores all modules for a specific course."
     },
-    "/courses/{courseId}/modules/{moduleId}/videos/{videoId}": {
+    "/formations/{formationId}/modules/{moduleId}/videos/{videoId}": {
       "schema": { "$ref": "#/entities/Video" },
       "description": "Stores all videos for a specific module."
     },

@@ -5,40 +5,37 @@ export interface Category {
   id?: string;
   name: string;
   description: string;
+  createdAt: Timestamp;
 }
 
 export interface Video {
   id?: string;
-  titre: string;
-  url: string;
-  ordre: number;
+  title: string;
+  duration?: number;
+  driveUrl?: string;
+  storagePath?: string;
+  order: number;
+  createdAt: Timestamp;
+  published: boolean;
 }
 
 export interface Module {
   id?: string;
-  titre: string;
-  description: string;
-  ordre: number;
-  videos?: string[];
+  title: string;
+  summary: string;
+  order: number;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
 }
 
 export interface Course {
-  id?: string; // Firestore ID will be added by the hook
-  slug: string;
-  titre: string;
-  categorie: string; // Now a string, not a type
-  description: string;
-  image: string; // maps to imageId in placeholder-images
-  niveau: 'Débutant' | 'Intermédiaire' | 'Avancé';
-  langue: string;
-  prix: number;
-  date_creation: Timestamp | string; // Can be a Timestamp from Firestore
-  publie: boolean;
-  auteur: string;
-  instructorId: string; // ID of the instructor (formateur)
-  statut: 'en_attente' | 'approuvee' | 'rejetee';
-  dateValidation?: Timestamp;
-  motifRejet?: string;
+  id?: string; // Firestore ID
+  title: string;
+  summary: string;
+  categoryId: string;
+  keywords: string[];
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
 }
 
 

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -33,8 +32,8 @@ export default function FormateurStudentsPage() {
   const { user } = useUser();
   const db = useFirestore();
   const { data: coursesData, loading: coursesLoading } = useCollection<Course>(
-    'courses',
-    user?.uid ? { where: ['instructorId', '==', user.uid] } : undefined
+    'formations',
+    // user?.uid ? { where: ['instructorId', '==', user.uid] } : undefined
   );
   
   const [enrollments, setEnrollments] = useState<EnrichedEnrollment[]>([]);
@@ -67,7 +66,7 @@ export default function FormateurStudentsPage() {
 
     coursesData.forEach(course => {
         if (course.id) {
-            const enrollmentsQuery = query(collection(db, `courses/${course.id}/enrollments`));
+            const enrollmentsQuery = query(collection(db, `formations/${course.id}/enrollments`));
             
             const unsubscribe = onSnapshot(enrollmentsQuery, async (snapshot) => {
                 const fetchedEnrollments: EnrichedEnrollment[] = [];

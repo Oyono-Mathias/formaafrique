@@ -27,15 +27,13 @@ import { Timestamp } from 'firebase/firestore';
 export default function CoursesPage() {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<string>('all');
-  const { data: coursesData, loading, error } = useCollection<Course>('courses', {
-      where: ['publie', '==', true]
-  });
+  const { data: coursesData, loading, error } = useCollection<Course>('formations');
   const courses = coursesData || [];
 
   const sortedCourses = useMemo(() => {
     return [...courses].sort((a, b) => {
-        const dateA = a.date_creation instanceof Timestamp ? a.date_creation.toMillis() : new Date(a.date_creation as string).getTime();
-        const dateB = b.date_creation instanceof Timestamp ? b.date_creation.toMillis() : new Date(b.date_creation as string).getTime();
+        const dateA = a.createdAt instanceof Timestamp ? a.createdAt.toMillis() : 0;
+        const dateB = b.createdAt instanceof Timestamp ? b.createdAt.toMillis() : 0;
         return dateB - dateA;
     });
   }, [courses]);
@@ -43,10 +41,10 @@ export default function CoursesPage() {
   const filteredCourses = useMemo(() => {
     return sortedCourses
       .filter(course => 
-        search === '' || course.titre.toLowerCase().includes(search.toLowerCase())
+        search === '' || course.title.toLowerCase().includes(search.toLowerCase())
       )
       .filter(course =>
-        category === 'all' || course.categorie === category
+        category === 'all' || course.categoryId === category
       );
   }, [search, category, sortedCourses]);
 
@@ -107,7 +105,7 @@ export default function CoursesPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-8">
         {filteredCourses.map((course) => {
-          const courseImage = PlaceHolderImages.find((img) => img.id === course.image);
+          const courseImage = PlaceHolderImages.find((img) => img.id === 'course-project-management'); // Simplified
           return (
             <Card key={course.id} className="flex flex-col overflow-hidden transition-transform duration-300 hover:scale-105 hover:shadow-xl">
               <CardHeader className="p-0">
@@ -115,7 +113,7 @@ export default function CoursesPage() {
                   {courseImage && (
                     <Image
                       src={courseImage.imageUrl}
-                      alt={course.titre}
+                      alt={course.title}
                       fill
                       className="object-cover"
                       data-ai-hint={courseImage.imageHint}
@@ -125,11 +123,11 @@ export default function CoursesPage() {
                 </Link>
               </CardHeader>
               <CardContent className="flex-grow p-6">
-                <Badge variant="secondary" className="mb-2">{course.categorie}</Badge>
+                <Badge variant="secondary" className="mb-2">{course.categoryId}</Badge>
                 <CardTitle className="text-xl font-headline leading-tight hover:text-primary">
-                  <Link href={`/courses/${course.id}`}>{course.titre}</Link>
+                  <Link href={`/courses/${course.id}`}>{course.title}</Link>
                 </CardTitle>
-                <p className="mt-2 text-sm text-muted-foreground line-clamp-3">{course.description}</p>
+                <p className="mt-2 text-sm text-muted-foreground line-clamp-3">{course.summary}</p>
               </CardContent>
               <CardFooter className="p-6 pt-0 flex justify-between items-center">
                  <Button asChild variant="link" size="sm">
@@ -148,4 +146,3 @@ export default function CoursesPage() {
     </div>
   );
 }
-    
