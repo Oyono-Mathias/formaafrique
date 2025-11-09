@@ -36,6 +36,15 @@
           "type": "array",
           "items": { "type": "string" },
           "description": "List of user UIDs who are friends with this user."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["actif", "suspendu"],
+          "description": "The current status of the user account."
+        },
+        "infractions": {
+            "type": "number",
+            "description": "A count of user infractions against community guidelines."
         }
       },
       "required": [
@@ -309,7 +318,7 @@
         "properties": {
             "type": {
                 "type": "string",
-                "enum": ["nouveau_cours", "nouveau_paiement", "nouvelle_inscription", "modification_profil", "demande_validation"],
+                "enum": ["nouveau_cours", "nouveau_paiement", "nouvelle_inscription", "modification_profil", "demande_validation", "possible_scam"],
                 "description": "The type of event that triggered the notification."
             },
             "title": { "type": "string", "description": "A short, descriptive title for the notification." },

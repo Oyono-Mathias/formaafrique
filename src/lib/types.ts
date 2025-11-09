@@ -61,6 +61,7 @@ export interface UserProfile {
   lastSeen?: Timestamp;
   formationId?: string;
   moduleLevel?: string;
+  infractions?: number;
 }
 
 export interface InstructorProfile extends UserProfile {
@@ -141,7 +142,7 @@ export interface UserActivityLog {
 
 export interface AdminNotification {
     id?: string;
-    type: 'nouveau_cours' | 'nouveau_paiement' | 'nouvelle_inscription' | 'modification_profil' | 'demande_validation';
+    type: 'nouveau_cours' | 'nouveau_paiement' | 'nouvelle_inscription' | 'modification_profil' | 'demande_validation' | 'possible_scam';
     title: string;
     message: string;
     createdAt: Timestamp;

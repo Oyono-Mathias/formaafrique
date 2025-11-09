@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { collection, addDoc, serverTimestamp, orderBy, query, doc, updateDoc, writeBatch, onSnapshot, Unsubscribe, DocumentReference } from 'firebase/firestore';
-import type { Message, Chat, UserProfile } from '@/lib/types';
+import type { Message, Chat, UserProfile, AdminNotification } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Image from 'next/image';
@@ -207,7 +207,6 @@ export default function ChatPage() {
             });
 
             // Log moderation
-            const modLogRef = doc(collection(db, 'moderationLogs'));
             addDoc(collection(db, 'moderationLogs'), {
                 chatId: chatId,
                 fromUid: user.uid,
@@ -215,7 +214,7 @@ export default function ChatPage() {
                 verdict: moderationResult.verdict,
                 category: moderationResult.category,
                 score: moderationResult.score,
-                action: 'none',
+                action: 'none', // This could be updated later by an admin
                 timestamp: serverTimestamp(),
             });
             
@@ -230,16 +229,32 @@ export default function ChatPage() {
                     status: 'pending_review',
                     timestamp: serverTimestamp(),
                 });
+
+                // Escalate if needed
+                if(moderationResult.verdict === 'block' || moderationResult.verdict === 'escalate') {
+                    addDoc(collection(db, 'admin_notifications'), {
+                        type: 'possible_scam',
+                        title: `Activité suspecte dans le chat`,
+                        message: `Le message de ${user.displayName} à ${otherUser?.name} a été bloqué. Motif: ${moderationResult.reason}.`,
+                        createdAt: serverTimestamp(),
+                        read: false,
+                        link: `/messages/${chatId}`
+                    } as AdminNotification);
+
+                    // Placeholder for sanction system
+                    // const userRef = doc(db, 'users', user.uid);
+                    // await updateDoc(userRef, { infractions: increment(1) });
+                    // check for suspension...
+                }
+
                 toast({
                     variant: 'destructive',
                     title: 'Message bloqué par la modération',
-                    description: `Motif : ${moderationResult.reason}. Votre message est en cours de révision.`
+                    description: `Motif : ${moderationResult.reason}. Votre message ne sera pas envoyé.`
                 });
                 setIsProcessing(false);
                 return;
             }
-            
-            // If allowed, proceed to send message and trigger auto-reply
             
             let imageUrl = '';
             if (imageFile) {
@@ -253,7 +268,7 @@ export default function ChatPage() {
             }
             
             // Send user message
-            const userMessageRef = await addDoc(collection(db, `chats/${chatId}/messages`), {
+            await addDoc(collection(db, `chats/${chatId}/messages`), {
                 from: user.uid,
                 text: messageText,
                 attachments: imageUrl ? [imageUrl] : [],
@@ -267,7 +282,7 @@ export default function ChatPage() {
                 [`unreadCounts.${otherUserId}`]: (chatData?.unreadCounts[otherUserId!] || 0) + 1,
             });
 
-            // Step 3: Trigger Auto-Reply
+            // Step 3: Trigger Auto-Reply (if applicable)
             const reply = await autoReply({
                 text: messageText,
                 fromUid: user.uid,

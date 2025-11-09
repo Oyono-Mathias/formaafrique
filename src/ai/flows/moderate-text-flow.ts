@@ -100,8 +100,9 @@ const moderateTextFlow = ai.defineFlow(
     // For very simple, high-confidence cases, we can use regex before calling the LLM.
     const phoneRegex = /(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/; // Simple phone regex
     const whatsappRegex = /wa\.me\/|api\.whatsapp\.com/;
+    const emailRegex = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i;
 
-    if (phoneRegex.test(input.text) || whatsappRegex.test(input.text)) {
+    if (phoneRegex.test(input.text) || whatsappRegex.test(input.text) || emailRegex.test(input.text)) {
         return {
             verdict: 'block',
             reason: 'Partage de contact externe détecté automatiquement.',
