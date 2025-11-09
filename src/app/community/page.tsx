@@ -35,6 +35,7 @@ export default function CommunityPage() {
     const [sending, setSending] = useState(false);
     
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const isInitialLoad = useRef(true);
     const formationId = userProfile?.formationId;
     const formationName = getFormationName(formationId);
     
@@ -76,6 +77,23 @@ export default function CommunityPage() {
         const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
             const newMessages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as GroupMessage));
             setMessages(newMessages);
+
+            if (isInitialLoad.current) {
+                isInitialLoad.current = false;
+            } else {
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === "added") {
+                        const messageData = change.doc.data() as GroupMessage;
+                        if (messageData.authorId !== user?.uid) {
+                             toast({
+                                title: `Nouveau message de ${messageData.authorName}`,
+                                description: messageData.text,
+                            });
+                        }
+                    }
+                });
+            }
+            
             setLoading(false);
         }, (error) => {
             console.error("Error fetching group messages:", error);
@@ -83,8 +101,11 @@ export default function CommunityPage() {
             setLoading(false);
         });
 
-        return () => unsubscribe();
-    }, [groupChat, db, toast]);
+        return () => {
+            unsubscribe();
+            isInitialLoad.current = true;
+        }
+    }, [groupChat, db, toast, user?.uid]);
     
      // Scroll to bottom effect
     useEffect(() => {
@@ -162,8 +183,8 @@ export default function CommunityPage() {
                                                     className={cn(
                                                         'max-w-md md:max-w-lg p-3 rounded-2xl shadow-sm',
                                                         isSender
-                                                        ? 'bg-primary text-primary-foreground rounded-br-lg'
-                                                        : 'bg-muted rounded-bl-lg'
+                                                        ? 'bg-primary text-primary-foreground rounded-br-none'
+                                                        : 'bg-muted rounded-bl-none'
                                                     )}
                                                     >
                                                     <p>{message.text}</p>
