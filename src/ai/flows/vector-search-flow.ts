@@ -10,19 +10,15 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z, Document, retrieve } from 'genkit';
-import { memoryRetriever } from 'genkit/dev';
+import { z } from 'genkit';
 
-// Note: In a production environment, you would replace `memoryRetriever`
-// with a proper vector store retriever (e.g., Cloud Firestore Vector Search).
-// For demonstration, we'll use a simple in-memory store.
+// This is a simplified in-memory knowledge base for demonstration.
+// In a production environment, this data would come from your vector database.
 const knowledgeBase = [
-    Document.fromText("Les bases de la comptabilité: Le bilan. Dans cette vidéo, nous explorons les actifs, les passifs et les capitaux propres.", { type: "video", id: "vid1", title: "Le bilan" }),
-    Document.fromText("Marketing Digital pour Débutants: Introduction au SEO. Découvrez comment optimiser votre site pour les moteurs de recherche.", { type: "video", id: "vid2", title: "Introduction au SEO" }),
-    Document.fromText("Le module d'introduction au business plan couvre la définition de votre mission et l'analyse de marché.", { type: "module", id: "mod1", title: "Introduction au Business Plan" }),
+    { id: "vid1", text: "Les bases de la comptabilité: Le bilan. Dans cette vidéo, nous explorons les actifs, les passifs et les capitaux propres.", type: "video", meta: { title: "Le bilan" } },
+    { id: "vid2", text: "Marketing Digital pour Débutants: Introduction au SEO. Découvrez comment optimiser votre site pour les moteurs de recherche.", type: "video", meta: { title: "Introduction au SEO" } },
+    { id: "mod1", text: "Le module d'introduction au business plan couvre la définition de votre mission et l'analyse de marché.", type: "module", meta: { title: "Introduction au Business Plan" } },
 ];
-
-const retriever = memoryRetriever({documents: knowledgeBase});
 
 const VectorSearchInputSchema = z.object({
   query: z.string().describe('The user\'s search query.'),
@@ -68,19 +64,17 @@ const vectorSearchFlow = ai.defineFlow(
 
     console.log(`Simulating vector search for: "${input.query}"`);
     
-    const documents = await retrieve({
-        retriever: retriever,
-        query: input.query,
-        options: { k: input.topK },
+    // Simple text matching simulation
+    const lowerCaseQuery = input.query.toLowerCase();
+    const scoredResults = knowledgeBase.map(doc => {
+      const score = doc.text.toLowerCase().includes(lowerCaseQuery) ? 0.8 : 0.2;
+      return { ...doc, score };
     });
 
-    const results = documents.map(doc => ({
-        id: doc.metadata.id || '',
-        text: doc.text(),
-        type: doc.metadata.type || 'document',
-        score: doc.metadata.score || 0,
-        meta: { title: doc.metadata.title || 'Source inconnue' }
-    }));
+    const results = scoredResults
+        .filter(doc => doc.score > 0.5)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, input.topK);
     
     return {
       results: results,
