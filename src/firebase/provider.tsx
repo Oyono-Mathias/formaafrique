@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import type { Auth, User } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
 import type { FirebaseStorage } from 'firebase/storage';
@@ -42,12 +42,26 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const userRef = useRef<User | null>(null);
+
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
 
   useEffect(() => {
     if (!auth || !db) {
       setLoading(false);
       return;
     }
+
+    const handleBeforeUnload = () => {
+        if (userRef.current) {
+            const userDocRef = doc(db, 'users', userRef.current.uid);
+            setDoc(userDocRef, { online: false, lastSeen: serverTimestamp() }, { merge: true });
+        }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
 
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
       setLoading(true);
@@ -60,8 +74,6 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
           if (userDoc.exists()) {
             setUserProfile({ id: userDoc.id, ...userDoc.data() } as UserProfile);
           } else {
-            // This case might happen if the doc creation failed on signup.
-            // We can attempt to recreate it.
             const newUserProfile: Omit<UserProfile, 'createdAt' | 'photoURL'> & { createdAt: any, photoURL: string | null } = {
                 name: firebaseUser.displayName || 'Nouvel Utilisateur',
                 email: firebaseUser.email!,
@@ -87,9 +99,8 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
           setUserProfile(null);
         }
       } else {
-        if (user) {
-            // User is signing out
-            const userDocRef = doc(db, 'users', user.uid);
+        if (userRef.current) {
+            const userDocRef = doc(db, 'users', userRef.current.uid);
             setDoc(userDocRef, { online: false, lastSeen: serverTimestamp() }, { merge: true });
         }
         setUser(null);
@@ -98,8 +109,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       setLoading(false);
     });
 
-    return () => unsubscribe();
-  }, [auth, db, user]);
+    return () => {
+        unsubscribe();
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+    }
+  }, [auth, db]);
 
   return (
     <UserContext.Provider value={{ user, userProfile, loading }}>

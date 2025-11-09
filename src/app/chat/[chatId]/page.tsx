@@ -15,6 +15,7 @@ import { fr } from 'date-fns/locale';
 import Image from 'next/image';
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 export default function ChatPage() {
     const { chatId } = useParams() as { chatId: string };
@@ -153,13 +154,16 @@ export default function ChatPage() {
                     <ArrowLeft className="h-5 w-5"/>
                 </Button>
                 <div className="flex items-center gap-3">
-                     <Avatar>
+                     <Avatar className="relative">
                         <AvatarImage src={otherUser?.photoURL || ''} alt={otherUser?.name} />
                         <AvatarFallback>{otherUser?.name?.charAt(0)}</AvatarFallback>
+                        <div className={cn("absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-background", otherUser?.online ? "bg-green-500" : "bg-gray-400")} />
                     </Avatar>
                     <div>
                         <CardTitle className="text-base">{otherUser?.name}</CardTitle>
-                        <p className="text-xs text-muted-foreground">{otherUser?.online ? 'En ligne' : `Vu ${otherUser?.lastSeen ? formatDistanceToNow(otherUser.lastSeen.toDate(), {addSuffix: true, locale: fr}) : ''}`}</p>
+                        <p className="text-xs text-muted-foreground">
+                            {otherUser?.online ? 'En ligne' : (otherUser?.lastSeen ? `Vu ${formatDistanceToNow(otherUser.lastSeen.toDate(), {addSuffix: true, locale: fr})}` : 'Hors ligne')}
+                        </p>
                     </div>
                 </div>
                  <div className="w-8"/>
