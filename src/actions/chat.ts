@@ -1,8 +1,9 @@
 'use server';
 
 import { db } from '@/firebase/config';
-import { collection, query, where, getDocs, addDoc, serverTimestamp, doc } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { redirect } from 'next/navigation';
+import type { UserProfile } from '@/lib/types';
 
 /**
  * Finds an existing 1-on-1 chat between two users or creates a new one if it doesn't exist.
@@ -13,7 +14,6 @@ import { redirect } from 'next/navigation';
 export async function getOrCreateChat(uid1: string, uid2: string) {
     if (!uid1 || !uid2) {
         console.error("Invalid user IDs provided for chat creation. Both UIDs are required.");
-        // Optionally redirect to an error page or show a toast on the client
         return;
     }
      if (uid1 === uid2) {
@@ -26,8 +26,6 @@ export async function getOrCreateChat(uid1: string, uid2: string) {
     const chatsRef = collection(db, 'chats');
 
     // Query for chats where both users are members.
-    // Firestore's `array-contains-all` is perfect for this, but to be absolutely sure
-    // we find the exact 1-on-1 chat, we check the members array length as well.
     const q = query(chatsRef, where('members', 'in', [[uid1, uid2], [uid2, uid1]]));
     
     const querySnapshot = await getDocs(q);
@@ -41,11 +39,36 @@ export async function getOrCreateChat(uid1: string, uid2: string) {
 
     if (existingChatId) {
         console.log(`Found existing chat: ${existingChatId}`);
-        redirect(`/chat/${existingChatId}`);
+        redirect(`/messages/${existingChatId}`);
     } else {
-        console.log("No existing chat found. Creating a new one...");
+        console.log("No existing chat found. Verifying users before creating...");
 
         try {
+            // --- Step 5 Logic Integration ---
+            const user1DocRef = doc(db, "users", uid1);
+            const user2DocRef = doc(db, "users", uid2);
+            
+            const [user1Snap, user2Snap] = await Promise.all([
+                getDoc(user1DocRef),
+                getDoc(user2DocRef)
+            ]);
+
+            if (!user1Snap.exists() || !user2Snap.exists()) {
+                console.error("One or both users do not exist.");
+                return;
+            }
+
+            const user1Profile = user1Snap.data() as UserProfile;
+            const user2Profile = user2Snap.data() as UserProfile;
+
+            if (user1Profile.formationId !== user2Profile.formationId) {
+                console.error("Users are not in the same formation. Chat creation blocked.");
+                // In a real app, you might redirect with an error query param
+                // or simply rely on the UI and security rules to prevent this.
+                return;
+            }
+            // --- End of Step 5 Logic ---
+
             const newChatDoc = await addDoc(chatsRef, {
                 members: [uid1, uid2],
                 lastMessage: 'Nouvelle conversation',
@@ -56,7 +79,7 @@ export async function getOrCreateChat(uid1: string, uid2: string) {
                 },
             });
             console.log(`Created new chat with ID: ${newChatDoc.id}`);
-            redirect(`/chat/${newChatDoc.id}`);
+            redirect(`/messages/${newChatDoc.id}`);
         } catch (error) {
             console.error("Error creating new chat:", error);
             // Handle error, maybe redirect to an error page or show a toast
