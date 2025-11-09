@@ -290,6 +290,16 @@ export interface ModerationAppeal {
     createdAt: Timestamp;
 }
 
+export interface TutorFeedback {
+  id?: string;
+  userId: string;
+  formationId?: string;
+  query: string;
+  answer: string;
+  isHelpful: boolean;
+  notes?: string;
+  createdAt: Timestamp;
+}
 
 
 // This is a temporary API route to fetch collections from the client side

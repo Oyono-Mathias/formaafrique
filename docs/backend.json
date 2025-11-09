@@ -591,6 +591,21 @@
             "updatedAt": { "type": "string", "format": "date-time" }
         },
         "required": ["type", "text", "embedding", "createdAt", "updatedAt"]
+    },
+    "TutorFeedback": {
+        "title": "Tutor Feedback",
+        "description": "Represents feedback on an AI tutor's response.",
+        "type": "object",
+        "properties": {
+            "userId": { "type": "string" },
+            "formationId": { "type": "string" },
+            "query": { "type": "string" },
+            "answer": { "type": "string" },
+            "isHelpful": { "type": "boolean" },
+            "notes": { "type": "string" },
+            "createdAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["userId", "query", "answer", "isHelpful", "createdAt"]
     }
   },
   "auth": {
@@ -700,6 +715,10 @@
     "/embeddings/{embeddingId}": {
         "schema": { "$ref": "#/entities/Embedding" },
         "description": "Stores vector embeddings for content to be used in semantic search."
+    },
+    "/tutorFeedbacks/{feedbackId}": {
+        "schema": { "$ref": "#/entities/TutorFeedback" },
+        "description": "Stores user feedback on AI tutor responses."
     }
   }
 }
