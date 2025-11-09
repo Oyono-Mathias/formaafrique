@@ -18,6 +18,7 @@ import {
   Bell,
   Wrench,
   MessageSquare,
+  ShieldAlert,
 } from 'lucide-react';
 import { Logo } from '@/components/icons/logo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -43,6 +44,7 @@ const adminNavLinks = [
   { href: '/admin/courses', label: 'Formations', icon: BookCopy },
   { href: '/admin/categories', label: 'Catégories', icon: Tag },
   { href: '/admin/validation', label: 'Validation', icon: ShieldCheck },
+  { href: '/admin/moderation', label: 'Modération', icon: ShieldAlert },
   { href: '/admin/users', label: 'Utilisateurs', icon: Users },
   { href: '/admin/community', label: 'Communauté', icon: MessageSquare },
   { href: '/admin/donations', label: 'Transactions', icon: CreditCard },
@@ -53,7 +55,7 @@ const adminNavLinks = [
 
 function NavLink({ href, icon: Icon, label }: { href: string, icon: React.ElementType, label: string }) {
   const pathname = usePathname();
-  const isActive = pathname.startsWith(href) && (pathname === href || href !== '/admin');
+  const isActive = pathname.startsWith(href) && (pathname === href || (href !== '/admin' && href !== '/admin/'));
 
   return (
     <Link
