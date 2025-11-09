@@ -59,13 +59,21 @@ export default function MyCoursesPage() {
         </div>
       );
     }
+    
+    const getFirstModuleId = (enrollment: Enrollment) => {
+        if (!enrollment.modules) return null;
+        const moduleIds = Object.keys(enrollment.modules);
+        // This is a simplification; you'd likely want to sort by an 'order' property if it existed on the module map
+        return moduleIds.length > 0 ? moduleIds[0] : null;
+    }
+
 
     return (
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {enrollmentsList.map((enrollment) => {
             const courseImage = PlaceHolderImages.find(img => img.id === 'course-project-management'); // Fallback image
             const progression = enrollment.progression || 0;
-            const firstModuleId = (enrollment.modules && Object.keys(enrollment.modules).length > 0) ? Object.keys(enrollment.modules)[0] : null;
+            const firstModuleId = getFirstModuleId(enrollment);
 
             return (
               <Card key={enrollment.id} className="flex flex-col overflow-hidden h-full shadow-sm hover:shadow-lg transition-shadow">

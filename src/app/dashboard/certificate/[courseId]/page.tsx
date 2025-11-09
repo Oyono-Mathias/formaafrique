@@ -22,14 +22,14 @@ type CertificatePageProps = {
 
 export default function CertificatePage({ params }: CertificatePageProps) {
   const { user, userProfile } = useUser();
-  const { data: course, loading: courseLoading } = useDoc<Course>('courses', params.courseId);
+  const { data: course, loading: courseLoading } = useDoc<Course>('formations', params.courseId);
   const { data: enrollment, loading: enrollmentLoading } = useDoc<Enrollment>(
     user ? `users/${user.uid}/enrollments` : null, 
     params.courseId
   );
   const { data: instructor, loading: instructorLoading } = useDoc<InstructorProfile>(
-    course?.instructorId ? 'instructors' : null, 
-    course?.instructorId
+    course?.authorId ? 'users' : null, 
+    course?.authorId
   );
   
   const loading = courseLoading || enrollmentLoading || instructorLoading;
@@ -92,7 +92,7 @@ export default function CertificatePage({ params }: CertificatePageProps) {
                 <h2 className="text-5xl font-bold font-headline" style={{fontFamily: 'serif'}}>{userProfile.name}</h2>
                 <Separator className="my-4 w-2/3 mx-auto" />
                 <p className="text-muted-foreground">pour avoir terminé avec succès la formation</p>
-                <h3 className="text-3xl font-semibold font-headline text-primary mt-2">{course.titre}</h3>
+                <h3 className="text-3xl font-semibold font-headline text-primary mt-2">{course.title}</h3>
             </section>
             
             <footer className="w-full">
@@ -111,7 +111,7 @@ export default function CertificatePage({ params }: CertificatePageProps) {
                                 )}
                                 <p className="font-semibold">{instructor.name}</p>
                                 <Separator className='my-1'/>
-                                <p className="text-xs text-muted-foreground">{instructor.headline || "Formateur"}</p>
+                                <p className="text-xs text-muted-foreground">{(instructor as InstructorProfile).headline || "Formateur"}</p>
                            </>
                         )}
                     </div>
@@ -127,3 +127,4 @@ export default function CertificatePage({ params }: CertificatePageProps) {
     </div>
   );
 }
+

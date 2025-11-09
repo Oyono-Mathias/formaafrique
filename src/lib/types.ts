@@ -18,6 +18,7 @@ export interface Video {
   order: number;
   createdAt: Timestamp;
   published: boolean;
+  moduleId: string; // Keep track of the parent module
 }
 
 export interface Module {
@@ -37,6 +38,8 @@ export interface Course {
   keywords: string[];
   createdAt: Timestamp;
   updatedAt: Timestamp;
+  authorId?: string; // Add authorId to course
+  published?: boolean;
 }
 
 export interface ContentIndex {
@@ -329,3 +332,4 @@ export interface GetCollectionApiRequest {
     path: string;
     filters?: { field: string; op: any; value: any }[];
 }
+

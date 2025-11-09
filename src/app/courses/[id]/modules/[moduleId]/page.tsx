@@ -9,7 +9,6 @@ import ReactPlayer from 'react-player';
 import {
   collection,
   doc,
-  getDoc,
   setDoc,
   serverTimestamp,
   updateDoc,
@@ -41,13 +40,15 @@ export default function ModulePage({ params }: ModulePageProps) {
   const { toast } = useToast();
   const playerRef = useRef<ReactPlayer>(null);
 
-  const { data: course, loading: courseLoading } = useDoc<Course>('courses', courseId);
+  const { data: course, loading: courseLoading } = useDoc<Course>('formations', courseId);
   const { data: modulesData, loading: modulesLoading } = useCollection<Module>(
-    courseId ? `courses/${courseId}/modules` : undefined
+    courseId ? `formations/${courseId}/modules` : undefined
   );
   
   const [videos, setVideos] = useState<Video[]>([]);
   const [videosLoading, setVideosLoading] = useState(true);
+  const [allCourseVideos, setAllCourseVideos] = useState<Video[]>([]);
+
 
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
   const [enrollmentLoading, setEnrollmentLoading] = useState(true);
@@ -57,21 +58,25 @@ export default function ModulePage({ params }: ModulePageProps) {
 
   // Fetch all videos for all modules to calculate total course videos
   useEffect(() => {
-    if (!modulesData || modulesData.length === 0 || !db) return;
+    if (!modulesData || modulesData.length === 0 || !db) {
+        if(!modulesLoading) setVideosLoading(false);
+        return;
+    };
   
     const fetchAllVideos = async () => {
-      let allVideos: Video[] = [];
+      let allVids: Video[] = [];
       for (const module of modulesData) {
         if(module.id) {
-          const videosCollectionRef = collection(db, `courses/${courseId}/modules/${module.id}/videos`);
+          const videosCollectionRef = collection(db, `formations/${courseId}/modules/${module.id}/videos`);
           const videosSnapshot = await getDocs(videosCollectionRef);
           const moduleVideos = videosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Video));
-          allVideos = [...allVideos, ...moduleVideos];
+          allVids = [...allVids, ...moduleVideos];
         }
       }
-      const videosOfCurrentModule = allVideos.filter(v => 
-          (modulesData.find(m => m.id === moduleId)?.videos as any)?.includes(v.id)
-      ).sort((a, b) => a.ordre - b.ordre);
+      setAllCourseVideos(allVids);
+      const videosOfCurrentModule = allVids.filter(v => 
+          (modulesData.find(m => m.id === moduleId)?.id) === v.moduleId
+      ).sort((a, b) => a.order - b.order);
 
       setVideos(videosOfCurrentModule);
       setVideosLoading(false);
@@ -79,7 +84,7 @@ export default function ModulePage({ params }: ModulePageProps) {
   
     fetchAllVideos();
 
-  }, [courseId, moduleId, modulesData, db]);
+  }, [courseId, moduleId, modulesData, db, modulesLoading]);
 
   // Enrollment listener
   useEffect(() => {
@@ -93,12 +98,12 @@ export default function ModulePage({ params }: ModulePageProps) {
     const unsubscribe = onSnapshot(enrollmentDocRef, (docSnap) => {
         if (docSnap.exists()) {
             setEnrollment(docSnap.data() as Enrollment);
-        } else {
+        } else if(course?.title) {
             // Auto-enroll user if they visit a course page
-            const newEnrollment: Enrollment = {
+            const newEnrollment: Omit<Enrollment, 'id'> = {
                 studentId: user.uid,
                 courseId: courseId,
-                courseTitle: course?.titre || 'Titre inconnu',
+                courseTitle: course.title,
                 enrollmentDate: serverTimestamp() as any,
                 progression: 0,
                 modules: {},
@@ -110,10 +115,10 @@ export default function ModulePage({ params }: ModulePageProps) {
 
     return () => unsubscribe();
 
-  }, [user, userLoading, db, courseId, course?.titre]);
+  }, [user, userLoading, db, courseId, course?.title]);
 
-  const sortedModules = useMemo(() => (modulesData || []).sort((a,b) => a.ordre - b.ordre), [modulesData]);
-  const sortedVideos = useMemo(() => videos.sort((a,b) => a.ordre - b.ordre), [videos]);
+  const sortedModules = useMemo(() => (modulesData || []).sort((a,b) => a.order - b.order), [modulesData]);
+  const sortedVideos = useMemo(() => videos.sort((a,b) => a.order - b.order), [videos]);
   
   const { currentModule, currentModuleIndex, nextModule, previousModule } = useMemo(() => {
     const currentIndex = sortedModules.findIndex(m => m.id === moduleId);
@@ -186,8 +191,8 @@ export default function ModulePage({ params }: ModulePageProps) {
         duration: 8000,
       });
       // Ensure final progress is 100%
-      if (enrollment) {
-        updateDoc(doc(db, 'users', user!.uid, 'enrollments', courseId), { progression: 100 });
+      if (enrollment && user) {
+        updateDoc(doc(db, 'users', user.uid, 'enrollments', courseId), { progression: 100 });
       }
       router.push(`/dashboard/certificates`);
     }
@@ -208,14 +213,14 @@ export default function ModulePage({ params }: ModulePageProps) {
         }
       };
 
-      const watchedCount = Object.values(newModulesData[moduleId].videos).filter(v => v.watched).length;
+      const watchedCountInModule = Object.values(newModulesData[moduleId].videos || {}).filter(v => v.watched).length;
       const totalVideosInModule = sortedVideos.length;
-      const moduleProgress = totalVideosInModule > 0 ? (watchedCount / totalVideosInModule) * 100 : 0;
+      const moduleProgress = totalVideosInModule > 0 ? (watchedCountInModule / totalVideosInModule) * 100 : 0;
       newModulesData[moduleId].progress = moduleProgress;
       
-      const totalModuleProgress = Object.values(newModulesData).reduce((sum, mod) => sum + (mod.progress || 0), 0);
-      const totalModules = sortedModules.length;
-      const courseProgress = totalModules > 0 ? (totalModuleProgress / (totalModules * 100)) * 100 : 0;
+      const totalVideosWatched = allCourseVideos.filter(v => newModulesData[v.moduleId!]?.videos?.[v.id!]?.watched).length;
+      const totalCourseVideos = allCourseVideos.length;
+      const courseProgress = totalCourseVideos > 0 ? (totalVideosWatched / totalCourseVideos) * 100 : 0;
 
       await updateDoc(doc(db, 'users', user.uid, 'enrollments', courseId), {
           modules: newModulesData,
@@ -267,7 +272,7 @@ export default function ModulePage({ params }: ModulePageProps) {
         </Button>
         <div className="text-center">
             <h1 className="text-xl font-bold font-headline text-primary hidden md:block">
-                {currentModule.titre}
+                {currentModule.title}
             </h1>
             <p className='text-sm text-muted-foreground'>Leçon {currentModuleIndex + 1} / {sortedModules.length}</p>
         </div>
@@ -282,10 +287,10 @@ export default function ModulePage({ params }: ModulePageProps) {
       <div className="flex-grow flex flex-col md:flex-row">
         <main className="flex-1 p-4 md:p-8">
              <div className="aspect-video bg-black rounded-lg overflow-hidden mb-6 shadow-lg">
-             {selectedVideo?.url ? (
+             {selectedVideo?.driveUrl ? (
                 <ReactPlayer
                     ref={playerRef}
-                    url={selectedVideo.url}
+                    url={selectedVideo.driveUrl}
                     controls
                     width="100%"
                     height="100%"
@@ -334,7 +339,7 @@ export default function ModulePage({ params }: ModulePageProps) {
                     >
                         <div className="flex items-start gap-3">
                             <span className='font-mono text-muted-foreground text-xs pt-1'>{String(index + 1).padStart(2, '0')}</span>
-                            <span className="font-medium flex-grow">{video.titre}</span>
+                            <span className="font-medium flex-grow">{video.title}</span>
                             {videoProgressMap[video.id!]?.watched && (
                                 <CheckCircle className='h-5 w-5 text-green-500 flex-shrink-0' />
                             )}
