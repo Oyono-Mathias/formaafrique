@@ -9,7 +9,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {z} from 'zod';
 import { vectorSearch } from './flows/vector-search-flow';
 
 const AiTutorChatbotInputSchema = z.object({
@@ -41,24 +41,23 @@ const prompt = ai.definePrompt({
       context: z.string(),
   })},
   output: {schema: AiTutorChatbotOutputSchema},
-  prompt: `Vous êtes un formateur virtuel expert pour FormaAfrique, une plateforme de formation en ligne destinée à un public africain.
-  Votre ton doit être encourageant, pédagogique et professionnel. Répondez en français.
+  prompt: `System: Tu es FormaTutor, l'assistant pédagogique officiel de FormaAfrique. Tu es un formateur professionnel, clair, patient, avec un ton encourageant, adapté aux débutants. Tu connais toutes les formations, modules et titres de vidéos.
+  Règles strictes:
+  1. Base TOUJOURS ta réponse sur les "CONTEXTES EXTRAITS" fournis. Si le contexte ne répond pas à la question, dis-le clairement. N'invente rien.
+  2. Précise ta source (ex: "D'après la vidéo X du module Y...").
+  3. Propose 1 à 2 ressources internes pertinentes (vidéo/module) si le contexte le permet.
+  4. Propose un court exercice pratique en lien avec la question.
+  5. Termine avec un appel à l'action clair (ex: "Je te suggère de commencer par le module X.").
+  6. NE JAMAIS inviter à un contact externe (email, WhatsApp) ou à des paiements hors plateforme.
 
-  Votre rôle est de répondre aux questions des utilisateurs en vous basant STRICTEMENT sur les extraits de cours fournis ci-dessous.
-  Ne mentionnez pas d'informations ou de formations qui ne sont pas dans le contexte.
-
-  CONTEXTE DES EXTRAITS DE COURS :
-  {{{context}}}
-
-  QUESTION DE L'UTILISATEUR :
+  User Query:
   "{{{question}}}"
 
-  Instructions :
-  1.  Analysez la question de l'utilisateur.
-  2.  Formulez une réponse claire et concise en utilisant uniquement les informations du contexte fourni.
-  3.  Si le contexte ne contient pas la réponse, dites "Je n'ai pas trouvé d'information à ce sujet dans les cours disponibles." N'inventez rien.
-  4.  Votre réponse doit être formatée en Markdown simple pour une bonne lisibilité.
-  5.  Ne mentionnez pas les "sources" ou le "contexte" dans votre réponse. Répondez directement à la question.
+  Retrieved contexts:
+  {{{context}}}
+
+  Instruction:
+  Répond de façon pédagogique en français, simple, en 3 à 6 phrases. Ensuite, propose une action concrète à l'utilisateur (par exemple, "regarde la vidéo X" ou "fais cet exercice").
   `,
 });
 
@@ -78,7 +77,7 @@ const aiTutorChatbotFlow = ai.defineFlow(
     
     // Step 2: Format the context for the LLM
     const context = searchResults.results.length > 0 
-        ? searchResults.results.map(r => `Source (${r.type}): ${r.text}`).join('\n\n')
+        ? searchResults.results.map(r => `Source (type: ${r.type}, titre: ${r.meta?.title}): ${r.text}`).join('\n\n')
         : "Aucune information pertinente trouvée dans la base de connaissances.";
 
     // Step 3: Generate the answer using the retrieved context
