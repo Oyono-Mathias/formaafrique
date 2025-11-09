@@ -121,8 +121,8 @@ export default function CommunityPage() {
     }
 
     return (
-        <div className="flex flex-col h-[calc(100vh-8rem)] bg-primary/5">
-            <header className="p-4 border-b text-center bg-card shadow-sm">
+        <div className="flex flex-col h-[calc(100vh-8rem)] bg-card rounded-2xl shadow-lg border">
+            <header className="p-4 border-b text-center">
                 <h1 className="text-2xl font-bold font-headline text-primary">{formationName}</h1>
                 <p className="text-muted-foreground text-sm">{groupChat?.description || "Le lieu d'échange de votre promotion."}</p>
             </header>
@@ -160,10 +160,10 @@ export default function CommunityPage() {
                                                 {!isSender && <p className="text-xs text-muted-foreground ml-3 mb-1">{message.authorName}</p>}
                                                 <div
                                                     className={cn(
-                                                        'max-w-md md:max-w-lg p-3 rounded-lg shadow-sm',
+                                                        'max-w-md md:max-w-lg p-3 rounded-2xl shadow-sm',
                                                         isSender
-                                                        ? 'bg-primary text-primary-foreground rounded-br-none'
-                                                        : 'bg-card rounded-bl-none'
+                                                        ? 'bg-primary text-primary-foreground rounded-br-lg'
+                                                        : 'bg-muted rounded-bl-lg'
                                                     )}
                                                     >
                                                     <p>{message.text}</p>
@@ -180,17 +180,17 @@ export default function CommunityPage() {
                         </ScrollArea>
                     </div>
 
-                    <footer className="p-4 border-t bg-background">
-                        <div className="flex items-center gap-4 max-w-3xl mx-auto">
+                    <footer className="p-3 border-t bg-background rounded-b-2xl">
+                        <div className="flex items-center gap-2 max-w-3xl mx-auto">
                         <Input
                             value={newMessage}
                             onChange={(e) => setNewMessage(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                             placeholder="Envoyer un message à la communauté..."
-                            className="flex-1 h-12"
+                            className="flex-1 h-11 rounded-full px-4"
                             disabled={sending}
                         />
-                        <Button onClick={handleSendMessage} size="icon" className="h-12 w-12 flex-shrink-0" disabled={sending || !newMessage.trim()}>
+                        <Button onClick={handleSendMessage} size="icon" className="h-11 w-11 flex-shrink-0 rounded-full" disabled={sending || !newMessage.trim()}>
                             {sending ? <Loader2 className="animate-spin" /> : <Send />}
                             <span className="sr-only">Envoyer</span>
                         </Button>
