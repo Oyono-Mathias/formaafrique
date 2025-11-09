@@ -1,27 +1,51 @@
 
 'use client';
 
-import Image from 'next/image';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Lightbulb, Rocket, Award, Users, Languages, Star, Globe, TrendingUp, Loader2, CheckCircle, AlertCircle, ListPlus, Send, Video, ShieldCheckIcon } from 'lucide-react';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { Lightbulb, Rocket, Award, Users, Languages, Star, Globe, TrendingUp, Loader2, CheckCircle, AlertCircle, Video, ListPlus, Send, ShieldCheckIcon } from 'lucide-react';
 import { useLanguage } from '@/contexts/language-context';
-import { useUser, useFirestore, useCollection } from '@/firebase';
-import { addDoc, collection, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
+import { useUser, useCollection } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useMemo } from 'react';
-import type { InstructorRequest, Enrollment } from '@/lib/types';
+import type { InstructorRequest, Enrollment, UserProfile } from '@/lib/types';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import Link from 'next/link';
+import { createInstructorRequest } from '@/actions/instructor-request';
 
+const requestSchema = z.object({
+  specialite: z.string().min(5, { message: "Veuillez décrire votre spécialité (min. 5 caractères)." }),
+  motivation: z.string().min(50, { message: "Veuillez développer votre motivation (min. 50 caractères)." }),
+  videoUrl: z.string().url({ message: "Veuillez fournir une URL de vidéo valide." }),
+  facebookUrl: z.string().url().optional().or(z.literal('')),
+  instagramUrl: z.string().url().optional().or(z.literal('')),
+  twitterUrl: z.string().url().optional().or(z.literal('')),
+  youtubeUrl: z.string().url().optional().or(z.literal('')),
+});
 
 export default function BecomeInstructorPage() {
     const { t } = useLanguage();
     const { user, userProfile } = useUser();
-    const db = useFirestore();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const form = useForm<z.infer<typeof requestSchema>>({
+      resolver: zodResolver(requestSchema),
+      defaultValues: {
+        specialite: '',
+        motivation: '',
+        videoUrl: '',
+        facebookUrl: '',
+        instagramUrl: '',
+        twitterUrl: '',
+        youtubeUrl: '',
+      },
+    });
 
     const instructorRequestOptions = useMemo(() => {
         if (!user?.uid) return undefined;
@@ -41,154 +65,155 @@ export default function BecomeInstructorPage() {
         return (requests || []).find(r => r.status === 'pending');
     }, [requests]);
 
-    const isProfileComplete = useMemo(() => {
-        if (!userProfile) return false;
-        const hasBio = !!userProfile.bio && userProfile.bio.trim().length > 0;
-        const hasPhoto = !!userProfile.photoURL;
-        const hasSkills = !!userProfile.skills && userProfile.skills.length > 0;
-        return hasBio && hasPhoto && hasSkills;
-    }, [userProfile]);
+    const prerequisites = useMemo(() => {
+        const profile = userProfile as UserProfile & { bio?: string; photoURL?: string; };
+        const isEmailVerified = user?.emailVerified || false;
+        const isProfileComplete = !!(
+            profile?.bio && profile.bio.length >= 100 &&
+            profile.photoURL
+        );
+        const completedCoursesCount = (enrollments || []).filter(e => (e.progression || 0) >= 100).length;
+        const hasCompletedThreeCourses = completedCoursesCount >= 3;
 
-    const hasCompletedCourse = useMemo(() => {
-        if (!enrollments) return false;
-        return enrollments.some(e => (e.progression || 0) >= 100);
-    }, [enrollments]);
+        return {
+            isEmailVerified,
+            isProfileComplete,
+            completedCoursesCount,
+            hasCompletedThreeCourses,
+            canApply: isEmailVerified && isProfileComplete && hasCompletedThreeCourses,
+        };
+    }, [user, userProfile, enrollments]);
 
-
-    const handleRequest = async () => {
-        if (!user || !userProfile || !db) {
-            toast({ variant: 'destructive', title: 'Erreur', description: 'Vous devez être connecté pour faire une demande.' });
+    const handleSubmit = async (values: z.infer<typeof requestSchema>) => {
+        if (!user || !userProfile || !prerequisites.canApply) {
+            toast({ variant: 'destructive', title: 'Conditions non remplies', description: 'Veuillez remplir toutes les conditions avant de soumettre.' });
             return;
         }
-
-        if (!isProfileComplete || !hasCompletedCourse) {
-            toast({ variant: 'destructive', title: 'Conditions non remplies', description: 'Veuillez compléter votre profil et terminer au moins une formation.' });
-            return;
-        }
-
         setIsSubmitting(true);
-
-        const q = query(collection(db, "instructor_requests"), where("userId", "==", user.uid), where("status", "==", "pending"));
-        const querySnapshot = await getDocs(q);
-
-        if (!querySnapshot.empty) {
-            toast({ title: 'Demande déjà envoyée', description: 'Vous avez déjà une demande en cours de validation.' });
-            setIsSubmitting(false);
-            return;
-        }
-
         try {
-            await addDoc(collection(db, 'instructor_requests'), {
-                userId: user.uid,
-                userName: userProfile.name,
-                userEmail: userProfile.email,
-                requestDate: serverTimestamp(),
-                status: 'pending'
-            });
-            toast({ title: 'Demande envoyée !', description: 'Votre demande a été envoyée pour validation. Nous vous contacterons bientôt.' });
-        } catch (error) {
-            console.error(error);
-            toast({ variant: 'destructive', title: 'Erreur', description: 'Une erreur est survenue.' });
+            await createInstructorRequest(values);
+            toast({ title: 'Candidature envoyée !', description: 'Votre demande a été envoyée pour validation. Nous vous contacterons bientôt.' });
+            form.reset();
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Erreur', description: error.message || 'Une erreur est survenue.' });
         } finally {
             setIsSubmitting(false);
         }
     };
-
+    
     const stats = [
         { label: "Participants", value: "80M", icon: Users },
         { label: "Langues", value: "+ de 75", icon: Languages },
         { label: "Inscriptions", value: "1.1Mds", icon: Star },
         { label: "Pays", value: "+ de 180", icon: Globe },
     ];
-    
-    const testimonials = [
-        {
-            name: "M. Oyono Mathias",
-            role: "Fondateur de FormaAfrique",
-            quote: "Partager son savoir, c'est semer les graines de la réussite de demain. Rejoignez-nous pour construire l'avenir de l'Afrique.",
-            imageId: "instructor-yann"
-        },
-        {
-            name: "Sandra L.",
-            role: "Développeuse et Formatrice",
-            quote: "La plateforme est intuitive et le support de l'équipe est incroyable. On se sent vraiment accompagné pour créer le meilleur cours possible.",
-            imageId: "testimonial-fatima"
-        },
-        {
-            name: "Jamal Lazaar",
-            role: "Coach professionnel",
-            quote: "FormaAfrique gère la technique, ce qui me permet de me concentrer sur ma passion : enseigner et voir mes étudiants réussir.",
-            imageId: "instructor-david"
-        }
-    ];
 
-    const renderCallToActionButton = () => {
+    const renderCallToActionSection = () => {
         if (!user) {
-            return <Button size="lg" className="mt-8" asChild><Link href="/login?tab=signup">Devenir formateur</Link></Button>;
+            return (
+                <div className="text-center py-20 bg-primary/10">
+                    <h2 className="text-3xl md:text-4xl font-bold font-headline text-primary">Devenez formateur dès aujourd'hui</h2>
+                    <p className="mt-4 text-lg md:text-xl max-w-3xl mx-auto text-muted-foreground">Rejoignez l'une des plus grandes plates-formes d'apprentissage en ligne au monde.</p>
+                    <Button size="lg" className="mt-8" asChild><Link href="/login?tab=signup">Rejoindre la communauté</Link></Button>
+                </div>
+            );
         }
+
         if (userProfile?.role === 'formateur') {
-            return <Button size="lg" className="mt-8" asChild><Link href="/formateur">Accéder à mon tableau de bord</Link></Button>;
+            return (
+                 <div className="text-center py-20 bg-green-50 border-y border-green-200">
+                    <h2 className="text-3xl md:text-4xl font-bold font-headline text-green-800">Vous êtes déjà formateur !</h2>
+                    <p className="mt-4 text-lg md:text-xl max-w-3xl mx-auto text-green-700">Accédez à votre tableau de bord pour créer et gérer vos formations.</p>
+                    <Button size="lg" className="mt-8 bg-green-600 hover:bg-green-700" asChild><Link href="/formateur">Accéder à mon tableau de bord</Link></Button>
+                </div>
+            )
         }
+
         if (requestsLoading || enrollmentsLoading) {
-            return <Button size="lg" className="mt-8" disabled><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Chargement...</Button>;
+            return <div className="text-center py-20"><Loader2 className="h-8 w-8 animate-spin mx-auto" /></div>;
         }
+
         if (pendingRequest) {
-            return <Button size="lg" className="mt-8 bg-green-600 hover:bg-green-700" disabled><CheckCircle className="mr-2 h-4 w-4" /> Demande en cours</Button>;
+            return (
+                <div className="text-center py-20 bg-blue-50 border-y border-blue-200">
+                    <h2 className="text-3xl md:text-4xl font-bold font-headline text-blue-800">Candidature en cours d'examen</h2>
+                    <p className="mt-4 text-lg md:text-xl max-w-3xl mx-auto text-blue-700">Merci pour votre intérêt. Notre équipe examine votre profil et reviendra vers vous très prochainement.</p>
+                </div>
+            );
         }
-
+        
         return (
-            <div className='flex flex-col items-center gap-4'>
-                <Card className="max-w-2xl w-full bg-amber-50 border-amber-500 text-amber-900">
-                    <CardHeader className="flex flex-row items-center gap-4">
-                        <AlertCircle className="w-6 h-6 text-amber-700"/>
-                        <div>
-                            <CardTitle>Conditions requises</CardTitle>
+            <section className="py-16 sm:py-24" id="application-form">
+                <div className="container px-4">
+                    <div className="text-center max-w-3xl mx-auto">
+                        <h2 className="text-3xl font-bold font-headline">Prêt à postuler ?</h2>
+                        <p className="mt-4 text-lg text-muted-foreground">
+                           Remplissez les conditions et soumettez votre dossier pour commencer votre parcours de formateur.
+                        </p>
+                    </div>
+
+                    <div className="mt-12 max-w-4xl mx-auto grid md:grid-cols-2 gap-8">
+                        {/* Prerequisites */}
+                        <div className="space-y-6">
+                            <h3 className="text-xl font-bold">Conditions requises</h3>
+                            <Card className={prerequisites.isEmailVerified ? "border-green-500" : "border-amber-500"}>
+                                <CardContent className="p-4 flex items-center gap-3">
+                                    {prerequisites.isEmailVerified ? <CheckCircle className="w-5 h-5 text-green-500"/> : <AlertCircle className="w-5 h-5 text-amber-500"/>}
+                                    <span className="font-medium">Adresse email vérifiée</span>
+                                </CardContent>
+                            </Card>
+                             <Card className={prerequisites.isProfileComplete ? "border-green-500" : "border-amber-500"}>
+                                <CardContent className="p-4 flex items-center gap-3">
+                                     {prerequisites.isProfileComplete ? <CheckCircle className="w-5 h-5 text-green-500"/> : <AlertCircle className="w-5 h-5 text-amber-500"/>}
+                                    <span className="font-medium">Profil complet (photo, bio ≥ 100 car.)</span>
+                                     {!prerequisites.isProfileComplete && <Button asChild size="sm" variant="outline"><Link href="/dashboard/settings">Compléter</Link></Button>}
+                                </CardContent>
+                            </Card>
+                            <Card className={prerequisites.hasCompletedThreeCourses ? "border-green-500" : "border-amber-500"}>
+                                <CardContent className="p-4 flex items-center gap-3">
+                                    {prerequisites.hasCompletedThreeCourses ? <CheckCircle className="w-5 h-5 text-green-500"/> : <AlertCircle className="w-5 h-5 text-amber-500"/>}
+                                    <span className="font-medium">Avoir terminé au moins 3 formations ({prerequisites.completedCoursesCount}/3)</span>
+                                    {!prerequisites.hasCompletedThreeCourses && <Button asChild size="sm" variant="outline"><Link href="/courses">Explorer</Link></Button>}
+                                </CardContent>
+                            </Card>
                         </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                         <div className={`flex items-center gap-3 ${isProfileComplete ? 'text-green-700' : 'text-amber-800'}`}>
-                            {isProfileComplete ? <CheckCircle className="w-5 h-5"/> : <AlertCircle className="w-5 h-5"/>}
-                            <span className="font-medium">Profil complet (photo, bio, compétences)</span>
-                         </div>
-                         {!isProfileComplete && (
-                             <Button asChild size="sm" className="ml-8">
-                                <Link href="/dashboard/settings">Compléter mon profil</Link>
-                            </Button>
-                         )}
-
-                         <div className={`flex items-center gap-3 ${hasCompletedCourse ? 'text-green-700' : 'text-amber-800'}`}>
-                            {hasCompletedCourse ? <CheckCircle className="w-5 h-5"/> : <AlertCircle className="w-5 h-5"/>}
-                            <span className="font-medium">Avoir terminé au moins une formation</span>
-                         </div>
-                         {!hasCompletedCourse && (
-                            <Button asChild size="sm" variant="secondary" className="ml-8">
-                                <Link href="/courses">Explorer les formations</Link>
-                            </Button>
-                         )}
-                    </CardContent>
-                </Card>
-
-                 <Button size="lg" className="mt-4" onClick={handleRequest} disabled={isSubmitting || !isProfileComplete || !hasCompletedCourse}>
-                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Envoyer ma demande
-                </Button>
-            </div>
+                        {/* Application Form */}
+                        <div className="space-y-6">
+                             <h3 className="text-xl font-bold">Dossier de candidature</h3>
+                            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                                <div><Label htmlFor="specialite">Votre spécialité principale</Label><Input id="specialite" {...form.register('specialite')} /> {form.formState.errors.specialite && <p className="text-sm text-destructive mt-1">{form.formState.errors.specialite.message}</p>}</div>
+                                <div><Label htmlFor="videoUrl">Lien vers une mini-vidéo de présentation (1-2 min)</Label><Input id="videoUrl" placeholder="https://youtube.com/..." {...form.register('videoUrl')} /> {form.formState.errors.videoUrl && <p className="text-sm text-destructive mt-1">{form.formState.errors.videoUrl.message}</p>}</div>
+                                <div><Label htmlFor="motivation">Pourquoi souhaitez-vous enseigner sur FormaAfrique ?</Label><Textarea id="motivation" {...form.register('motivation')} /> {form.formState.errors.motivation && <p className="text-sm text-destructive mt-1">{form.formState.errors.motivation.message}</p>}</div>
+                                <div><Label>Réseaux sociaux professionnels (optionnel)</Label>
+                                <div className="space-y-2 mt-2">
+                                <Input placeholder="URL Profil Facebook" {...form.register('facebookUrl')} />
+                                <Input placeholder="URL Profil Instagram" {...form.register('instagramUrl')} />
+                                <Input placeholder="URL Profil Twitter / X" {...form.register('twitterUrl')} />
+                                <Input placeholder="URL Chaîne YouTube" {...form.register('youtubeUrl')} />
+                                </div>
+                                </div>
+                                <Button type="submit" size="lg" className="w-full" disabled={isSubmitting || !prerequisites.canApply}>
+                                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                                    {prerequisites.canApply ? "Soumettre ma candidature" : "Conditions non remplies"}
+                                </Button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </section>
         );
     }
-
 
     return (
         <div className="bg-background">
             {/* Hero Section */}
             <section className="bg-primary/10 py-20 text-center">
                 <div className="container px-4">
-                    <h1 className="text-4xl md:text-5xl font-bold font-headline text-primary">Ayez un impact global</h1>
+                    <Award className="mx-auto h-12 w-12 text-primary mb-4" />
+                    <h1 className="text-4xl md:text-5xl font-bold font-headline text-primary">Devenez Formateur sur FormaAfrique</h1>
                     <p className="mt-4 text-lg md:text-xl max-w-3xl mx-auto text-muted-foreground">
-                        Construisez votre cours en ligne et monétisez votre expertise en partageant votre savoir partout dans le monde.
+                        Partagez votre expertise, inspirez des milliers d'apprenants et construisez l'avenir de l'éducation en Afrique.
                     </p>
-                    <div className='mt-8'>
-                        {renderCallToActionButton()}
-                    </div>
                 </div>
             </section>
             
@@ -198,42 +223,14 @@ export default function BecomeInstructorPage() {
                     <div className="text-center max-w-3xl mx-auto">
                         <h2 className="text-3xl font-bold font-headline">Comment ça marche ?</h2>
                         <p className="mt-4 text-lg text-muted-foreground">
-                           Un processus simple et direct pour partager votre passion.
+                           Un processus simple et transparent pour rejoindre notre communauté de formateurs.
                         </p>
                     </div>
                     <div className="mt-16 grid grid-cols-1 gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
-                        <div className="flex flex-col items-center text-center">
-                            <div className="relative mb-4">
-                                <div className="p-4 bg-primary/10 rounded-full"><Users className="w-10 h-10 text-primary"/></div>
-                                <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center font-bold text-lg">1</div>
-                            </div>
-                            <h3 className="text-xl font-bold mt-2">Créez votre compte</h3>
-                            <p className="mt-2 text-muted-foreground">Inscrivez-vous sur la plateforme. Si vous avez déjà un compte étudiant, vous pouvez l'utiliser.</p>
-                        </div>
-                        <div className="flex flex-col items-center text-center">
-                             <div className="relative mb-4">
-                                <div className="p-4 bg-primary/10 rounded-full"><ListPlus className="w-10 h-10 text-primary"/></div>
-                                <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center font-bold text-lg">2</div>
-                            </div>
-                            <h3 className="text-xl font-bold mt-2">Préparez votre cours</h3>
-                            <p className="mt-2 text-muted-foreground">Définissez votre plan de cours et enregistrez vos vidéos. Nous vous aidons avec des ressources et une communauté de soutien.</p>
-                        </div>
-                        <div className="flex flex-col items-center text-center">
-                            <div className="relative mb-4">
-                                <div className="p-4 bg-primary/10 rounded-full"><Send className="w-10 h-10 text-primary"/></div>
-                                <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center font-bold text-lg">3</div>
-                            </div>
-                            <h3 className="text-xl font-bold mt-2">Soumettez votre demande</h3>
-                            <p className="mt-2 text-muted-foreground">Remplissez votre profil et envoyez votre demande pour devenir formateur via cette page.</p>
-                        </div>
-                        <div className="flex flex-col items-center text-center">
-                             <div className="relative mb-4">
-                                <div className="p-4 bg-primary/10 rounded-full"><ShieldCheckIcon className="w-10 h-10 text-primary"/></div>
-                                <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center font-bold text-lg">4</div>
-                            </div>
-                            <h3 className="text-xl font-bold mt-2">Validation & Publication</h3>
-                            <p className="mt-2 text-muted-foreground">Une fois votre demande approuvée, vous pourrez créer et soumettre vos cours pour validation par notre équipe.</p>
-                        </div>
+                        <div className="flex flex-col items-center text-center"><div className="relative mb-4"><div className="p-4 bg-primary/10 rounded-full"><Users className="w-10 h-10 text-primary"/></div><div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center font-bold text-lg">1</div></div><h3 className="text-xl font-bold mt-2">Remplissez les conditions</h3><p className="mt-2 text-muted-foreground">Assurez-vous que votre profil est complet et que vous avez terminé au moins 3 cours sur la plateforme.</p></div>
+                        <div className="flex flex-col items-center text-center"><div className="relative mb-4"><div className="p-4 bg-primary/10 rounded-full"><ListPlus className="w-10 h-10 text-primary"/></div><div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center font-bold text-lg">2</div></div><h3 className="text-xl font-bold mt-2">Soumettez votre dossier</h3><p className="mt-2 text-muted-foreground">Remplissez le formulaire de candidature avec votre spécialité, une vidéo de présentation et vos motivations.</p></div>
+                        <div className="flex flex-col items-center text-center"><div className="relative mb-4"><div className="p-4 bg-primary/10 rounded-full"><ShieldCheckIcon className="w-10 h-10 text-primary"/></div><div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center font-bold text-lg">3</div></div><h3 className="text-xl font-bold mt-2">Validation par l'équipe</h3><p className="mt-2 text-muted-foreground">Notre équipe examine votre candidature. Ce processus peut prendre quelques jours.</p></div>
+                        <div className="flex flex-col items-center text-center"><div className="relative mb-4"><div className="p-4 bg-primary/10 rounded-full"><Rocket className="w-10 h-10 text-primary"/></div><div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center font-bold text-lg">4</div></div><h3 className="text-xl font-bold mt-2">Lancez votre 1er cours</h3><p className="mt-2 text-muted-foreground">Une fois approuvé, publiez votre première formation et commencez à enseigner !</p></div>
                     </div>
                 </div>
             </section>
@@ -242,69 +239,13 @@ export default function BecomeInstructorPage() {
             <section className="bg-primary text-primary-foreground py-16">
                 <div className="container px-4">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-                        {stats.map(stat => (
-                            <div key={stat.label} className="flex flex-col items-center">
-                                <stat.icon className="w-10 h-10 mb-2" />
-                                <p className="text-3xl md:text-4xl font-bold">{stat.value}</p>
-                                <p className="text-sm md:text-base text-primary-foreground/80">{stat.label}</p>
-                            </div>
-                        ))}
+                        {stats.map(stat => (<div key={stat.label} className="flex flex-col items-center"><stat.icon className="w-10 h-10 mb-2" /><p className="text-3xl md:text-4xl font-bold">{stat.value}</p><p className="text-sm md:text-base text-primary-foreground/80">{stat.label}</p></div>))}
                     </div>
                 </div>
             </section>
+            
+            {renderCallToActionSection()}
 
-            {/* Testimonials */}
-            <section className="py-16 sm:py-24 bg-background">
-                <div className="container px-4">
-                    <div className="grid md:grid-cols-3 gap-8">
-                         {testimonials.map((testimonial) => {
-                             const avatarImage = PlaceHolderImages.find((img) => img.id === testimonial.imageId);
-                             return (
-                                 <Card key={testimonial.name} className="border-0 shadow-none bg-transparent">
-                                    <CardContent className="p-0">
-                                        <blockquote className="text-lg font-semibold leading-8 tracking-tight text-foreground">
-                                            <p>« {testimonial.quote} »</p>
-                                        </blockquote>
-                                        <figcaption className="mt-6 flex items-center gap-x-4">
-                                            <Avatar>
-                                                {avatarImage && <AvatarImage src={avatarImage.imageUrl} alt={testimonial.name} />}
-                                                <AvatarFallback>{testimonial.name.charAt(0)}</AvatarFallback>
-                                            </Avatar>
-                                            <div>
-                                                <div className="font-semibold text-foreground">{testimonial.name}</div>
-                                                <div className="text-muted-foreground">{testimonial.role}</div>
-                                            </div>
-                                        </figcaption>
-                                    </CardContent>
-                                 </Card>
-                             )
-                         })}
-                    </div>
-                </div>
-            </section>
-
-             {/* Support Section */}
-            <section className="bg-primary/10 py-16 sm:py-24">
-                <div className="container px-4 text-center max-w-4xl mx-auto">
-                     <h2 className="text-3xl font-bold font-headline">Vous n'aurez pas à vous lancer tout seul</h2>
-                     <p className="mt-4 text-lg text-muted-foreground">
-                        Notre équipe de support est là pour répondre à vos questions et vérifier votre vidéo test, tandis que notre Teaching Center vous offre de nombreuses ressources pour vous aider tout au long du processus. De plus, bénéficiez du soutien de formateurs expérimentés dans notre communauté en ligne.
-                     </p>
-                </div>
-            </section>
-
-            {/* Final CTA */}
-            <section className="py-20 text-center">
-                 <div className="container px-4">
-                    <h2 className="text-3xl md:text-4xl font-bold font-headline text-primary">Devenez formateur dès aujourd'hui</h2>
-                    <p className="mt-4 text-lg md:text-xl max-w-3xl mx-auto text-muted-foreground">
-                        Rejoignez l'une des plus grandes plates-formes d'apprentissage en ligne au monde.
-                    </p>
-                    <div className='mt-8'>
-                        {renderCallToActionButton()}
-                    </div>
-                </div>
-            </section>
         </div>
     );
 }

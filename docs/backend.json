@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "UserProfile": {
@@ -45,6 +46,10 @@
         "infractions": {
             "type": "number",
             "description": "A count of user infractions against community guidelines."
+        },
+        "scoreReputation": {
+          "type": "number",
+          "description": "A calculated score representing user's reputation."
         }
       },
       "required": [
@@ -300,34 +305,29 @@
     },
     "InstructorRequest": {
       "title": "Instructor Request",
-      "description": "A student's request to become an instructor.",
+      "description": "A user's application to become an instructor.",
       "type": "object",
       "properties": {
-        "userId": {
-          "type": "string",
-          "description": "The UID of the user making the request."
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userEmail": { "type": "string", "format": "email" },
+        "requestDate": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "specialite": { "type": "string" },
+        "motivation": { "type": "string" },
+        "videoUrl": { "type": "string", "format": "uri" },
+        "socialLinks": {
+          "type": "object",
+          "properties": {
+            "facebookUrl": { "type": "string", "format": "uri" },
+            "instagramUrl": { "type": "string", "format": "uri" },
+            "twitterUrl": { "type": "string", "format": "uri" },
+            "youtubeUrl": { "type": "string", "format": "uri" }
+          }
         },
-        "userName": {
-          "type": "string",
-          "description": "The name of the user."
-        },
-        "userEmail": {
-          "type": "string",
-          "format": "email",
-          "description": "The email of the user."
-        },
-        "requestDate": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Timestamp of the request."
-        },
-        "status": {
-          "type": "string",
-          "enum": ["pending", "approved", "rejected"],
-          "description": "The status of the request."
-        }
+        "scoreReputation": { "type": "number" }
       },
-      "required": ["userId", "userName", "userEmail", "requestDate", "status"]
+      "required": ["userId", "userName", "userEmail", "requestDate", "status", "specialite", "motivation", "videoUrl"]
     },
     "CommunityPost": {
       "title": "Community Post",

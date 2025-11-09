@@ -87,6 +87,7 @@ export interface UserProfile {
   formationId?: string;
   moduleLevel?: string;
   infractions?: number;
+  scoreReputation?: number;
 }
 
 export interface InstructorProfile extends UserProfile {
@@ -182,6 +183,16 @@ export interface InstructorRequest {
     userEmail: string;
     requestDate: Timestamp;
     status: 'pending' | 'approved' | 'rejected';
+    specialite: string;
+    motivation: string;
+    videoUrl: string;
+    socialLinks: {
+        facebookUrl?: string;
+        instagramUrl?: string;
+        twitterUrl?: string;
+        youtubeUrl?: string;
+    };
+    scoreReputation?: number;
 }
 
 export interface CommunityPost {

@@ -1,9 +1,10 @@
+
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { useUser, useCollection, useFirestore } from '@/firebase';
-import type { Course, InstructorRequest } from '@/lib/types';
-import { Loader2, Search, Filter, MoreVertical, Eye, Check, X, ShieldAlert, UserCheck } from 'lucide-react';
+import { useCollection, useFirestore } from '@/firebase';
+import type { Course, InstructorRequest, UserProfile } from '@/lib/types';
+import { Loader2, Search, Filter, MoreVertical, Eye, Check, X, ShieldAlert, UserCheck, Link as LinkIcon, MessageCircle, Video } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -19,8 +20,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { categories } from '@/lib/categories';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
-type StatusFilter = 'tous' | 'en_attente' | 'approuvee' | 'rejetee';
 
 export default function AdminValidationPage() {
   return (
@@ -29,16 +30,16 @@ export default function AdminValidationPage() {
         <h1 className="text-3xl font-bold font-headline">Validation</h1>
         <p className="text-muted-foreground">Approuvez ou rejetez les nouvelles soumissions.</p>
       </div>
-      <Tabs defaultValue="courses" className="w-full">
+      <Tabs defaultValue="instructors" className="w-full">
         <TabsList>
-          <TabsTrigger value="courses">Formations à valider</TabsTrigger>
           <TabsTrigger value="instructors">Demandes des Formateurs</TabsTrigger>
+          <TabsTrigger value="courses">Formations à valider</TabsTrigger>
         </TabsList>
-        <TabsContent value="courses">
-          <CoursesValidationTab />
-        </TabsContent>
         <TabsContent value="instructors">
           <InstructorsValidationTab />
+        </TabsContent>
+        <TabsContent value="courses">
+          <CoursesValidationTab />
         </TabsContent>
       </Tabs>
     </div>
@@ -143,7 +144,7 @@ function CoursesValidationTab() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Select onValueChange={(value: StatusFilter) => setStatusFilter(value)} defaultValue="en_attente">
+          <Select onValueChange={(value) => setStatusFilter(value)} defaultValue="en_attente">
             <SelectTrigger><div className="flex items-center gap-2"><Filter className="h-4 w-4" /> Statut</div></SelectTrigger>
             <SelectContent>
               <SelectItem value="tous">Tous</SelectItem>
@@ -245,42 +246,32 @@ function CoursesValidationTab() {
 }
 
 function InstructorsValidationTab() {
-    const { data: requests, loading, error } = useCollection<InstructorRequest>('instructor_requests', { where: ['status', '==', 'pending'] });
+    const { data: requests, loading, error } = useCollection<InstructorRequest>('instructor_requests');
+    const { data: users, loading: usersLoading } = useCollection<UserProfile>('users');
     const db = useFirestore();
     const { toast } = useToast();
+    const [selectedRequest, setSelectedRequest] = useState<InstructorRequest | null>(null);
+
+    const pendingRequests = useMemo(() => (requests || []).filter(r => r.status === 'pending'), [requests]);
+    const usersMap = useMemo(() => {
+        const map = new Map<string, UserProfile>();
+        (users || []).forEach(u => map.set(u.id!, u));
+        return map;
+    }, [users]);
+    
 
     const handleApprove = async (request: InstructorRequest) => {
         if (!db || !request.id || !request.userId) return;
         const requestRef = doc(db, 'instructor_requests', request.id);
         const userRef = doc(db, 'users', request.userId);
-        const instructorRef = doc(db, 'instructors', request.userId);
 
         try {
-            // Use a batch to ensure atomicity
             const batch = writeBatch(db);
-
-            // Update user role
             batch.update(userRef, { role: 'formateur' });
-            
-            // Create instructor profile
-            batch.set(instructorRef, {
-                // Copy relevant data from user profile
-                name: request.userName,
-                email: request.userEmail,
-                createdAt: serverTimestamp(), // Or copy from userProfile if needed
-                role: 'formateur',
-                // Add other default instructor fields here
-            });
-            
-            // Update request status
             batch.update(requestRef, { status: 'approved' });
-            
             await batch.commit();
 
-            toast({
-                title: 'Demande Approuvée',
-                description: `${request.userName} est maintenant un formateur.`,
-            });
+            toast({ title: 'Demande Approuvée', description: `${request.userName} est maintenant un formateur.` });
         } catch (e) {
             console.error(e);
             toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'approuver la demande.' });
@@ -312,7 +303,7 @@ function InstructorsValidationTab() {
                 <CardDescription>Validez les utilisateurs qui souhaitent devenir formateurs.</CardDescription>
             </CardHeader>
             <CardContent>
-                {loading ? (
+                {(loading || usersLoading) ? (
                     <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>
                 ) : error ? (
                     <div className="text-destructive text-center py-12">❌ Erreur de chargement des demandes.</div>
@@ -321,19 +312,20 @@ function InstructorsValidationTab() {
                          <Table>
                              <TableHeader>
                                  <TableRow>
-                                     <TableHead>Nom de l'utilisateur</TableHead>
+                                     <TableHead>Nom</TableHead>
                                      <TableHead>Email</TableHead>
-                                     <TableHead>Date de la demande</TableHead>
+                                     <TableHead>Date</TableHead>
                                      <TableHead className="text-right">Actions</TableHead>
                                  </TableRow>
                              </TableHeader>
                              <TableBody>
-                                {requests && requests.length > 0 ? requests.map((request) => (
+                                {pendingRequests && pendingRequests.length > 0 ? pendingRequests.map((request) => (
                                      <TableRow key={request.id}>
                                          <TableCell className="font-medium">{request.userName}</TableCell>
                                          <TableCell>{request.userEmail}</TableCell>
                                          <TableCell>{formatDate(request.requestDate)}</TableCell>
                                          <TableCell className="text-right space-x-2">
+                                            <Button size="sm" variant="ghost" onClick={() => setSelectedRequest(request)}><Eye className="mr-2 h-4 w-4" />Dossier</Button>
                                             <Button size="sm" variant="outline" className="text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700" onClick={() => handleApprove(request)}>
                                                 <Check className="mr-2 h-4 w-4" />Approuver
                                             </Button>
@@ -352,8 +344,43 @@ function InstructorsValidationTab() {
                      </div>
                 )}
             </CardContent>
+            {selectedRequest && (
+                <Dialog open={!!selectedRequest} onOpenChange={() => setSelectedRequest(null)}>
+                    <DialogContent className="max-w-2xl">
+                        <DialogHeader>
+                             <DialogTitle className="font-headline text-2xl">Dossier de candidature</DialogTitle>
+                             <DialogDescription>{selectedRequest.userName}</DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4 space-y-4 max-h-[70vh] overflow-y-auto pr-4">
+                             <div className='flex items-center gap-4'>
+                                <Avatar className='h-16 w-16'>
+                                    <AvatarImage src={usersMap.get(selectedRequest.userId)?.photoURL || ''} />
+                                    <AvatarFallback>{selectedRequest.userName.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <p className='font-bold'>{selectedRequest.userName}</p>
+                                    <p className='text-sm text-muted-foreground'>{selectedRequest.userEmail}</p>
+                                </div>
+                             </div>
+                             <p><strong>Spécialité :</strong> {selectedRequest.specialite}</p>
+                             <div>
+                                <strong>Motivation :</strong>
+                                <blockquote className="mt-2 border-l-2 pl-6 italic">{selectedRequest.motivation}</blockquote>
+                             </div>
+                             <div className='space-y-2'>
+                                <strong>Liens :</strong>
+                                <div className='flex items-center gap-2'><Video className='h-4 w-4' /><a href={selectedRequest.videoUrl} target="_blank" rel="noopener noreferrer" className='text-primary hover:underline'>Vidéo de présentation</a></div>
+                                {Object.entries(selectedRequest.socialLinks || {}).map(([key, value]) => value && (
+                                     <div key={key} className='flex items-center gap-2'><LinkIcon className='h-4 w-4' /><a href={value as string} target="_blank" rel="noopener noreferrer" className='text-primary hover:underline capitalize'>{key.replace('Url', '')}</a></div>
+                                ))}
+                             </div>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="secondary" onClick={() => setSelectedRequest(null)}>Fermer</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            )}
         </Card>
     )
 }
-
-    
