@@ -17,6 +17,7 @@ import {
   Home,
   MessageSquare,
   Users,
+  Bot,
 } from 'lucide-react';
 import { Logo } from '@/components/icons/logo';
 import { Button } from '@/components/ui/button';
@@ -43,6 +44,7 @@ const navLinks = [
     { href: '/messages', label: 'Messages', icon: MessageSquare },
     { href: '/dashboard/team', label: 'Mes Camarades', icon: Users },
     { href: '/community', label: 'Communauté', icon: MessageSquare },
+    { href: '/chatbot', label: 'Tuteur IA', icon: Bot },
     { href: '/dashboard/wishlist', label: 'Favoris', icon: Heart },
     { href: '/dashboard/certificates', label: 'Certificats', icon: GraduationCap },
 ];
