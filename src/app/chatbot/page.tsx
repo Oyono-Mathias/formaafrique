@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Loader2 } from 'lucide-react';
+import { Send, Bot, User, Loader2, Link as LinkIcon, ThumbsDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -9,21 +9,22 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/firebase';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { courses } from '@/lib/mock-data';
-import { aiTutorChatbot } from '@/ai/ai-tutor-chatbot';
+import { aiTutorChatbot, AiTutorChatbotOutput } from '@/ai/ai-tutor-chatbot';
 import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
 
 interface Message {
   id: string;
   text: string;
   sender: 'user' | 'bot';
+  sources?: AiTutorChatbotOutput['sources'];
 }
 
 export default function ChatbotPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'initial-bot-message',
-      text: "Bonjour ! Je suis votre formateur virtuel IA pour FormaAfrique. Comment puis-je vous aider aujourd'hui ? Posez-moi une question sur vos formations.",
+      text: "Bonjour ! Je suis votre tuteur virtuel IA pour FormaAfrique. Comment puis-je vous aider aujourd'hui ? Posez-moi une question sur vos formations.",
       sender: 'bot',
     },
   ]);
@@ -37,7 +38,6 @@ export default function ChatbotPage() {
   const userImage = user?.photoURL || userAvatar?.imageUrl;
 
   useEffect(() => {
-    // Scroll to bottom when messages change
     if (scrollAreaRef.current) {
         const viewport = scrollAreaRef.current.querySelector('div');
         if (viewport) {
@@ -58,13 +58,14 @@ export default function ChatbotPage() {
     try {
       const response = await aiTutorChatbot({
         question: input,
-        formationId: userProfile?.formationId, // Pass the user's formationId
+        formationId: userProfile?.formationId,
       });
 
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
         text: response.answer,
         sender: 'bot',
+        sources: response.sources,
       };
       setMessages(prev => [...prev, botMessage]);
     } catch (error) {
@@ -74,17 +75,25 @@ export default function ChatbotPage() {
         title: 'Erreur du chatbot',
         description: "Désolé, je n'ai pas pu répondre. Veuillez réessayer.",
       });
-      // Optionally remove the user's message if the bot fails
       setMessages(prev => prev.filter(m => m.id !== userMessage.id));
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleFeedback = (messageId: string) => {
+    toast({
+        title: "Merci pour votre retour !",
+        description: "Votre signalement a été enregistré et aidera à améliorer le tuteur.",
+    });
+    // Here you would typically call a server action to save the feedback
+    // e.g., createTutorFeedback({ messageId, userId: user.uid, ... })
+  }
+
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)] bg-primary/5">
       <header className="p-4 border-b text-center bg-card">
-        <h1 className="text-2xl font-bold font-headline text-primary">Formateur Virtuel FormaAfrique 🤖</h1>
+        <h1 className="text-2xl font-bold font-headline text-primary">Tuteur Virtuel FormaAfrique 🤖</h1>
       </header>
 
       <div className="flex-1 overflow-hidden">
@@ -105,13 +114,36 @@ export default function ChatbotPage() {
                 )}
                 <div
                   className={cn(
-                    'max-w-md md:max-w-lg p-4 rounded-lg shadow prose',
+                    'max-w-md md:max-w-2xl p-4 rounded-lg shadow-sm',
                     message.sender === 'user'
                       ? 'bg-primary text-primary-foreground'
                       : 'bg-card'
                   )}
                 >
-                  <p>{message.text}</p>
+                  <p className='prose prose-sm max-w-none'>{message.text}</p>
+                  {message.sources && message.sources.length > 0 && (
+                      <div className="mt-4 border-t pt-3">
+                          <h4 className="text-xs font-bold uppercase text-muted-foreground mb-2">Sources</h4>
+                          <div className="flex flex-col gap-2">
+                              {message.sources.map(source => (
+                                  <Button key={source.id} variant="link" asChild className="p-0 h-auto justify-start text-sm">
+                                      <Link href={`/courses/${userProfile?.formationId}/modules/${source.id}`}>
+                                          <LinkIcon className="mr-2 h-4 w-4"/>
+                                          {source.type === 'video' ? 'Vidéo' : 'Module'}: {source.title}
+                                      </Link>
+                                  </Button>
+                              ))}
+                          </div>
+                      </div>
+                  )}
+                  {message.sender === 'bot' && message.id !== 'initial-bot-message' && (
+                      <div className="mt-3 text-right">
+                          <Button variant="ghost" size="sm" onClick={() => handleFeedback(message.id)} className="text-muted-foreground hover:text-destructive h-auto p-1">
+                               <ThumbsDown className="h-4 w-4" />
+                               <span className="sr-only">Signaler une réponse incorrecte</span>
+                          </Button>
+                      </div>
+                  )}
                 </div>
                  {message.sender === 'user' && user && (
                   <Avatar>
