@@ -23,30 +23,18 @@ export default function ChatbotPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'initial-bot-message',
-      text: "Bonjour ! Je suis votre formateur virtuel IA pour FormaAfrique. Comment puis-je vous aider aujourd'hui ? Posez-moi une question sur nos formations.",
+      text: "Bonjour ! Je suis votre formateur virtuel IA pour FormaAfrique. Comment puis-je vous aider aujourd'hui ? Posez-moi une question sur vos formations.",
       sender: 'bot',
     },
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { user } = useUser();
+  const { user, userProfile } = useUser();
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const userAvatar = PlaceHolderImages.find(img => img.id === 'user-avatar');
   const userImage = user?.photoURL || userAvatar?.imageUrl;
-
-  const courseContent = `
-    Voici les catégories de formation que nous proposons sur FormaAfrique :
-    - Entrepreneuriat & Commerce (ex: Création d’entreprise, Business plan, E-commerce)
-    - Compétences numériques (ex: Marketing digital, Développement web, Cybersécurité)
-    - Agriculture & Agro-industrie (ex: Agriculture intelligente, Transformation des produits)
-    - Métiers manuels & Artisanat (ex: Couture, Coiffure, Menuiserie)
-    - Éducation & Renforcement des capacités (ex: Tutoriels scolaires, Préparation aux examens)
-    - Santé & Bien-être (ex: Hygiène et prévention, Nutrition)
-    - Langues & Communication (ex: Français, Anglais, Prise de parole)
-    - Finances & Inclusion économique (ex: Épargne, Mobile Money, Comptabilité)
-    `;
 
   useEffect(() => {
     // Scroll to bottom when messages change
@@ -70,7 +58,7 @@ export default function ChatbotPage() {
     try {
       const response = await aiTutorChatbot({
         question: input,
-        courseContent: courseContent,
+        formationId: userProfile?.formationId, // Pass the user's formationId
       });
 
       const botMessage: Message = {
