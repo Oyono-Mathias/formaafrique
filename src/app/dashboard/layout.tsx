@@ -16,7 +16,7 @@ import {
   Heart,
   Home,
   MessageSquare,
-  Users, // Ajout de l'icône
+  Users,
 } from 'lucide-react';
 import { Logo } from '@/components/icons/logo';
 import { Button } from '@/components/ui/button';
@@ -40,6 +40,7 @@ import NotificationBell from '@/components/notifications/notification-bell';
 const navLinks = [
     { href: '/dashboard', label: 'Accueil', icon: Home },
     { href: '/dashboard/courses', label: 'Mes Formations', icon: BookCopy },
+    { href: '/messages', label: 'Messages', icon: MessageSquare },
     { href: '/dashboard/friends', label: 'Mes Amis', icon: Users },
     { href: '/community', label: 'Communauté', icon: MessageSquare },
     { href: '/dashboard/wishlist', label: 'Favoris', icon: Heart },
@@ -58,7 +59,8 @@ function NavLink({
   isMobile?: boolean;
 }) {
   const pathname = usePathname();
-  const isActive = pathname === href;
+  const isActive = pathname.startsWith(href) && (href !== '/dashboard' || pathname === '/dashboard');
+
 
   if (isMobile) {
     return (
@@ -144,6 +146,7 @@ export default function DashboardLayout({
   const router = useRouter();
   const { toast } = useToast();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     if (loading) return;
@@ -185,6 +188,15 @@ export default function DashboardLayout({
     await signOut(auth);
     router.push('/');
   };
+
+  const isMessagesPage = pathname.startsWith('/messages');
+  if (isMessagesPage) {
+      return (
+           <div className="h-screen overflow-hidden">
+                {children}
+            </div>
+      )
+  }
 
 
   return (

@@ -9,6 +9,7 @@ const noHeaderFooterRoutes = [
     '/dashboard',
     '/admin',
     '/formateur',
+    '/messages'
 ];
 
 export function NextLayout({ children }: { children: React.ReactNode }) {
