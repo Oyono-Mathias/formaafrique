@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -83,21 +84,11 @@ const aiTutorChatbotFlow = ai.defineFlow(
         ? searchResults.results.map(r => `Source (type: ${r.type}, titre: ${r.meta?.title}): ${r.text}`).join('\n\n')
         : "Aucune information pertinente trouvée dans la base de connaissances.";
 
-    // Step 3: Generate the answer using the retrieved context
-    const response = await ai.generate({
-      prompt: {
-        ...prompt.options,
-        prompt: prompt.options.prompt?.toString() || '',
-      },
-      history: [],
-      input: {
-        question: input.question,
-        context: context,
-      },
-      tools: [getPublishedCoursesCount],
+    // Step 3: Generate the answer using the retrieved context by calling the prompt directly
+    const { output } = await prompt({
+      question: input.question,
+      context: context,
     });
-
-    const output = response.output();
 
     if (!output) {
       throw new Error("AI Tutor flow failed to generate an answer.");
