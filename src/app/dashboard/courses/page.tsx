@@ -65,7 +65,7 @@ export default function MyCoursesPage() {
         {enrollmentsList.map((enrollment) => {
             const courseImage = PlaceHolderImages.find(img => img.id === 'course-project-management'); // Fallback image
             const progression = enrollment.progression || 0;
-            const firstModuleId = enrollment.modules ? Object.keys(enrollment.modules)[0] : null;
+            const firstModuleId = (enrollment.modules && Object.keys(enrollment.modules).length > 0) ? Object.keys(enrollment.modules)[0] : null;
 
             return (
               <Card key={enrollment.id} className="flex flex-col overflow-hidden h-full shadow-sm hover:shadow-lg transition-shadow">

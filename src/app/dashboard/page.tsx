@@ -25,8 +25,8 @@ import { Timestamp } from 'firebase/firestore';
 import Autoplay from "embla-carousel-autoplay"
 
 const CourseCard = ({ course }: { course: Course }) => {
-    const courseImage = PlaceHolderImages.find((img) => img.id === course.image);
-    const isFree = course.prix === 0;
+    const courseImage = PlaceHolderImages.find((img) => img.id === 'course-project-management');
+    const isFree = true;
 
     return (
         <Card className="flex flex-col h-full overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-1 bg-card">
@@ -35,7 +35,7 @@ const CourseCard = ({ course }: { course: Course }) => {
                 {courseImage && (
                     <Image
                         src={courseImage.imageUrl}
-                        alt={course.titre}
+                        alt={course.title}
                         fill
                         className="object-cover"
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -45,16 +45,15 @@ const CourseCard = ({ course }: { course: Course }) => {
             </CardHeader>
             <CardContent className="flex-grow p-3">
                 <CardTitle className="text-base font-bold leading-tight hover:text-primary">
-                    <Link href={`/courses/${course.id}`}>{course.titre}</Link>
+                    <Link href={`/courses/${course.id}`}>{course.title}</Link>
                 </CardTitle>
-                <p className="mt-1 text-xs text-muted-foreground">{course.auteur}</p>
-                 <div className="flex items-center gap-1 mt-1 text-xs">
+                <div className="flex items-center gap-1 mt-1 text-xs">
                     <span className='font-bold text-amber-400'>4.5</span>
                     <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
                     <span className="text-muted-foreground">(1,250)</span>
                 </div>
                 <p className="mt-2 text-sm font-bold">
-                    {isFree ? 'Gratuit' : `${course.prix.toLocaleString('fr-FR')} FCFA`}
+                    {isFree ? 'Gratuit' : `Prix à venir`}
                 </p>
             </CardContent>
         </Card>
@@ -99,7 +98,7 @@ const CourseCarousel = ({ title, courses }: { title: string, courses: Course[] }
 
 export default function DashboardPage() {
   const { user, userProfile } = useUser();
-  const {data: coursesData, loading: coursesLoading} = useCollection<Course>("courses", { where: ['publie', '==', true]});
+  const {data: coursesData, loading: coursesLoading} = useCollection<Course>("formations", { where: ['publie', '==', true]});
   const {data: enrollmentsData, loading: enrollmentsLoading} = useCollection<Enrollment>(user ? `users/${user.uid}/enrollments` : undefined);
   
   const allCourses = coursesData || [];
@@ -109,23 +108,25 @@ export default function DashboardPage() {
     const shuffled = [...allCourses].sort(() => 0.5 - Math.random());
     const inProgress = enrollments
       .filter(e => (e.progression || 0) > 0 && (e.progression || 0) < 100)
-      .sort((a,b) => b.progression - a.progression);
+      .sort((a,b) => (b.progression || 0) - (a.progression || 0));
+
+    const sortedNew = [...allCourses].sort((a, b) => {
+            const dateA = a.createdAt instanceof Timestamp ? a.createdAt.toMillis() : 0;
+            const dateB = b.createdAt instanceof Timestamp ? b.createdAt.toMillis() : 0;
+            return dateB - dateA;
+        }).slice(0, 10);
 
     return {
         recommendedCourses: shuffled.slice(0, 10),
         popularCourses: shuffled.slice(10, 20),
-        newCourses: [...allCourses].sort((a, b) => {
-            const dateA = a.date_creation instanceof Timestamp ? a.date_creation.toMillis() : new Date(a.date_creation as string).getTime();
-            const dateB = b.date_creation instanceof Timestamp ? b.date_creation.toMillis() : new Date(b.date_creation as string).getTime();
-            return dateB - dateA;
-        }).slice(0, 10),
+        newCourses: sortedNew,
         inProgressCourses: inProgress,
     }
   }, [allCourses, enrollments]);
   
   const loading = coursesLoading || enrollmentsLoading;
   
-  const firstModuleId = (enrollment: Enrollment) => enrollment.modules ? Object.keys(enrollment.modules)[0] : null;
+  const firstModuleId = (enrollment: Enrollment) => (enrollment.modules && Object.keys(enrollment.modules).length > 0) ? Object.keys(enrollment.modules)[0] : null;
 
   return (
     <div className="space-y-12">
@@ -175,26 +176,29 @@ export default function DashboardPage() {
                 <div>
                      <h2 className="text-2xl font-bold text-foreground mb-4">Reprendre là où vous vous êtes arrêté</h2>
                      <div className="grid gap-6 md:grid-cols-2">
-                        {inProgressCourses.slice(0, 2).map(enrollment => (
-                            <Card key={enrollment.id}>
-                                <CardHeader>
-                                    <CardTitle className="text-lg hover:text-primary">
-                                        <Link href={`/courses/${enrollment.courseId}`}>{enrollment.courseTitle}</Link>
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <Progress value={enrollment.progression || 0} />
-                                     <p className="text-sm text-muted-foreground mt-2">{Math.round(enrollment.progression || 0)}% terminé</p>
-                                </CardContent>
-                                <CardFooter>
-                                     <Button asChild disabled={!firstModuleId(enrollment)}>
-                                        <Link href={`/courses/${enrollment.courseId}/modules/${firstModuleId(enrollment)}`}>
-                                            Continuer la formation <ArrowRight className="ml-2 h-4 w-4" />
-                                        </Link>
-                                    </Button>
-                                </CardFooter>
-                            </Card>
-                        ))}
+                        {inProgressCourses.slice(0, 2).map(enrollment => {
+                            const fModuleId = firstModuleId(enrollment);
+                            return (
+                                <Card key={enrollment.id}>
+                                    <CardHeader>
+                                        <CardTitle className="text-lg hover:text-primary">
+                                            <Link href={`/courses/${enrollment.courseId}`}>{enrollment.courseTitle}</Link>
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <Progress value={enrollment.progression || 0} />
+                                        <p className="text-sm text-muted-foreground mt-2">{Math.round(enrollment.progression || 0)}% terminé</p>
+                                    </CardContent>
+                                    <CardFooter>
+                                        <Button asChild disabled={!fModuleId}>
+                                            <Link href={`/courses/${enrollment.courseId}/modules/${fModuleId}`}>
+                                                Continuer la formation <ArrowRight className="ml-2 h-4 w-4" />
+                                            </Link>
+                                        </Button>
+                                    </CardFooter>
+                                </Card>
+                            );
+                        })}
                      </div>
                 </div>
             )}

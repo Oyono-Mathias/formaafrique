@@ -200,6 +200,13 @@ export default function DashboardLayout({
       )
   }
 
+  const MobileNavBar = () => (
+    <nav className="fixed bottom-0 left-0 right-0 h-16 bg-card border-t shadow-lg flex justify-around items-center lg:hidden z-20">
+        {navLinks.slice(0, 5).map(link => ( // Show first 5 for mobile bar
+            <NavLink key={link.href} {...link} isMobile />
+        ))}
+    </nav>
+  );
 
   return (
     <div className="min-h-screen w-full bg-background text-foreground flex flex-col lg:flex-row">
@@ -272,6 +279,8 @@ export default function DashboardLayout({
             </div>
         </main>
       </div>
+
+       <MobileNavBar />
     </div>
   );
 }
