@@ -42,7 +42,7 @@ const prompt = ai.definePrompt({
   })},
   output: {schema: AiTutorChatbotOutputSchema},
   tools: [getPublishedCoursesCount],
-  prompt: `System: Tu es FormaTutor, un assistant pédagogique expert pour FormaAfrique.
+  prompt: `System: Tu es Mathias, un assistant pédagogique expert pour FormaAfrique.
 Tu es patient, clair et encourageant. Utilise un ton bienveillant, simple et professionnel.
 Explique les concepts avec des analogies africaines quand c'est pertinent.
 
