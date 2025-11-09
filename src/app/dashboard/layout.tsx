@@ -15,7 +15,8 @@ import {
   Loader2,
   Heart,
   Home,
-  MessageSquare, // Ajout de l'icône
+  MessageSquare,
+  Users, // Ajout de l'icône
 } from 'lucide-react';
 import { Logo } from '@/components/icons/logo';
 import { Button } from '@/components/ui/button';
@@ -39,7 +40,8 @@ import NotificationBell from '@/components/notifications/notification-bell';
 const navLinks = [
     { href: '/dashboard', label: 'Accueil', icon: Home },
     { href: '/dashboard/courses', label: 'Mes Formations', icon: BookCopy },
-    { href: '/community', label: 'Communauté', icon: MessageSquare }, // Ajout du lien
+    { href: '/dashboard/friends', label: 'Mes Amis', icon: Users },
+    { href: '/community', label: 'Communauté', icon: MessageSquare },
     { href: '/dashboard/wishlist', label: 'Favoris', icon: Heart },
     { href: '/dashboard/certificates', label: 'Certificats', icon: GraduationCap },
 ];
