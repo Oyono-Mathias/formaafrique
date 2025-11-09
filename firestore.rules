@@ -18,6 +18,10 @@ service cloud.firestore {
       let user2Formation = get(/databases/$(database)/documents/users/$(uid2)).data.formationId;
       return user1Formation == user2Formation;
     }
+    
+    function isUserInFormation(formationId) {
+        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.formationId == formationId;
+    }
 
     // Rules for User Profiles
     match /users/{userId} {
@@ -107,6 +111,21 @@ service cloud.firestore {
       
       // Only the sender can update/delete their own message
       allow update, delete: if isChatMember() && isOwner(get(/databases/$(database)/documents/chats/$(chatId)/messages/$(messageId)).data.from);
+    }
+    
+    // Rules for Group Chats
+    match /group_chats/{chatId} {
+        // Anyone in the formation can read the group chat info
+        allow read: if isUserInFormation(resource.data.formationId);
+        // Only admins can create/update group chat metadata
+        allow create, update, delete: if isAdmin();
+    }
+    
+    match /group_chats/{chatId}/messages/{messageId} {
+        // Allow read/write if the user belongs to the formation of the chat
+        allow read, create: if isUserInFormation(get(/databases/$(database)/documents/group_chats/$(chatId)).data.formationId);
+        // Allow update/delete only for the message author or an admin
+        allow update, delete: if isOwner(get(/databases/$(database)/documents/group_chats/$(chatId)/messages/$(messageId)).data.authorId) || isAdmin();
     }
     
     // Rules for Notifications

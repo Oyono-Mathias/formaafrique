@@ -1,216 +1,203 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import Link from 'next/link';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { addDoc, collection, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { useUser, useCollection, useFirestore } from '@/firebase';
+import type { GroupChat, GroupMessage, UserProfile } from '@/lib/types';
+import { Loader2, Send } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
-
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useUser, useCollection, useFirestore } from '@/firebase';
-import type { CommunityPost } from '@/lib/types';
-import { MessageSquare, Search, Users, ThumbsUp, HelpCircle, Book, Loader2 } from 'lucide-react';
+import { collection, query, where, getDocs, addDoc, serverTimestamp, orderBy, onSnapshot, doc, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
+import { categories } from '@/lib/categories';
 
 
-const postSchema = z.object({
-  title: z.string().min(5, { message: "Le titre doit avoir au moins 5 caractères." }),
-  content: z.string().min(20, { message: "Le contenu doit avoir au moins 20 caractères." }),
-  tags: z.string().min(3, { message: "Veuillez ajouter au moins un tag." }),
-});
+const getFormationName = (formationId: string | undefined) => {
+    if (!formationId) return "Communauté";
+    const foundCategory = categories.find(c => c.toLowerCase().includes(formationId.toLowerCase()));
+    return foundCategory || `Communauté ${formationId}`;
+}
+
 
 export default function CommunityPage() {
     const { user, userProfile } = useUser();
-    
-    const collectionOptions = useMemo(() => {
-        if (!userProfile?.formationId) return undefined;
-        return { where: ['formationId', '==', userProfile.formationId] as [string, '==', string]};
-    }, [userProfile?.formationId]);
-
-    const { data: postsData, loading, error } = useCollection<CommunityPost>(
-        userProfile?.formationId ? 'community_posts' : null,
-        collectionOptions
-    );
-    
     const db = useFirestore();
     const { toast } = useToast();
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-    const sortedPosts = useMemo(() => {
-        return (postsData || []).sort((a, b) => {
-            const dateA = a.createdAt instanceof Timestamp ? a.createdAt.toMillis() : 0;
-            const dateB = b.createdAt instanceof Timestamp ? b.createdAt.toMillis() : 0;
-            return dateB - dateA;
+    const [groupChat, setGroupChat] = useState<GroupChat | null>(null);
+    const [messages, setMessages] = useState<GroupMessage[]>([]);
+    const [newMessage, setNewMessage] = useState('');
+    const [loading, setLoading] = useState(true);
+    const [sending, setSending] = useState(false);
+    
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const formationId = userProfile?.formationId;
+    const formationName = getFormationName(formationId);
+    
+    // Effect to find or create the group chat for the user's formation
+    useEffect(() => {
+        if (!formationId || !db) {
+            setLoading(false);
+            return;
+        }
+
+        const findOrCreateChat = async () => {
+            setLoading(true);
+            const chatRef = doc(db, 'group_chats', formationId);
+            const chatSnap = await getDocs(query(collection(db, 'group_chats'), where('formationId', '==', formationId)));
+            
+            if (chatSnap.empty) {
+                // If it doesn't exist, an admin should create it.
+                // For now, we'll show a message.
+                console.log(`No group chat found for formation: ${formationId}`);
+                setGroupChat(null);
+            } else {
+                const chatData = { id: chatSnap.docs[0].id, ...chatSnap.docs[0].data() } as GroupChat;
+                setGroupChat(chatData);
+            }
+        };
+
+        findOrCreateChat();
+    }, [formationId, db]);
+
+    // Effect to listen for new messages
+    useEffect(() => {
+        if (!groupChat?.id || !db) {
+            setLoading(false);
+            return;
+        }
+        
+        const messagesQuery = query(collection(db, `group_chats/${groupChat.id}/messages`), orderBy('timestamp', 'asc'));
+        
+        const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
+            const newMessages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as GroupMessage));
+            setMessages(newMessages);
+            setLoading(false);
+        }, (error) => {
+            console.error("Error fetching group messages:", error);
+            toast({ variant: 'destructive', title: "Erreur de chargement des messages." });
+            setLoading(false);
         });
-    }, [postsData]);
 
-    const form = useForm<z.infer<typeof postSchema>>({
-        resolver: zodResolver(postSchema),
-        defaultValues: { title: '', content: '', tags: '' },
-    });
+        return () => unsubscribe();
+    }, [groupChat, db, toast]);
+    
+     // Scroll to bottom effect
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
 
-    async function onSubmit(values: z.infer<typeof postSchema>) {
-        if (!user || !userProfile || !db) return;
 
-        const tagsArray = values.tags.split(',').map(tag => tag.trim()).filter(Boolean);
+    const handleSendMessage = async () => {
+        if (!newMessage.trim() || !user || !userProfile || !groupChat || !db) return;
+
+        setSending(true);
+        const messagesCollection = collection(db, `group_chats/${groupChat.id}/messages`);
 
         try {
-            await addDoc(collection(db, 'community_posts'), {
-                title: values.title,
-                content: values.content,
+            await addDoc(messagesCollection, {
                 authorId: user.uid,
                 authorName: userProfile.name,
                 authorImage: userProfile.photoURL || '',
-                tags: tagsArray,
-                createdAt: serverTimestamp(),
-                commentCount: 0,
-                voteCount: 0,
-                formationId: userProfile.formationId || 'default', // Add formationId
+                text: newMessage.trim(),
+                timestamp: serverTimestamp(),
             });
-            toast({ title: "Discussion publiée !", description: "Votre message est maintenant visible par la communauté." });
-            setIsDialogOpen(false);
-            form.reset();
-        } catch (e) {
-            console.error(e);
-            toast({ variant: 'destructive', title: "Erreur", description: "Impossible de publier la discussion." });
+            setNewMessage('');
+        } catch (error) {
+            console.error("Error sending message:", error);
+            toast({ variant: 'destructive', title: "L'envoi du message a échoué." });
+        } finally {
+            setSending(false);
         }
+    };
+
+
+    if (loading && !groupChat) {
+        return <div className="flex h-full w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
     }
 
     return (
-        <div className="bg-background">
-            {/* Hero Section */}
-            <section className="bg-primary/10 py-12">
-                <div className="container px-4">
-                    <div className="text-center">
-                        <h1 className="text-4xl font-bold font-headline text-primary">Bienvenue dans la Communauté</h1>
-                        <p className="mt-2 text-lg text-muted-foreground">Posez des questions, trouvez des réponses, et collaborez avec d'autres apprenants.</p>
-                        <div className="mt-6 flex justify-center gap-2">
-                            <div className="relative flex-grow max-w-lg">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                <Input placeholder="Rechercher dans la communauté..." className="pl-10 h-12" />
-                            </div>
-                        </div>
-                    </div>
+        <div className="flex flex-col h-[calc(100vh-8rem)] bg-primary/5">
+            <header className="p-4 border-b text-center bg-card shadow-sm">
+                <h1 className="text-2xl font-bold font-headline text-primary">{formationName}</h1>
+                <p className="text-muted-foreground text-sm">{groupChat?.description || "Le lieu d'échange de votre promotion."}</p>
+            </header>
+
+            {!formationId ? (
+                <div className="flex-1 flex items-center justify-center text-center p-4">
+                    <p className="text-muted-foreground">Vous devez être assigné à une formation pour rejoindre un groupe.</p>
                 </div>
-            </section>
-            
-            <main className="container px-4 py-12">
-                <div className="grid lg:grid-cols-12 gap-12">
-                    {/* Main Content */}
-                    <div className="lg:col-span-8">
-                        <div className="flex justify-between items-center mb-4">
-                             <h2 className="text-2xl font-bold font-headline">Discussions Récentes</h2>
-                             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                                <DialogTrigger asChild>
-                                    <Button disabled={!user}>
-                                        <MessageSquare className="mr-2 h-4 w-4"/>
-                                        Nouvelle Discussion
-                                    </Button>
-                                </DialogTrigger>
-                                <DialogContent>
-                                    <DialogHeader>
-                                        <DialogTitle>Lancer une nouvelle discussion</DialogTitle>
-                                    </DialogHeader>
-                                    <Form {...form}>
-                                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                                            <FormField control={form.control} name="title" render={({ field }) => (
-                                                <FormItem><FormLabel>Titre</FormLabel><FormControl><Input {...field} placeholder="Quel est le sujet principal ?" /></FormControl><FormMessage /></FormItem>
-                                            )}/>
-                                            <FormField control={form.control} name="content" render={({ field }) => (
-                                                <FormItem><FormLabel>Votre question ou message</FormLabel><FormControl><Textarea {...field} placeholder="Décrivez votre question en détail..." rows={5} /></FormControl><FormMessage /></FormItem>
-                                            )}/>
-                                            <FormField control={form.control} name="tags" render={({ field }) => (
-                                                <FormItem><FormLabel>Tags</FormLabel><FormControl><Input {...field} placeholder="Ex: marketing, javascript, business" /></FormControl><p className='text-xs text-muted-foreground'>Séparez les tags par une virgule.</p><FormMessage /></FormItem>
-                                            )}/>
-                                            <DialogFooter>
-                                                <DialogClose asChild><Button type="button" variant="secondary">Annuler</Button></DialogClose>
-                                                <Button type="submit" disabled={form.formState.isSubmitting}>
-                                                    {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                                                    Publier
-                                                </Button>
-                                            </DialogFooter>
-                                        </form>
-                                    </Form>
-                                </DialogContent>
-                             </Dialog>
-                        </div>
-                        <Tabs defaultValue="recent" className="w-full">
-                            <TabsList>
-                                <TabsTrigger value="recent">Récents</TabsTrigger>
-                                <TabsTrigger value="popular">Populaire</TabsTrigger>
-                                <TabsTrigger value="unanswered">Sans réponse</TabsTrigger>
-                            </TabsList>
-                            <TabsContent value="recent" className="mt-4 space-y-4">
-                                {loading && (
-                                    <div className="flex justify-center items-center h-40">
-                                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                                    </div>
-                                )}
-                                {error && <p className="text-destructive text-center">Erreur de chargement des discussions.</p>}
-                                {!loading && sortedPosts.length > 0 ? sortedPosts.map((post) => (
-                                    <Card key={post.id} className="hover:bg-muted/50 transition-colors">
-                                        <CardContent className="p-4 flex gap-4">
-                                            <Avatar>
-                                                <AvatarImage src={post.authorImage} />
-                                                <AvatarFallback>{post.authorName.charAt(0)}</AvatarFallback>
-                                            </Avatar>
-                                            <div className="flex-grow">
-                                                <h3 className="font-semibold text-lg hover:text-primary"><Link href="#">{post.title}</Link></h3>
-                                                <div className="flex flex-wrap gap-2 my-2">
-                                                    {post.tags.map(tag => <Badge key={tag} variant="secondary">{tag}</Badge>)}
-                                                </div>
-                                                <div className="text-xs text-muted-foreground flex items-center gap-4">
-                                                    <span>Posté par <strong className='text-foreground'>{post.authorName}</strong> • {post.createdAt ? formatDistanceToNow(post.createdAt.toDate(), { addSuffix: true, locale: fr }) : ''}</span>
-                                                    <div className="flex gap-4">
-                                                         <span className='flex items-center gap-1'><ThumbsUp className='h-3 w-3'/> {post.voteCount} Votes</span>
-                                                         <span className='flex items-center gap-1'><MessageSquare className='h-3 w-3'/> {post.commentCount} Commentaires</span>
-                                                    </div>
+            ) : !groupChat && !loading ? (
+                 <div className="flex-1 flex items-center justify-center text-center p-4">
+                    <p className="text-muted-foreground">Le chat de groupe pour votre formation n'est pas encore disponible.</p>
+                </div>
+            ) : (
+                <>
+                    <div className="flex-1 overflow-hidden">
+                        <ScrollArea className="h-full">
+                            <div className="p-4 md:p-8 space-y-6">
+                                {messages.map((message) => {
+                                    const isSender = message.authorId === user?.uid;
+                                    return (
+                                        <div
+                                            key={message.id}
+                                            className={cn(
+                                                'flex items-start gap-3',
+                                                isSender ? 'justify-end' : 'justify-start'
+                                            )}
+                                        >
+                                            {!isSender && (
+                                                 <Avatar className="h-10 w-10">
+                                                    <AvatarImage src={message.authorImage} alt={message.authorName} />
+                                                    <AvatarFallback>{message.authorName.charAt(0)}</AvatarFallback>
+                                                </Avatar>
+                                            )}
+                                            <div className="flex flex-col">
+                                                {!isSender && <p className="text-xs text-muted-foreground ml-3 mb-1">{message.authorName}</p>}
+                                                <div
+                                                    className={cn(
+                                                        'max-w-md md:max-w-lg p-3 rounded-lg shadow-sm',
+                                                        isSender
+                                                        ? 'bg-primary text-primary-foreground rounded-br-none'
+                                                        : 'bg-card rounded-bl-none'
+                                                    )}
+                                                    >
+                                                    <p>{message.text}</p>
+                                                    <p className={`text-xs mt-1.5 opacity-70 ${isSender ? 'text-right' : 'text-left'}`}>
+                                                        {message.timestamp ? formatDistanceToNow(message.timestamp.toDate(), { addSuffix: true, locale: fr }) : '...'}
+                                                    </p>
                                                 </div>
                                             </div>
-                                        </CardContent>
-                                    </Card>
-                                )) : !loading && (
-                                    <div className="text-center py-12 text-muted-foreground">
-                                        <p>Aucune discussion pour le moment. Soyez le premier à en lancer une !</p>
-                                    </div>
-                                )}
-                            </TabsContent>
-                        </Tabs>
+                                        </div>
+                                    );
+                                })}
+                                <div ref={messagesEndRef} />
+                            </div>
+                        </ScrollArea>
                     </div>
 
-                    {/* Sidebar */}
-                    <aside className="lg:col-span-4 space-y-8">
-                         <Card>
-                            <CardHeader>
-                                <CardTitle>Règles et Ressources</CardTitle>
-                                <CardDescription>Consultez les bonnes pratiques de la communauté.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-2">
-                                <Link href="#" className="flex items-center text-sm text-primary hover:underline p-2 rounded-md hover:bg-primary/5">
-                                    <Book className="mr-3 h-4 w-4"/> Objectifs et valeurs de la communauté
-                                </Link>
-                                <Link href="#" className="flex items-center text-sm text-primary hover:underline p-2 rounded-md hover:bg-primary/5">
-                                    <Users className="mr-3 h-4 w-4"/> Principes et code de conduite
-                                </Link>
-                                <Link href="#" className="flex items-center text-sm text-primary hover:underline p-2 rounded-md hover:bg-primary/5">
-                                    <HelpCircle className="mr-3 h-4 w-4"/> Comment poser une bonne question ?
-                                </Link>
-                            </CardContent>
-                        </Card>
-                    </aside>
-                </div>
-            </main>
+                    <footer className="p-4 border-t bg-background">
+                        <div className="flex items-center gap-4 max-w-3xl mx-auto">
+                        <Input
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                            placeholder="Envoyer un message à la communauté..."
+                            className="flex-1 h-12"
+                            disabled={sending}
+                        />
+                        <Button onClick={handleSendMessage} size="icon" className="h-12 w-12 flex-shrink-0" disabled={sending || !newMessage.trim()}>
+                            {sending ? <Loader2 className="animate-spin" /> : <Send />}
+                            <span className="sr-only">Envoyer</span>
+                        </Button>
+                        </div>
+                    </footer>
+                </>
+            )}
         </div>
     );
 }

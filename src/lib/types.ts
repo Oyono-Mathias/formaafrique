@@ -210,6 +210,23 @@ export interface Notification {
   createdAt: Timestamp;
 }
 
+export interface GroupChat {
+  id?: string; // The ID will be the formationId
+  formationId: string;
+  name: string;
+  description: string;
+  createdAt: Timestamp;
+}
+
+export interface GroupMessage {
+  id?: string;
+  authorId: string;
+  authorName: string;
+  authorImage: string;
+  text: string;
+  timestamp: Timestamp;
+}
+
 
 // This is a temporary API route to fetch collections from the client side
 // as server components are not fully supported with the current firebase setup
