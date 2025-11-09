@@ -10,9 +10,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
-import { Document } from 'genkit';
-import { retrieve } from 'genkit/ai';
+import { z, Document, retrieve } from 'genkit';
 import { memoryRetriever } from 'genkit/dev';
 
 // Note: In a production environment, you would replace `memoryRetriever`
