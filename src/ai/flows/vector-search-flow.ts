@@ -11,7 +11,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { Document } from 'genkit/document';
+import { Document } from 'genkit';
 import { retrieve } from 'genkit/ai';
 import { memoryRetriever } from 'genkit/dev';
 
@@ -21,7 +21,7 @@ import { memoryRetriever } from 'genkit/dev';
 const knowledgeBase = [
     Document.fromText("Les bases de la comptabilité: Le bilan. Dans cette vidéo, nous explorons les actifs, les passifs et les capitaux propres.", { type: "video", id: "vid1", title: "Le bilan" }),
     Document.fromText("Marketing Digital pour Débutants: Introduction au SEO. Découvrez comment optimiser votre site pour les moteurs de recherche.", { type: "video", id: "vid2", title: "Introduction au SEO" }),
-    Document<any>.fromText("Le module d'introduction au business plan couvre la définition de votre mission et l'analyse de marché.", { type: "module", id: "mod1", title: "Introduction au Business Plan" }),
+    Document.fromText("Le module d'introduction au business plan couvre la définition de votre mission et l'analyse de marché.", { type: "module", id: "mod1", title: "Introduction au Business Plan" }),
 ];
 
 const retriever = memoryRetriever(knowledgeBase);
