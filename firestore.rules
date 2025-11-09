@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -5,6 +6,11 @@ service cloud.firestore {
     // Helper function to check for admin role
     function isAdmin() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Helper function to check for instructor role
+    function isFormateur() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'formateur';
     }
 
     // Helper function to check if a user is the owner of a document
@@ -32,22 +38,26 @@ service cloud.firestore {
     }
 
     // Rules for Courses, Categories, Modules, Videos (Read-only for most users)
-    match /courses/{courseId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
     match /categories/{categoryId} {
       allow read: if true;
       allow write: if isAdmin();
     }
-    match /courses/{courseId}/modules/{moduleId} {
-       allow read: if true;
-       allow write: if isAdmin();
+
+    match /formations/{formationId} {
+      allow read: if true;
+      allow write: if isAdmin() || isFormateur(); 
     }
-     match /courses/{courseId}/modules/{moduleId}/videos/{videoId} {
+    
+    match /formations/{formationId}/modules/{moduleId} {
        allow read: if true;
-       allow write: if isAdmin();
+       allow write: if isAdmin() || isFormateur();
     }
+
+     match /formations/{formationId}/modules/{moduleId}/videos/{videoId} {
+       allow read: if true;
+       allow write: if isAdmin() || isFormateur();
+    }
+
      match /courses/{courseId}/enrollments/{enrollmentId} {
        allow read, write: if request.auth != null;
     }
@@ -149,3 +159,5 @@ service cloud.firestore {
 
   }
 }
+
+    

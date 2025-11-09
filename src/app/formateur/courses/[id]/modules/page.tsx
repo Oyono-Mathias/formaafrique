@@ -66,17 +66,17 @@ import ReactPlayer from 'react-player';
 import { formatVideoUrl } from '@/lib/video-utils';
 
 const moduleSchema = z.object({
-  titre: z
+  title: z
     .string()
     .min(3, { message: 'Le titre doit avoir au moins 3 caractères.' }),
-  description: z
+  summary: z
     .string()
     .min(10, { message: 'La description doit avoir au moins 10 caractères.' }),
 });
 
 const videoSchema = z.object({
-  titre: z.string().min(3, 'Titre requis.'),
-  url: z.string().url('URL de vidéo valide requise.'),
+  title: z.string().min(3, 'Titre requis.'),
+  driveUrl: z.string().url('URL de vidéo valide requise.'),
 });
 
 export default function ManageModulesPage({
@@ -87,11 +87,11 @@ export default function ManageModulesPage({
   const courseId = params.id;
   
   const { data: course, loading: courseLoading } = useDoc<Course>(
-    'courses',
+    'formations',
     courseId
   );
   const { data: modulesData, loading: modulesLoading } = useCollection<Module>(
-    courseId ? `courses/${courseId}/modules` : null
+    courseId ? `formations/${courseId}/modules` : null
   );
   const db = useFirestore();
   const { toast } = useToast();
@@ -103,28 +103,28 @@ export default function ManageModulesPage({
   const [editingVideo, setEditingVideo] = useState<Video | null>(null);
 
   const sortedModules = useMemo(() => {
-    return (modulesData || []).sort((a, b) => a.ordre - b.ordre);
+    return (modulesData || []).sort((a, b) => a.order - b.order);
   }, [modulesData]);
 
   const moduleForm = useForm<z.infer<typeof moduleSchema>>({
     resolver: zodResolver(moduleSchema),
-    defaultValues: { titre: '', description: '' },
+    defaultValues: { title: '', summary: '' },
   });
 
   const videoForm = useForm<z.infer<typeof videoSchema>>({
     resolver: zodResolver(videoSchema),
-    defaultValues: { titre: '', url: '' },
+    defaultValues: { title: '', driveUrl: '' },
   });
 
   useEffect(() => {
     if (isModuleModalOpen) {
       if (editingModule) {
         moduleForm.reset({
-          titre: editingModule.titre,
-          description: editingModule.description,
+          title: editingModule.title,
+          summary: editingModule.summary,
         });
       } else {
-        moduleForm.reset({ titre: '', description: '' });
+        moduleForm.reset({ title: '', summary: '' });
       }
     }
   }, [editingModule, isModuleModalOpen, moduleForm]);
@@ -133,11 +133,11 @@ export default function ManageModulesPage({
     if (isVideoModalOpen) {
       if (editingVideo) {
         videoForm.reset({
-          titre: editingVideo.titre,
-          url: editingVideo.url,
+          title: editingVideo.title,
+          driveUrl: editingVideo.driveUrl,
         });
       } else {
-        videoForm.reset({ titre: '', url: '' });
+        videoForm.reset({ title: '', driveUrl: '' });
       }
     }
   }, [editingVideo, isVideoModalOpen, videoForm]);
@@ -148,15 +148,15 @@ export default function ManageModulesPage({
     try {
       if (editingModule) {
         // Update existing module
-        const moduleRef = doc(db, `courses/${courseId}/modules`, editingModule.id!);
+        const moduleRef = doc(db, `formations/${courseId}/modules`, editingModule.id!);
         await updateDoc(moduleRef, values);
         toast({ title: 'Module mis à jour !' });
       } else {
         // Create new module
-        const modulesCollectionRef = collection(db, 'courses', courseId, 'modules');
+        const modulesCollectionRef = collection(db, 'formations', courseId, 'modules');
         await addDoc(modulesCollectionRef, {
           ...values,
-          ordre: (sortedModules.length || 0) + 1,
+          order: (sortedModules.length || 0) + 1,
         });
         toast({ title: 'Module ajouté !' });
       }
@@ -175,30 +175,30 @@ export default function ManageModulesPage({
   async function onVideoSubmit(values: z.infer<typeof videoSchema>) {
     if (!db || !courseId || !selectedModule?.id) return;
     
-    const formattedUrl = formatVideoUrl(values.url);
+    const formattedUrl = formatVideoUrl(values.driveUrl);
 
     try {
       const videosCollectionRef = collection(
         db,
-        `courses/${courseId}/modules/${selectedModule.id}/videos`
+        `formations/${courseId}/modules/${selectedModule.id}/videos`
       );
       
       const videosSnapshot = await getDocs(videosCollectionRef);
       const nextOrder = (videosSnapshot.docs.length || 0) + 1;
       
       const videoData = {
-          titre: values.titre,
-          url: formattedUrl
+          title: values.title,
+          driveUrl: formattedUrl
       };
 
       if (editingVideo) {
-        const videoRef = doc(db, `courses/${courseId}/modules/${selectedModule.id}/videos`, editingVideo.id!);
+        const videoRef = doc(db, `formations/${courseId}/modules/${selectedModule.id}/videos`, editingVideo.id!);
         await updateDoc(videoRef, videoData);
         toast({ title: 'Vidéo mise à jour !' });
       } else {
         await addDoc(videosCollectionRef, {
           ...videoData,
-          ordre: nextOrder,
+          order: nextOrder,
         });
         toast({ title: 'Vidéo ajoutée !' });
       }
@@ -224,8 +224,8 @@ export default function ManageModulesPage({
     if (!confirmed) return;
 
     try {
-      const moduleRef = doc(db, 'courses', courseId, 'modules', moduleId);
-      const videosQuery = query(collection(db, `courses/${courseId}/modules/${moduleId}/videos`));
+      const moduleRef = doc(db, 'formations', courseId, 'modules', moduleId);
+      const videosQuery = query(collection(db, `formations/${courseId}/modules/${moduleId}/videos`));
       const videosSnapshot = await getDocs(videosQuery);
       
       const batch = writeBatch(db);
@@ -255,7 +255,7 @@ export default function ManageModulesPage({
   const openVideoDialog = (module: Module, video: Video | null = null) => {
     setSelectedModule(module);
     setEditingVideo(video);
-    videoForm.reset({ titre: video?.titre || '', url: video?.url || '' });
+    videoForm.reset({ title: video?.title || '', driveUrl: video?.driveUrl || '' });
     setIsVideoModalOpen(true);
   };
 
@@ -299,7 +299,7 @@ export default function ManageModulesPage({
       </Link>
 
       <div>
-        <h1 className="text-3xl font-bold font-headline">{course.titre}</h1>
+        <h1 className="text-3xl font-bold font-headline">{course.title}</h1>
         <p className="text-muted-foreground">
           Gérez les modules et les vidéos de votre formation.
         </p>
@@ -324,8 +324,8 @@ export default function ManageModulesPage({
             <Card key={module.id}>
               <CardHeader className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
                 <div>
-                  <CardTitle>{module.titre}</CardTitle>
-                  <CardDescription>{module.description}</CardDescription>
+                  <CardTitle>{module.title}</CardTitle>
+                  <CardDescription>{module.summary}</CardDescription>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <Button
@@ -381,7 +381,7 @@ export default function ManageModulesPage({
             >
               <FormField
                 control={moduleForm.control}
-                name="titre"
+                name="title"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Titre du module</FormLabel>
@@ -397,7 +397,7 @@ export default function ManageModulesPage({
               />
               <FormField
                 control={moduleForm.control}
-                name="description"
+                name="summary"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Description</FormLabel>
@@ -447,7 +447,7 @@ export default function ManageModulesPage({
 }
 
 function VideoDialog({ isOpen, setIsOpen, form, onSubmit, isEditing, module }: any) {
-  const rawVideoUrl = form.watch('url');
+  const rawVideoUrl = form.watch('driveUrl');
   const formattedVideoUrl = formatVideoUrl(rawVideoUrl);
 
   return (
@@ -457,7 +457,7 @@ function VideoDialog({ isOpen, setIsOpen, form, onSubmit, isEditing, module }: a
           <DialogTitle>
             {isEditing
               ? 'Modifier la vidéo'
-              : `Ajouter une vidéo à "${module?.titre}"`}
+              : `Ajouter une vidéo à "${module?.title}"`}
           </DialogTitle>
           <DialogDescription>
             Collez l'URL de votre vidéo (YouTube, Google Drive, etc.).
@@ -470,7 +470,7 @@ function VideoDialog({ isOpen, setIsOpen, form, onSubmit, isEditing, module }: a
           >
             <FormField
               control={form.control}
-              name="titre"
+              name="title"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Titre de la vidéo</FormLabel>
@@ -483,7 +483,7 @@ function VideoDialog({ isOpen, setIsOpen, form, onSubmit, isEditing, module }: a
             />
             <FormField
               control={form.control}
-              name="url"
+              name="driveUrl"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>URL de la vidéo</FormLabel>
@@ -532,14 +532,14 @@ function ModuleVideos({
   onEditVideo: (video: Video) => void;
 }) {
   const { data: videosData, loading, error } = useCollection<Video>(
-    courseId && moduleId ? `courses/${courseId}/modules/${moduleId}/videos` : null
+    courseId && moduleId ? `formations/${courseId}/modules/${moduleId}/videos` : null
   );
   const db = useFirestore();
   const { toast } = useToast();
 
   const sortedVideos = useMemo(() => {
     const videos = videosData || [];
-    return videos.sort((a, b) => a.ordre - b.ordre);
+    return videos.sort((a, b) => a.order - b.order);
   }, [videosData]);
 
   const handleDeleteVideo = async (videoId: string) => {
@@ -551,7 +551,7 @@ function ModuleVideos({
     if (!confirmed) return;
     
     try {
-      const videoRef = doc(db, `courses/${courseId}/modules/${moduleId}/videos`, videoId);
+      const videoRef = doc(db, `formations/${courseId}/modules/${moduleId}/videos`, videoId);
       await deleteDoc(videoRef);
       toast({ title: 'Vidéo supprimée avec succès !' });
     } catch (e) {
@@ -593,7 +593,7 @@ function ModuleVideos({
             >
               <div className="flex items-center gap-3">
                 <VideoIcon className="h-5 w-5 text-primary" />
-                <p className="font-medium text-sm">{video.titre}</p>
+                <p className="font-medium text-sm">{video.title}</p>
               </div>
               <div className="flex gap-2 items-center">
                 <Button
@@ -624,3 +624,5 @@ function ModuleVideos({
     </div>
   );
 }
+
+    
