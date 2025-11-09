@@ -364,9 +364,10 @@
         "tags": { "type": "array", "items": { "type": "string" }, "description": "Tags associated with the post." },
         "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp when the post was created." },
         "commentCount": { "type": "number", "description": "Number of comments on the post." },
-        "voteCount": { "type": "number", "description": "Number of upvotes on the post." }
+        "voteCount": { "type": "number", "description": "Number of upvotes on the post." },
+        "formationId": { "type": "string", "description": "ID of the formation this post belongs to." }
       },
-      "required": ["title", "content", "authorId", "authorName", "createdAt", "commentCount", "voteCount"]
+      "required": ["title", "content", "authorId", "authorName", "createdAt", "commentCount", "voteCount", "formationId"]
     },
     "FriendRequest": {
       "title": "Friend Request",

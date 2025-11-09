@@ -31,8 +31,18 @@ const postSchema = z.object({
 });
 
 export default function CommunityPage() {
-    const { data: postsData, loading, error } = useCollection<CommunityPost>('community_posts');
     const { user, userProfile } = useUser();
+    
+    const collectionOptions = useMemo(() => {
+        if (!userProfile?.formationId) return undefined;
+        return { where: ['formationId', '==', userProfile.formationId] as [string, '==', string]};
+    }, [userProfile?.formationId]);
+
+    const { data: postsData, loading, error } = useCollection<CommunityPost>(
+        userProfile?.formationId ? 'community_posts' : null,
+        collectionOptions
+    );
+    
     const db = useFirestore();
     const { toast } = useToast();
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -66,6 +76,7 @@ export default function CommunityPage() {
                 createdAt: serverTimestamp(),
                 commentCount: 0,
                 voteCount: 0,
+                formationId: userProfile.formationId || 'default', // Add formationId
             });
             toast({ title: "Discussion publiée !", description: "Votre message est maintenant visible par la communauté." });
             setIsDialogOpen(false);

@@ -168,6 +168,7 @@ export interface CommunityPost {
     createdAt: Timestamp;
     commentCount: number;
     voteCount: number;
+    formationId?: string; // Add this line
 }
 
 export interface FriendRequest {
