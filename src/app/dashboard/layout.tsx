@@ -41,7 +41,7 @@ const navLinks = [
     { href: '/dashboard', label: 'Accueil', icon: Home },
     { href: '/dashboard/courses', label: 'Mes Formations', icon: BookCopy },
     { href: '/messages', label: 'Messages', icon: MessageSquare },
-    { href: '/dashboard/friends', label: 'Mes Amis', icon: Users },
+    { href: '/dashboard/team', label: 'Mes Camarades', icon: Users },
     { href: '/community', label: 'Communauté', icon: MessageSquare },
     { href: '/dashboard/wishlist', label: 'Favoris', icon: Heart },
     { href: '/dashboard/certificates', label: 'Certificats', icon: GraduationCap },
