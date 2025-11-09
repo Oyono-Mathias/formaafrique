@@ -624,4 +624,3 @@ function ModuleVideos({
     </div>
   );
 }
-

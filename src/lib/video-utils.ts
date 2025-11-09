@@ -22,7 +22,11 @@ export function formatVideoUrl(url: string): string {
   const driveRegex = /drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/;
   const driveMatch = url.match(driveRegex);
   if (driveMatch && driveMatch[1]) {
-    return `https://drive.google.com/uc?export=download&id=${driveMatch[1]}`;
+    // Note: This link forces a download, which is not ideal for streaming.
+    // For direct streaming, the file must be publicly shared, and even then it can be unreliable.
+    // A better approach is using the Google Drive API to get a direct media link or using a platform like YouTube/Vimeo.
+    // For the purpose of this component, we'll format it for basic embedding attempts.
+    return `https://drive.google.com/uc?export=view&id=${driveMatch[1]}`;
   }
 
   // Pour Firebase Storage ou d'autres liens directs, l'URL est déjà utilisable.
