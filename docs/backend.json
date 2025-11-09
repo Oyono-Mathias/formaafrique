@@ -524,6 +524,37 @@
         }
       },
       "required": ["authorId", "authorName", "text", "timestamp"]
+    },
+    "ModerationLog": {
+        "title": "Moderation Log",
+        "description": "Stores the result of an AI moderation check for a message.",
+        "type": "object",
+        "properties": {
+            "msgId": { "type": "string" },
+            "chatId": { "type": "string" },
+            "fromUid": { "type": "string" },
+            "text": { "type": "string" },
+            "verdict": { "type": "string", "enum": ["allowed", "blocked", "review"] },
+            "categories": { "type": "object", "additionalProperties": { "type": "number" }, "description": "Confidence scores for various moderation categories." },
+            "confidence": { "type": "number" },
+            "timestamp": { "type": "string", "format": "date-time" }
+        },
+        "required": ["msgId", "chatId", "fromUid", "text", "verdict", "timestamp"]
+    },
+    "AiFlag": {
+        "title": "AI Flag",
+        "description": "Stores messages flagged by the AI for review or because they were blocked.",
+        "type": "object",
+        "properties": {
+            "msgId": { "type": "string" },
+            "chatId": { "type": "string" },
+            "fromUid": { "type": "string" },
+            "reason": { "type": "string", "description": "The primary category that triggered the flag." },
+            "severity": { "type": "string", "enum": ["low", "medium", "high"] },
+            "status": { "type": "string", "enum": ["pending_review", "resolved", "dismissed"] },
+            "timestamp": { "type": "string", "format": "date-time" }
+        },
+        "required": ["msgId", "chatId", "fromUid", "reason", "severity", "status", "timestamp"]
     }
   },
   "auth": {
@@ -613,6 +644,14 @@
     "/group_chats/{chatId}/messages/{messageId}": {
       "schema": { "$ref": "#/entities/GroupMessage" },
       "description": "Stores all messages for a specific group chat."
+    },
+    "/moderationLogs/{logId}": {
+        "schema": { "$ref": "#/entities/ModerationLog" },
+        "description": "Stores the results of AI content moderation for chat messages."
+    },
+    "/aiFlags/{flagId}": {
+        "schema": { "$ref": "#/entities/AiFlag" },
+        "description": "Stores messages flagged by the AI for review or action."
     }
   }
 }
