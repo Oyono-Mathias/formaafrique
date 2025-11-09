@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useUser, useCollection, useDoc, useFirestore, useStorage } from '@/firebase';
-import { Loader2, Send, ArrowLeft, Paperclip, X } from 'lucide-react';
+import { Loader2, Send, ArrowLeft, Paperclip, X, Phone, Video } from 'lucide-react';
 import { notFound, useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { collection, addDoc, serverTimestamp, orderBy, query, doc, updateDoc, where, getDocs, writeBatch } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, orderBy, query, doc, updateDoc, writeBatch, onSnapshot, Unsubscribe, DocumentReference } from 'firebase/firestore';
 import type { Message, Chat, UserProfile } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -16,7 +16,41 @@ import Image from 'next/image';
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
+// --- WebRTC Call Modal ---
+function CallModal({ localStream, remoteStream, onHangup, callType }: { localStream: MediaStream | null, remoteStream: MediaStream | null, onHangup: () => void, callType: 'video' | 'audio' }) {
+    const localVideoRef = useRef<HTMLVideoElement>(null);
+    const remoteVideoRef = useRef<HTMLVideoElement>(null);
+
+    useEffect(() => {
+        if (localVideoRef.current && localStream) {
+            localVideoRef.current.srcObject = localStream;
+        }
+    }, [localStream]);
+
+    useEffect(() => {
+        if (remoteVideoRef.current && remoteStream) {
+            remoteVideoRef.current.srcObject = remoteStream;
+        }
+    }, [remoteStream]);
+
+    return (
+        <Dialog open={true} onOpenChange={(isOpen) => !isOpen && onHangup()}>
+            <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-0" onPointerDownOutside={(e) => e.preventDefault()}>
+                <div className="relative flex-1 bg-black">
+                    <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
+                     <video ref={localVideoRef} autoPlay playsInline muted className="absolute bottom-4 right-4 w-48 h-36 object-cover rounded-md border-2 border-white" />
+                </div>
+                <DialogFooter className="p-4 bg-card border-t">
+                    <Button variant="destructive" onClick={onHangup}>Raccrocher</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+// --- Main Chat Page Component ---
 export default function ChatPage() {
     const { chatId } = useParams() as { chatId: string };
     const { user, loading: userLoading } = useUser();
@@ -25,6 +59,7 @@ export default function ChatPage() {
     const storage = useStorage();
     const { toast } = useToast();
 
+    // State for messaging
     const { data: chatData, loading: chatLoading } = useDoc<Chat>('chats', chatId);
     const { data: messages, loading: messagesLoading } = useCollection<Message>(
         `chats/${chatId}/messages`,
@@ -37,13 +72,18 @@ export default function ChatPage() {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const otherUserId = useMemo(() => {
-        return chatData?.members.find(m => m !== user?.uid);
-    }, [chatData, user]);
+    // State for WebRTC
+    const [isCalling, setIsCalling] = useState(false);
+    const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+    const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
+    const [callType, setCallType] = useState<'video' | 'audio'>('video');
+    const pc = useRef<RTCPeerConnection | null>(null);
+    const callDocRef = useRef<DocumentReference | null>(null);
 
+    const otherUserId = useMemo(() => chatData?.members.find(m => m !== user?.uid), [chatData, user]);
     const { data: otherUser, loading: otherUserLoading } = useDoc<UserProfile>('users', otherUserId || null);
     
-    // Scroll to bottom effect
+    // Scroll to bottom effect for messages
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
@@ -51,26 +91,100 @@ export default function ChatPage() {
     // Mark messages as read effect
     useEffect(() => {
         if (!db || !user || !messages || messages.length === 0) return;
-
         const markAsRead = async () => {
             const unreadMessages = messages.filter(m => m.from !== user.uid && !m.seen);
             if (unreadMessages.length === 0) return;
-
             const batch = writeBatch(db);
             unreadMessages.forEach(msg => {
                 const msgRef = doc(db, `chats/${chatId}/messages`, msg.id!);
                 batch.update(msgRef, { seen: true });
             });
-
             const chatRef = doc(db, 'chats', chatId);
             batch.update(chatRef, { [`unreadCounts.${user.uid}`]: 0 });
-
             await batch.commit();
         };
-
         markAsRead();
-
     }, [messages, user, db, chatId]);
+
+    // --- WebRTC Logic ---
+    const servers = {
+        iceServers: [{ urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] }],
+        iceCandidatePoolSize: 10,
+    };
+
+    const startCall = useCallback(async (type: 'video' | 'audio') => {
+        if (!db || !user || !otherUserId) return;
+        setCallType(type);
+        setIsCalling(true);
+        
+        pc.current = new RTCPeerConnection(servers);
+        
+        // Get local media
+        const stream = await navigator.mediaDevices.getUserMedia({ video: type === 'video', audio: true });
+        setLocalStream(stream);
+        stream.getTracks().forEach(track => pc.current!.addTrack(track, stream));
+
+        // Create call document
+        callDocRef.current = doc(collection(db, 'webrtc_sessions'));
+        const offerCandidates = collection(callDocRef.current, 'offerCandidates');
+        const answerCandidates = collection(callDocRef.current, 'answerCandidates');
+
+        pc.current.onicecandidate = event => {
+            event.candidate && addDoc(offerCandidates, event.candidate.toJSON());
+        };
+
+        const offerDescription = await pc.current.createOffer();
+        await pc.current.setLocalDescription(offerDescription);
+
+        const offer = { sdp: offerDescription.sdp, type: offerDescription.type };
+        await updateDoc(callDocRef.current, { offer, callerId: user.uid, calleeId: otherUserId });
+
+        // Listen for answer
+        const unsubscribeAnswer = onSnapshot(callDocRef.current, (snapshot) => {
+            const data = snapshot.data();
+            if (!pc.current?.currentRemoteDescription && data?.answer) {
+                const answerDescription = new RTCSessionDescription(data.answer);
+                pc.current?.setRemoteDescription(answerDescription);
+            }
+        });
+
+        // Listen for remote ICE candidates
+        const unsubscribeIce = onSnapshot(answerCandidates, (snapshot) => {
+            snapshot.docChanges().forEach(change => {
+                if (change.type === 'added') {
+                    const candidate = new RTCIceCandidate(change.doc.data());
+                    pc.current?.addIceCandidate(candidate);
+                }
+            });
+        });
+        
+        pc.current.ontrack = event => {
+            setRemoteStream(event.streams[0]);
+        };
+        
+        // Cleanup function for this call
+        return () => {
+             unsubscribeAnswer();
+             unsubscribeIce();
+        };
+    }, [db, user, otherUserId]);
+
+    const hangup = useCallback(async () => {
+        localStream?.getTracks().forEach(track => track.stop());
+        pc.current?.close();
+        
+        if (callDocRef.current) {
+            // Logic to delete candidates and the call doc if needed
+        }
+        
+        setLocalStream(null);
+        setRemoteStream(null);
+        pc.current = null;
+        callDocRef.current = null;
+        setIsCalling(false);
+    }, [localStream]);
+    
+    // --- End WebRTC Logic ---
 
 
     const handleSendMessage = async () => {
@@ -81,13 +195,11 @@ export default function ChatPage() {
             setIsUploading(true);
             const storageRef = ref(storage, `chat_images/${chatId}/${Date.now()}_${imageFile.name}`);
             const uploadTask = uploadBytesResumable(storageRef, imageFile);
-
             try {
                 await uploadTask;
                 imageUrl = await getDownloadURL(uploadTask.snapshot.ref);
                 setImageFile(null);
             } catch (error) {
-                console.error("Image upload failed:", error);
                 toast({ variant: 'destructive', title: "L'envoi de l'image a échoué." });
                 setIsUploading(false);
                 return;
@@ -99,11 +211,8 @@ export default function ChatPage() {
         const messageText = newMessage.trim();
         setNewMessage('');
 
-        const messagesCollection = collection(db, `chats/${chatId}/messages`);
-        const chatDoc = doc(db, 'chats', chatId);
-
         try {
-            await addDoc(messagesCollection, {
+            await addDoc(collection(db, `chats/${chatId}/messages`), {
                 from: user.uid,
                 text: messageText,
                 attachments: imageUrl ? [imageUrl] : [],
@@ -111,13 +220,12 @@ export default function ChatPage() {
                 seen: false,
             });
 
-            await updateDoc(chatDoc, {
+            await updateDoc(doc(db, 'chats', chatId), {
                 lastMessage: messageText || "Image envoyée",
                 lastTimestamp: serverTimestamp(),
                 [`unreadCounts.${otherUserId}`]: (chatData?.unreadCounts[otherUserId!] || 0) + 1,
             });
         } catch (error) {
-            console.error("Error sending message:", error);
             toast({ variant: 'destructive', title: "L'envoi du message a échoué." });
         }
     };
@@ -149,6 +257,7 @@ export default function ChatPage() {
 
     return (
         <div className="flex flex-col h-full bg-muted">
+            {isCalling && <CallModal localStream={localStream} remoteStream={remoteStream} onHangup={hangup} callType={callType} />}
             <CardHeader className="flex-shrink-0 bg-background border-b flex flex-row items-center justify-between p-3">
                  <Button variant="ghost" size="icon" onClick={() => router.push('/messages')} className="md:hidden">
                     <ArrowLeft className="h-5 w-5"/>
@@ -166,7 +275,10 @@ export default function ChatPage() {
                         </p>
                     </div>
                 </div>
-                 <div className="w-8"/>
+                 <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon" onClick={() => startCall('video')}><Video className="h-5 w-5"/></Button>
+                    <Button variant="ghost" size="icon" onClick={() => startCall('audio')}><Phone className="h-5 w-5"/></Button>
+                 </div>
             </CardHeader>
             <CardContent className="flex-1 p-4 overflow-y-auto space-y-4">
                 {(messages || []).map((message, index) => {
