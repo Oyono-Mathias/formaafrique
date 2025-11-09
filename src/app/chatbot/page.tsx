@@ -83,7 +83,7 @@ export default function ChatbotPage() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)] bg-primary/5">
-      <header className="p-4 border-b text-center bg-card">
+      <header className="p-4 border-b text-center bg-card z-10">
         <h1 className="text-2xl font-bold font-headline text-primary">Tuteur Virtuel FormaAfrique 🤖</h1>
       </header>
 
@@ -135,7 +135,7 @@ export default function ChatbotPage() {
         </ScrollArea>
       </div>
 
-      <footer className="p-4 border-t bg-background">
+      <footer className="p-4 border-t bg-background z-10">
         <div className="flex items-center gap-4 max-w-3xl mx-auto">
           <Input
             value={input}
