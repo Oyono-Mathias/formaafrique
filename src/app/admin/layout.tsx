@@ -57,7 +57,7 @@ const adminNavLinks = [
 
 function NavLink({ href, icon: Icon, label }: { href: string, icon: React.ElementType, label: string }) {
   const pathname = usePathname();
-  const isActive = pathname.startsWith(href) && (pathname === href || (href !== '/admin' && href !== '/admin/'));
+  const isActive = pathname === href || (href !== '/admin' && pathname.startsWith(href));
 
   return (
     <Link
