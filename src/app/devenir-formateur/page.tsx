@@ -13,7 +13,7 @@ import { useUser, useFirestore, useCollection } from '@/firebase';
 import { addDoc, collection, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useMemo } from 'react';
-import type { InstructorRequest } from '@/lib/types';
+import type { InstructorRequest, Enrollment } from '@/lib/types';
 
 
 export default function BecomeInstructorPage() {
@@ -23,15 +23,18 @@ export default function BecomeInstructorPage() {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const collectionOptions = useMemo(() => {
+    const instructorRequestOptions = useMemo(() => {
         if (!user?.uid) return undefined;
         return { where: ['userId', '==', user.uid] as [string, '==', string] };
     }, [user?.uid]);
 
-    // Fetch existing requests for the current user
     const { data: requests, loading: requestsLoading } = useCollection<InstructorRequest>(
         user?.uid ? 'instructor_requests' : null,
-        collectionOptions
+        instructorRequestOptions
+    );
+    
+    const { data: enrollments, loading: enrollmentsLoading } = useCollection<Enrollment>(
+        user?.uid ? `users/${user.uid}/enrollments` : null
     );
 
     const pendingRequest = useMemo(() => {
@@ -46,6 +49,11 @@ export default function BecomeInstructorPage() {
         return hasBio && hasPhoto && hasSkills;
     }, [userProfile]);
 
+    const hasCompletedCourse = useMemo(() => {
+        if (!enrollments) return false;
+        return enrollments.some(e => (e.progression || 0) >= 100);
+    }, [enrollments]);
+
 
     const handleRequest = async () => {
         if (!user || !userProfile || !db) {
@@ -53,14 +61,13 @@ export default function BecomeInstructorPage() {
             return;
         }
 
-        if (!isProfileComplete) {
-            toast({ variant: 'destructive', title: 'Profil incomplet', description: 'Veuillez compléter votre profil pour devenir formateur.' });
+        if (!isProfileComplete || !hasCompletedCourse) {
+            toast({ variant: 'destructive', title: 'Conditions non remplies', description: 'Veuillez compléter votre profil et terminer au moins une formation.' });
             return;
         }
 
         setIsSubmitting(true);
 
-        // Double check if a pending request exists
         const q = query(collection(db, "instructor_requests"), where("userId", "==", user.uid), where("status", "==", "pending"));
         const querySnapshot = await getDocs(q);
 
@@ -122,7 +129,7 @@ export default function BecomeInstructorPage() {
         if (userProfile?.role === 'formateur') {
             return <Button size="lg" className="mt-8" asChild><Link href="/formateur">Accéder à mon tableau de bord</Link></Button>;
         }
-        if (requestsLoading) {
+        if (requestsLoading || enrollmentsLoading) {
             return <Button size="lg" className="mt-8" disabled><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Chargement...</Button>;
         }
         if (pendingRequest) {
@@ -131,25 +138,37 @@ export default function BecomeInstructorPage() {
 
         return (
             <div className='flex flex-col items-center gap-4'>
-                {!isProfileComplete && (
-                    <Card className="max-w-2xl bg-amber-50 border-amber-500 text-amber-900">
-                        <CardHeader className="flex flex-row items-center gap-4">
-                            <AlertCircle className="w-6 h-6 text-amber-700"/>
-                            <div>
-                                <CardTitle>Profil incomplet</CardTitle>
-                                <CardDescription className='text-amber-800'>
-                                    Pour devenir formateur, votre profil doit être complet (photo, biographie et compétences).
-                                </CardDescription>
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                             <Button asChild>
+                <Card className="max-w-2xl w-full bg-amber-50 border-amber-500 text-amber-900">
+                    <CardHeader className="flex flex-row items-center gap-4">
+                        <AlertCircle className="w-6 h-6 text-amber-700"/>
+                        <div>
+                            <CardTitle>Conditions requises</CardTitle>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                         <div className={`flex items-center gap-3 ${isProfileComplete ? 'text-green-700' : 'text-amber-800'}`}>
+                            {isProfileComplete ? <CheckCircle className="w-5 h-5"/> : <AlertCircle className="w-5 h-5"/>}
+                            <span className="font-medium">Profil complet (photo, bio, compétences)</span>
+                         </div>
+                         {!isProfileComplete && (
+                             <Button asChild size="sm" className="ml-8">
                                 <Link href="/dashboard/settings">Compléter mon profil</Link>
                             </Button>
-                        </CardContent>
-                    </Card>
-                )}
-                 <Button size="lg" className="mt-4" onClick={handleRequest} disabled={isSubmitting || !isProfileComplete}>
+                         )}
+
+                         <div className={`flex items-center gap-3 ${hasCompletedCourse ? 'text-green-700' : 'text-amber-800'}`}>
+                            {hasCompletedCourse ? <CheckCircle className="w-5 h-5"/> : <AlertCircle className="w-5 h-5"/>}
+                            <span className="font-medium">Avoir terminé au moins une formation</span>
+                         </div>
+                         {!hasCompletedCourse && (
+                            <Button asChild size="sm" variant="secondary" className="ml-8">
+                                <Link href="/courses">Explorer les formations</Link>
+                            </Button>
+                         )}
+                    </CardContent>
+                </Card>
+
+                 <Button size="lg" className="mt-4" onClick={handleRequest} disabled={isSubmitting || !isProfileComplete || !hasCompletedCourse}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Envoyer ma demande
                 </Button>
@@ -289,5 +308,3 @@ export default function BecomeInstructorPage() {
         </div>
     );
 }
-
-    
