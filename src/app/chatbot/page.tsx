@@ -23,7 +23,7 @@ export default function ChatbotPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'initial-bot-message',
-      text: "Bonjour ! Je suis votre tuteur virtuel IA pour FormaAfrique. Comment puis-je vous aider aujourd'hui ? Posez-moi une question sur vos formations.",
+      text: "Bonjour ! Je suis Mathias, votre tuteur virtuel pour FormaAfrique. Comment puis-je vous aider aujourd'hui ? Posez-moi une question sur vos formations.",
       sender: 'bot',
     },
   ]);
