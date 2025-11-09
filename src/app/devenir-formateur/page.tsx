@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -87,36 +88,36 @@ export default function BecomeInstructorPage() {
     };
 
     const stats = [
-        { label: t('instructor_stats_participants'), value: "80M", icon: Users },
-        { label: t('instructor_stats_languages'), value: t('instructor_stats_languages_value'), icon: Languages },
-        { label: t('instructor_stats_enrollments'), value: "1.1Mds", icon: Star },
-        { label: t('instructor_stats_countries'), value: "+ de 180", icon: Globe },
+        { label: "Participants", value: "80M", icon: Users },
+        { label: "Langues", value: "+ de 75", icon: Languages },
+        { label: "Inscriptions", value: "1.1Mds", icon: Star },
+        { label: "Pays", value: "+ de 180", icon: Globe },
     ];
     
     const testimonials = [
         {
-            name: "Thibault Houdon",
-            role: t('instructor_testimonial1_role'),
-            quote: t('instructor_testimonial1_quote'),
-            imageId: "testimonial-samuel"
+            name: "M. Oyono Mathias",
+            role: "Fondateur de FormaAfrique",
+            quote: "Partager son savoir, c'est semer les graines de la réussite de demain. Rejoignez-nous pour construire l'avenir de l'Afrique.",
+            imageId: "instructor-yann"
         },
         {
-            name: "Sandra L",
-            role: t('instructor_testimonial2_role'),
-            quote: t('instructor_testimonial2_quote'),
+            name: "Sandra L.",
+            role: "Développeuse et Formatrice",
+            quote: "La plateforme est intuitive et le support de l'équipe est incroyable. On se sent vraiment accompagné pour créer le meilleur cours possible.",
             imageId: "testimonial-fatima"
         },
         {
             name: "Jamal Lazaar",
-            role: t('instructor_testimonial3_role'),
-            quote: t('instructor_testimonial3_quote'),
+            role: "Coach professionnel",
+            quote: "FormaAfrique gère la technique, ce qui me permet de me concentrer sur ma passion : enseigner et voir mes étudiants réussir.",
             imageId: "instructor-david"
         }
     ];
 
     const renderCallToActionButton = () => {
         if (!user) {
-            return <Button size="lg" className="mt-8" asChild><Link href="/login?tab=signup">{t('instructor_cta_button')}</Link></Button>;
+            return <Button size="lg" className="mt-8" asChild><Link href="/login?tab=signup">Devenir formateur</Link></Button>;
         }
         if (userProfile?.role === 'formateur') {
             return <Button size="lg" className="mt-8" asChild><Link href="/formateur">Accéder à mon tableau de bord</Link></Button>;
@@ -150,7 +151,7 @@ export default function BecomeInstructorPage() {
                 )}
                  <Button size="lg" className="mt-4" onClick={handleRequest} disabled={isSubmitting || !isProfileComplete}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {t('submit_instructor_request')}
+                    Envoyer ma demande
                 </Button>
             </div>
         );
@@ -162,9 +163,9 @@ export default function BecomeInstructorPage() {
             {/* Hero Section */}
             <section className="bg-primary/10 py-20 text-center">
                 <div className="container px-4">
-                    <h1 className="text-4xl md:text-5xl font-bold font-headline text-primary">{t('instructor_hero_title')}</h1>
+                    <h1 className="text-4xl md:text-5xl font-bold font-headline text-primary">Ayez un impact global</h1>
                     <p className="mt-4 text-lg md:text-xl max-w-3xl mx-auto text-muted-foreground">
-                        {t('instructor_hero_subtitle')}
+                        Construisez votre cours en ligne et monétisez votre expertise en partageant votre savoir partout dans le monde.
                     </p>
                     <div className='mt-8'>
                         {renderCallToActionButton()}
@@ -266,9 +267,9 @@ export default function BecomeInstructorPage() {
              {/* Support Section */}
             <section className="bg-primary/10 py-16 sm:py-24">
                 <div className="container px-4 text-center max-w-4xl mx-auto">
-                     <h2 className="text-3xl font-bold font-headline">{t('instructor_support_title')}</h2>
+                     <h2 className="text-3xl font-bold font-headline">Vous n'aurez pas à vous lancer tout seul</h2>
                      <p className="mt-4 text-lg text-muted-foreground">
-                        {t('instructor_support_text')}
+                        Notre équipe de support est là pour répondre à vos questions et vérifier votre vidéo test, tandis que notre Teaching Center vous offre de nombreuses ressources pour vous aider tout au long du processus. De plus, bénéficiez du soutien de formateurs expérimentés dans notre communauté en ligne.
                      </p>
                 </div>
             </section>
@@ -276,9 +277,9 @@ export default function BecomeInstructorPage() {
             {/* Final CTA */}
             <section className="py-20 text-center">
                  <div className="container px-4">
-                    <h2 className="text-3xl md:text-4xl font-bold font-headline text-primary">{t('instructor_cta_title')}</h2>
+                    <h2 className="text-3xl md:text-4xl font-bold font-headline text-primary">Devenez formateur dès aujourd'hui</h2>
                     <p className="mt-4 text-lg md:text-xl max-w-3xl mx-auto text-muted-foreground">
-                        {t('instructor_cta_subtitle')}
+                        Rejoignez l'une des plus grandes plates-formes d'apprentissage en ligne au monde.
                     </p>
                     <div className='mt-8'>
                         {renderCallToActionButton()}
@@ -288,3 +289,4 @@ export default function BecomeInstructorPage() {
         </div>
     );
 }
+
