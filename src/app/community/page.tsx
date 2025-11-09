@@ -47,8 +47,8 @@ export default function CommunityPage() {
 
         const findOrCreateChat = async () => {
             setLoading(true);
-            const chatRef = doc(db, 'group_chats', formationId);
-            const chatSnap = await getDocs(query(collection(db, 'group_chats'), where('formationId', '==', formationId)));
+            const q = query(collection(db, "group_chats"), where("formationId", "==", formationId));
+            const chatSnap = await getDocs(q);
             
             if (chatSnap.empty) {
                 // If it doesn't exist, an admin should create it.
