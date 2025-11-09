@@ -133,6 +133,19 @@ service cloud.firestore {
         allow read, update, delete: if isOwner(resource.data.toUid);
         allow create: if request.auth != null; 
     }
+    
+    // Rules for Moderation
+    match /moderationLogs/{logId} {
+        allow read, write: if isAdmin();
+    }
+    match /aiFlags/{flagId} {
+        allow read, write: if isAdmin();
+        allow create: if request.auth != null;
+    }
+    match /moderationAppeals/{appealId} {
+        allow create: if isOwner(request.resource.data.userId);
+        allow read, update: if isAdmin();
+    }
 
   }
 }

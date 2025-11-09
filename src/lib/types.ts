@@ -256,6 +256,15 @@ export interface AiFlag {
     timestamp: Timestamp;
 }
 
+export interface ModerationAppeal {
+    id?: string;
+    userId: string;
+    flagId: string;
+    reason: string;
+    status: 'pending' | 'approved' | 'rejected';
+    createdAt: Timestamp;
+}
+
 
 
 // This is a temporary API route to fetch collections from the client side

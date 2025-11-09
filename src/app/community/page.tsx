@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useUser, useCollection, useFirestore } from '@/firebase';
-import type { GroupChat, GroupMessage, UserProfile } from '@/lib/types';
+import type { GroupChat, GroupMessage, UserProfile, AiFlag, AdminNotification } from '@/lib/types';
 import { Loader2, Send } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -125,19 +125,40 @@ export default function CommunityPage() {
             });
 
              if (moderationResult.verdict !== 'allowed') {
-                addDoc(collection(db, 'aiFlags'), {
+                const flagRef = await addDoc(collection(db, 'aiFlags'), {
                     chatId: groupChat.id,
                     fromUid: user.uid,
                     reason: moderationResult.category,
                     severity: moderationResult.score > 0.8 ? 'high' : 'medium',
                     status: 'pending_review',
                     timestamp: serverTimestamp(),
-                });
+                } as Omit<AiFlag, 'id'>);
+
+                let toastDescription = `Votre message est en cours de révision par la modération.`;
+                if(moderationResult.verdict === 'block') {
+                    toastDescription = `Votre message a été bloqué. Motif: ${moderationResult.reason}.`;
+                }
+
                 toast({
                     variant: 'destructive',
-                    title: 'Message non envoyé',
-                    description: `Votre message a été bloqué par la modération. Motif: ${moderationResult.reason}.`
+                    title: 'Action de modération',
+                    description: toastDescription,
                 });
+                
+                // User-facing notification
+                addDoc(collection(db, 'notifications'), {
+                    toUid: user.uid,
+                    fromUid: 'system', // or a specific moderator AI UID
+                    type: 'moderation_warning',
+                    payload: {
+                        reason: moderationResult.reason,
+                        verdict: moderationResult.verdict,
+                        flagId: flagRef.id
+                    },
+                    read: false,
+                    createdAt: serverTimestamp(),
+                });
+                
                 setIsProcessing(false);
                 return;
             }

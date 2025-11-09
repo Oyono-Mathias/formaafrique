@@ -472,7 +472,7 @@
       "properties": {
         "toUid": { "type": "string", "description": "The UID of the user receiving the notification." },
         "fromUid": { "type": "string", "description": "The UID of the user who triggered the notification." },
-        "type": { "type": "string", "enum": ["friend_request", "new_message", "course_update"], "description": "The type of notification." },
+        "type": { "type": "string", "enum": ["friend_request", "new_message", "course_update", "moderation_warning"], "description": "The type of notification." },
         "payload": { "type": "object", "description": "Additional data related to the notification." },
         "read": { "type": "boolean", "description": "Whether the notification has been read." },
         "createdAt": { "type": "string", "format": "date-time" }
@@ -565,6 +565,19 @@
             "timestamp": { "type": "string", "format": "date-time" }
         },
         "required": ["msgId", "chatId", "fromUid", "reason", "severity", "status", "timestamp"]
+    },
+    "ModerationAppeal": {
+        "title": "Moderation Appeal",
+        "description": "A user's request to review a moderation action.",
+        "type": "object",
+        "properties": {
+            "userId": { "type": "string", "description": "The UID of the user making the appeal." },
+            "flagId": { "type": "string", "description": "The ID of the AiFlag being appealed." },
+            "reason": { "type": "string", "description": "The user's justification for the appeal." },
+            "status": { "type": "string", "enum": ["pending", "approved", "rejected"], "description": "The status of the appeal." },
+            "createdAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["userId", "flagId", "reason", "status", "createdAt"]
     }
   },
   "auth": {
@@ -662,6 +675,10 @@
     "/aiFlags/{flagId}": {
         "schema": { "$ref": "#/entities/AiFlag" },
         "description": "Stores messages flagged by the AI for review or action."
+    },
+    "/moderationAppeals/{appealId}": {
+        "schema": { "$ref": "#/entities/ModerationAppeal" },
+        "description": "Stores user appeals against moderation actions."
     }
   }
 }

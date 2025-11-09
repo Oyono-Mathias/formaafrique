@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { collection, addDoc, serverTimestamp, orderBy, query, doc, updateDoc, writeBatch, onSnapshot, Unsubscribe, DocumentReference } from 'firebase/firestore';
-import type { Message, Chat, UserProfile, AdminNotification } from '@/lib/types';
+import type { Message, Chat, UserProfile, AdminNotification, AiFlag, Notification } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Image from 'next/image';
@@ -220,15 +220,39 @@ export default function ChatPage() {
             
             // Step 2: Handle verdict
             if (moderationResult.verdict !== 'allowed') {
-                 // Flag the message
-                 addDoc(collection(db, 'aiFlags'), {
+                 const flagRef = await addDoc(collection(db, 'aiFlags'), {
                     chatId: chatId,
                     fromUid: user.uid,
                     reason: moderationResult.category,
                     severity: moderationResult.score > 0.8 ? 'high' : 'medium',
                     status: 'pending_review',
                     timestamp: serverTimestamp(),
+                } as Omit<AiFlag, 'id'>);
+
+                let toastDescription = `Votre message est en cours de révision par la modération.`;
+                if(moderationResult.verdict === 'block') {
+                    toastDescription = `Votre message a été bloqué. Motif: ${moderationResult.reason}.`;
+                }
+                
+                toast({
+                    variant: 'destructive',
+                    title: 'Action de modération',
+                    description: toastDescription,
                 });
+
+                // User-facing notification
+                addDoc(collection(db, 'notifications'), {
+                    toUid: user.uid,
+                    fromUid: 'system', // or a specific moderator AI UID
+                    type: 'moderation_warning',
+                    payload: {
+                        reason: moderationResult.reason,
+                        verdict: moderationResult.verdict,
+                        flagId: flagRef.id
+                    },
+                    read: false,
+                    createdAt: serverTimestamp(),
+                } as Omit<Notification, 'id'>);
 
                 // Escalate if needed
                 if(moderationResult.verdict === 'block' || moderationResult.verdict === 'escalate') {
@@ -240,18 +264,8 @@ export default function ChatPage() {
                         read: false,
                         link: `/messages/${chatId}`
                     } as AdminNotification);
-
-                    // Placeholder for sanction system
-                    // const userRef = doc(db, 'users', user.uid);
-                    // await updateDoc(userRef, { infractions: increment(1) });
-                    // check for suspension...
                 }
-
-                toast({
-                    variant: 'destructive',
-                    title: 'Message bloqué par la modération',
-                    description: `Motif : ${moderationResult.reason}. Votre message ne sera pas envoyé.`
-                });
+                
                 setIsProcessing(false);
                 return;
             }
