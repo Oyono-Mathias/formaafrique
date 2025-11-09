@@ -29,9 +29,27 @@
           "type": "string",
           "description": "The ID of the formation the user is associated with (e.g., 'python', 'sante')."
         },
-        "moduleLevel": {
-          "type": "string",
-          "description": "The user's level in the module, e.g., 'debutant'."
+        "role": {
+            "type": "string",
+            "enum": ["etudiant", "formateur", "admin"],
+            "description": "The role of the user in the system."
+        },
+        "xp": {
+            "type": "number",
+            "description": "Experience points for gamification."
+        },
+        "badges": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "List of earned badges."
+        },
+        "verifiedPhone": {
+            "type": "boolean",
+            "description": "Indicates if the user's phone number is verified."
+        },
+        "verifiedEmail": {
+            "type": "boolean",
+            "description": "Indicates if the user's email is verified."
         },
         "friends": {
           "type": "array",
@@ -55,7 +73,8 @@
       "required": [
         "name",
         "email",
-        "createdAt"
+        "createdAt",
+        "role"
       ]
     },
     "InstructorProfile": {
@@ -127,32 +146,22 @@
       "description": "Represents a course on the platform.",
       "type": "object",
       "properties": {
-        "title": {
-          "type": "string"
-        },
-        "summary": {
-            "type": "string"
-        },
-        "categoryId": {
-          "type": "string"
-        },
-        "keywords": {
-          "type": "array",
-          "items": { "type": "string" }
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "format": "date-time"
-        }
+        "title": { "type": "string" },
+        "summary": { "type": "string" },
+        "categoryId": { "type": "string" },
+        "keywords": { "type": "array", "items": { "type": "string" } },
+        "coverUrl": { "type": "string", "format": "uri" },
+        "authorId": { "type": "string" },
+        "price": { "type": "number" },
+        "published": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": [
         "title",
         "summary",
         "categoryId",
+        "authorId",
         "createdAt",
         "updatedAt"
       ]
@@ -165,60 +174,46 @@
             "title": { "type": "string" },
             "summary": { "type": "string" },
             "order": { "type": "number" },
+            "courseId": { "type": "string" },
             "createdAt": { "type": "string", "format": "date-time" },
             "updatedAt": { "type": "string", "format": "date-time" }
         },
-        "required": ["title", "order", "createdAt", "updatedAt"]
+        "required": ["title", "order", "courseId", "createdAt", "updatedAt"]
     },
     "Video": {
         "title": "Video",
         "description": "Represents a video within a module.",
-        "type": "object"
-        ,
+        "type": "object",
         "properties": {
             "title": { "type": "string" },
             "duration": { "type": "number" },
-            "driveUrl": { "type": "string", "format": "uri" },
-            "storagePath": { "type": "string" },
+            "driveLink": { "type": "string", "format": "uri" },
+            "youtubeId": { "type": "string" },
+            "thumbnail": { "type": "string", "format": "uri"},
             "order": { "type": "number" },
+            "moduleId": { "type": "string" },
             "createdAt": { "type": "string", "format": "date-time" },
             "published": { "type": "boolean" }
         },
-        "required": ["title", "order", "createdAt", "published"]
+        "required": ["title", "order", "moduleId", "createdAt", "published"]
     },
     "CourseProgress": {
       "title": "Course Progress",
       "description": "Tracks a user's progress in a specific course.",
       "type": "object",
       "properties": {
-        "courseId": {
-          "type": "string",
-          "description": "The ID of the course."
-        },
-        "userId": {
-          "type": "string",
-          "description": "The ID of the user."
-        },
-        "progressPercentage": {
-          "type": "number",
-          "description": "The completion percentage of the course."
-        },
-        "lastUpdated": {
-          "type": "string",
-          "format": "date-time",
-          "description": "The timestamp when the progress was last updated."
-        },
-        "courseTitle": {
-          "type": "string",
-          "description": "The title of the course, denormalized for easy display."
+        "percentage": { "type": "number" },
+        "currentVideoPosition": { "type": "number" },
+        "lastSeen": { "type": "string", "format": "date-time" },
+        "watchedVideos": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "List of watched video IDs."
         }
       },
       "required": [
-        "courseId",
-        "userId",
-        "progressPercentage",
-        "lastUpdated",
-        "courseTitle"
+        "percentage",
+        "lastSeen"
       ]
     },
      "Enrollment": {
@@ -640,119 +635,126 @@
   },
   "auth": {
     "providers": [
-      "email"
+      "email",
+      "google"
     ]
   },
   "firestore": {
-    "/users/{userId}": {
+    "users/{userId}": {
       "schema": {
         "$ref": "#/entities/UserProfile"
       },
       "description": "Stores public profile information for each user."
     },
-    "/instructors/{instructorId}": {
-        "schema": { "$ref": "#/entities/InstructorProfile" },
-        "description": "Stores public profile information for each instructor."
+    "users/{userId}/progress/{courseId}": {
+      "schema": {
+        "$ref": "#/entities/CourseProgress"
+      },
+      "description": "Stores the learning progress for a user on a specific course."
+    },
+    "users/{userId}/friends/{friendId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Denormalized data of a user's friends for quick access."
+    },
+    "instructor_requests/{uid}": {
+        "schema": { "$ref": "#/entities/InstructorRequest" },
+        "description": "Stores applications from users wanting to become instructors."
     },
     "formateurs_valides/{uid}": {
         "schema": { "$ref": "#/entities/InstructorProfile" },
         "description": "Stores profiles of validated instructors."
     },
-    "/categories/{categoryId}": {
+    "categories/{categoryId}": {
         "schema": { "$ref": "#/entities/Category" },
         "description": "Stores all course categories."
     },
-    "/formations/{formationId}": {
+    "formations/{formationId}": {
       "schema": {
         "$ref": "#/entities/Course"
       },
       "description": "Stores all the available courses on the platform."
     },
-     "/formations/{formationId}/modules/{moduleId}": {
+    "formations/{formationId}/modules/{moduleId}": {
       "schema": { "$ref": "#/entities/Module" },
       "description": "Stores all modules for a specific course."
     },
-    "/formations/{formationId}/modules/{moduleId}/videos/{videoId}": {
+    "formations/{formationId}/modules/{moduleId}/videos/{videoId}": {
       "schema": { "$ref": "#/entities/Video" },
       "description": "Stores all videos for a specific module."
     },
-    "/users/{userId}/progress/{progressId}": {
-      "schema": {
-        "$ref": "#/entities/CourseProgress"
-      },
-      "description": "Stores the learning progress for each user on different courses."
-    },
-    "/courses/{courseId}/enrollments/{enrollmentId}": {
+    "formations/{courseId}/enrollments/{enrollmentId}": {
         "schema": { "$ref": "#/entities/Enrollment" },
-        "description": "Stores all enrollments for a specific course."
+        "description": "Stores all enrollments for a specific course. (Note: could also be a subcollection of users)"
     },
-    "/donations/{donationId}": {
+    "donations/{donationId}": {
         "schema": { "$ref": "#/entities/Donation" },
         "description": "Stores all donations made on the platform."
     },
-    "/user_activity_logs/{logId}": {
+    "user_activity_logs/{logId}": {
         "schema": { "$ref": "#/entities/UserActivityLog" },
         "description": "Stores a chronological log of all important user actions."
     },
-    "/admin_notifications/{notificationId}": {
+    "admin_notifications/{notificationId}": {
         "schema": { "$ref": "#/entities/AdminNotification" },
         "description": "Stores notifications intended for platform administrators."
     },
-    "/instructor_requests/{requestId}": {
-      "schema": { "$ref": "#/entities/InstructorRequest" },
-      "description": "Stores requests from students to become instructors."
-    },
-    "/community_posts/{postId}": {
+    "community_posts/{postId}": {
       "schema": { "$ref": "#/entities/CommunityPost" },
-      "description": "Stores all discussion posts in the community forum."
+      "description": "Stores discussion posts, can be filtered by formationId."
     },
-    "/friendRequests/{requestId}": {
+    "friendRequests/{requestId}": {
       "schema": { "$ref": "#/entities/FriendRequest" },
       "description": "Stores all friend requests between users."
     },
-    "/chats/{chatId}": {
+    "chats/{chatId}": {
       "schema": { "$ref": "#/entities/Chat" },
       "description": "Stores metadata for each private conversation."
     },
-    "/chats/{chatId}/messages/{messageId}": {
+    "chats/{chatId}/messages/{messageId}": {
       "schema": { "$ref": "#/entities/Message" },
       "description": "Stores all messages for a specific chat."
     },
-    "/notifications/{notificationId}": {
+    "notifications/{notificationId}": {
       "schema": { "$ref": "#/entities/Notification" },
       "description": "Stores notifications for users, such as friend requests."
     },
-    "/group_chats/{chatId}": {
+    "group_chats/{chatId}": {
       "schema": { "$ref": "#/entities/GroupChat" },
       "description": "Stores metadata for each formation's group chat."
     },
-    "/group_chats/{chatId}/messages/{messageId}": {
+    "group_chats/{chatId}/messages/{messageId}": {
       "schema": { "$ref": "#/entities/GroupMessage" },
       "description": "Stores all messages for a specific group chat."
     },
-    "/moderationLogs/{logId}": {
+    "moderationLogs/{logId}": {
         "schema": { "$ref": "#/entities/ModerationLog" },
         "description": "Stores the results of AI content moderation for chat messages."
     },
-    "/aiFlags/{flagId}": {
+    "aiFlags/{flagId}": {
         "schema": { "$ref": "#/entities/AiFlag" },
         "description": "Stores messages flagged by the AI for review or action."
     },
-    "/moderationAppeals/{appealId}": {
+    "moderationAppeals/{appealId}": {
         "schema": { "$ref": "#/entities/ModerationAppeal" },
         "description": "Stores user appeals against moderation actions."
     },
-    "/meta/contentIndex": {
+    "meta/contentIndex": {
         "schema": { "$ref": "#/entities/ContentIndex" },
         "description": "Singleton document containing a summary of all platform content."
     },
-    "/embeddings/{embeddingId}": {
+    "embeddings/{embeddingId}": {
         "schema": { "$ref": "#/entities/Embedding" },
         "description": "Stores vector embeddings for content to be used in semantic search."
     },
-    "/tutorFeedbacks/{feedbackId}": {
+    "tutorFeedbacks/{feedbackId}": {
         "schema": { "$ref": "#/entities/TutorFeedback" },
         "description": "Stores user feedback on AI tutor responses."
     }
+  },
+  "indexing": {
+    "recommendations": [
+        "Recommander de créer un index composite pour la collection 'community_posts' sur les champs 'formationId' et 'createdAt' afin d'optimiser les requêtes de fils de discussion par formation, triés par date.",
+        "Recommander de créer un index sur 'formations' sur les champs 'categoryId' et 'published' pour filtrer et afficher rapidement les cours publiés par catégorie."
+    ]
   }
 }
