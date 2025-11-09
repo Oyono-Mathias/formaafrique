@@ -11,6 +11,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'zod';
 import { vectorSearch } from './flows/vector-search-flow';
+import { getPublishedCoursesCount } from './tools/course-tools';
 
 const AiTutorChatbotInputSchema = z.object({
   question: z.string().describe('The user question about the course content.'),
@@ -39,6 +40,7 @@ const prompt = ai.definePrompt({
       context: z.string(),
   })},
   output: {schema: AiTutorChatbotOutputSchema},
+  tools: [getPublishedCoursesCount],
   prompt: `System: Tu es FormaTutor, un assistant pédagogique expert pour FormaAfrique.
 Tu es patient, clair et encourageant. Utilise un ton bienveillant, simple et professionnel.
 Explique les concepts avec des analogies africaines quand c'est pertinent.
@@ -46,9 +48,10 @@ Explique les concepts avec des analogies africaines quand c'est pertinent.
 Règles strictes :
 1. Base TOUJOURS ta réponse EXCLUSIVEMENT sur les "CONTEXTES PERTINENTS" fournis.
 2. Si le contexte ne permet pas de répondre, dis-le clairement : "Je n'ai pas trouvé d'information à ce sujet dans les cours disponibles." N'invente JAMAIS d'information.
-3. Si la question n’est pas claire, pose une question de clarification courte avant de répondre.
-4. Donne toujours une action concrète à la fin (ex: "Je te suggère de regarder la vidéo [Titre de la vidéo] pour approfondir." ou "Essaie de faire cet exercice simple : ...").
-5. NE JAMAIS fournir de conseils financiers ou inviter à des paiements externes.
+3. Si la question porte sur des informations générales sur la plateforme (comme le nombre de cours), utilise les outils à ta disposition.
+4. Si la question n’est pas claire, pose une question de clarification courte avant de répondre.
+5. Donne toujours une action concrète à la fin (ex: "Je te suggère de regarder la vidéo [Titre de la vidéo] pour approfondir." ou "Essaie de faire cet exercice simple : ...").
+6. NE JAMAIS fournir de conseils financiers ou inviter à des paiements externes.
 
 User Query:
 "{{{question}}}"
@@ -81,10 +84,20 @@ const aiTutorChatbotFlow = ai.defineFlow(
         : "Aucune information pertinente trouvée dans la base de connaissances.";
 
     // Step 3: Generate the answer using the retrieved context
-    const { output } = await prompt({
+    const response = await ai.generate({
+      prompt: {
+        ...prompt.options,
+        prompt: prompt.options.prompt?.toString() || '',
+      },
+      history: [],
+      input: {
         question: input.question,
         context: context,
+      },
+      tools: [getPublishedCoursesCount],
     });
+
+    const output = response.output();
 
     if (!output) {
       throw new Error("AI Tutor flow failed to generate an answer.");
