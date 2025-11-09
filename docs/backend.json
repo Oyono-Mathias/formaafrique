@@ -71,6 +71,34 @@
             "headline": {
                 "type": "string",
                 "description": "A professional headline for the instructor."
+            },
+            "videoUrl": {
+                "type": "string",
+                "format": "uri",
+                "description": "URL to the instructor's presentation video."
+            },
+            "socialLinks": {
+                "type": "object",
+                "properties": {
+                    "facebookUrl": { "type": "string", "format": "uri" },
+                    "instagramUrl": { "type": "string", "format": "uri" },
+                    "twitterUrl": { "type": "string", "format": "uri" },
+                    "youtubeUrl": { "type": "string", "format": "uri" }
+                }
+            },
+            "validation_status": {
+                "type": "string",
+                "enum": ["incomplete", "pending", "validated"],
+                "description": "The validation status of the instructor's profile."
+            },
+            "score_validation": {
+                "type": "number",
+                "description": "The validation score calculated by the AI."
+            },
+            "derniere_mise_a_jour": {
+                "type": "string",
+                "format": "date-time",
+                "description": "The timestamp of the last profile update for validation."
             }
         }
     },
@@ -325,7 +353,9 @@
             "youtubeUrl": { "type": "string", "format": "uri" }
           }
         },
-        "scoreReputation": { "type": "number" }
+        "scoreReputation": { "type": "number" },
+        "scoreFinal": { "type": "number" },
+        "feedbackMessage": { "type": "string"}
       },
       "required": ["userId", "userName", "userEmail", "requestDate", "status", "specialite", "motivation", "videoUrl"]
     },
@@ -623,6 +653,10 @@
     "/instructors/{instructorId}": {
         "schema": { "$ref": "#/entities/InstructorProfile" },
         "description": "Stores public profile information for each instructor."
+    },
+    "formateurs_valides/{uid}": {
+        "schema": { "$ref": "#/entities/InstructorProfile" },
+        "description": "Stores profiles of validated instructors."
     },
     "/categories/{categoryId}": {
         "schema": { "$ref": "#/entities/Category" },

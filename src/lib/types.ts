@@ -13,7 +13,7 @@ export interface Video {
   id?: string;
   title: string;
   duration?: number;
-  driveUrl?: string;
+  driveUrl: string;
   storagePath?: string;
   order: number;
   createdAt: Timestamp;
@@ -93,6 +93,16 @@ export interface UserProfile {
 export interface InstructorProfile extends UserProfile {
     specialite?: string;
     headline?: string;
+    videoUrl?: string;
+    socialLinks?: {
+        facebookUrl?: string;
+        instagramUrl?: string;
+        twitterUrl?: string;
+        youtubeUrl?: string;
+    };
+    validation_status?: 'incomplete' | 'pending' | 'validated';
+    score_validation?: number;
+    derniere_mise_a_jour?: string;
 }
 
 export interface VideoProgress {
@@ -186,7 +196,7 @@ export interface InstructorRequest {
     specialite: string;
     motivation: string;
     videoUrl: string;
-    socialLinks: {
+    socialLinks?: {
         facebookUrl?: string;
         instagramUrl?: string;
         twitterUrl?: string;

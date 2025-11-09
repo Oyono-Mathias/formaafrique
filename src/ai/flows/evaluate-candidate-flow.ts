@@ -10,7 +10,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { doc, getDoc, collection, getDocs, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, updateDoc, query, where } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import type { UserProfile, Enrollment, InstructorRequest } from '@/lib/types';
 
@@ -109,29 +109,30 @@ const evaluateCandidateFlow = ai.defineFlow(
 
     const [userDoc, enrollmentsSnap, requestDoc] = await Promise.all([
         getDoc(userDocRef),
-        getDocs(enrollmentsColRef),
+        getDocs(query(enrollmentsColRef, where("progression", ">=", 100))),
         getDoc(requestDocRef),
     ]);
 
-    if (!userDoc.exists() || !requestDoc.exists()) {
-        throw new Error(`User profile or instructor request not found for UID: ${input.uid}`);
+    if (!userDoc.exists()) {
+        throw new Error(`User profile not found for UID: ${input.uid}`);
     }
 
     const userProfile = userDoc.data() as UserProfile;
-    const enrollments = enrollmentsSnap.docs.map(d => d.data() as Enrollment);
-    const request = requestDoc.data() as InstructorRequest;
+    const request = requestDoc.exists() ? requestDoc.data() as InstructorRequest : {} as Partial<InstructorRequest>;
+    const socialLinks = request.socialLinks || (userProfile as any).socialLinks || {};
+
 
     // Step 2: Prepare data for the AI prompt
     const promptInput = {
         nom: userProfile.name,
         biographie: userProfile.bio || '',
-        formations_terminees: enrollments.filter(e => (e.progression || 0) >= 100).length,
-        note_moyenne: userProfile.scoreReputation || 4.0, // Default to 4.0 if not set
+        formations_terminees: enrollmentsSnap.docs.length,
+        note_moyenne: userProfile.scoreReputation || 3.5, // Default to 3.5 if not set
         reseaux: {
-            facebook: !!request.socialLinks?.facebookUrl,
-            instagram: !!request.socialLinks?.instagramUrl,
-            twitter: !!request.socialLinks?.twitterUrl,
-            youtube: !!request.socialLinks?.youtubeUrl,
+            facebook: !!socialLinks.facebookUrl,
+            instagram: !!socialLinks.instagramUrl,
+            twitter: !!socialLinks.twitterUrl,
+            youtube: !!socialLinks.youtubeUrl,
         }
     };
 
@@ -142,12 +143,14 @@ const evaluateCandidateFlow = ai.defineFlow(
       throw new Error("Candidate evaluation flow failed to produce an output.");
     }
     
-    // Step 4: Update the instructor request document with the AI's evaluation
-    await updateDoc(requestDocRef, {
-        scoreFinal: output.score_final,
-        statut: output.statut, // Update status based on AI evaluation
-        feedbackMessage: output.message_feedback,
-    });
+    // Step 4: Update the instructor request document with the AI's evaluation (if it exists)
+    if (requestDoc.exists()) {
+        await updateDoc(requestDocRef, {
+            scoreFinal: output.score_final,
+            status: output.statut, // Update status based on AI evaluation
+            feedbackMessage: output.message_feedback,
+        });
+    }
     
     console.log(`Evaluation for ${userProfile.name} completed. Score: ${output.score_final}, Status: ${output.statut}`);
     return output;

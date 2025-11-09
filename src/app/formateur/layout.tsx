@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import NotificationBell from '@/components/notifications/notification-bell';
+import type { InstructorProfile } from '@/lib/types';
 
 const formateurNavLinks = [
   { href: '/formateur', label: 'Dashboard', icon: LayoutDashboard },
@@ -87,6 +88,7 @@ export default function FormateurLayout({
   const { user, userProfile, loading } = useUser();
   const auth = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -97,18 +99,20 @@ export default function FormateurLayout({
       return;
     }
 
-    if (userProfile && userProfile.role !== 'formateur') {
+    const instructorProfile = userProfile as InstructorProfile;
+
+    if (instructorProfile && instructorProfile.role !== 'formateur') {
         toast({
             variant: 'destructive',
             title: 'Accès refusé',
             description: "Redirection vers votre tableau de bord.",
         });
-        if (userProfile.role === 'admin') {
+        if (instructorProfile.role === 'admin') {
             router.replace('/admin');
         } else {
             router.replace('/dashboard');
         }
-    } else if (!userProfile) {
+    } else if (!instructorProfile) {
         // If loading is done, user exists, but no profile, it's an error state.
         toast({
             variant: 'destructive',
@@ -117,14 +121,26 @@ export default function FormateurLayout({
         });
         if (auth) signOut(auth);
         router.replace('/login');
+    } else if (instructorProfile.validation_status === 'incomplete' && pathname !== '/formateur/mise-a-jour') {
+        // Redirect to update page if profile is incomplete
+        router.replace('/formateur/mise-a-jour');
     }
-  }, [user, userProfile, loading, router, toast, auth]);
+  }, [user, userProfile, loading, router, toast, auth, pathname]);
 
   if (loading || !userProfile || userProfile.role !== 'formateur') {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin" />
         <p className='ml-3'>Vérification des droits d'accès...</p>
+      </div>
+    );
+  }
+  
+  if (userProfile.validation_status === 'incomplete' && pathname !== '/formateur/mise-a-jour') {
+    return (
+       <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <p className='ml-3'>Redirection vers la mise à jour du profil...</p>
       </div>
     );
   }
