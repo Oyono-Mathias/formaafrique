@@ -29,6 +29,9 @@ export default function PrivacyPolicyPage() {
              <li>
               <strong>Dons :</strong> Si vous faites un don, nous collectons les informations de transaction nécessaires (sans stocker les détails de votre carte de crédit).
             </li>
+            <li>
+              <strong>Messages et communications :</strong> Les messages que vous envoyez dans les chats privés ou de groupe sont traités par notre système.
+            </li>
           </ul>
 
           <h2>3. Comment nous utilisons vos données</h2>
@@ -40,25 +43,43 @@ export default function PrivacyPolicyPage() {
             <li>Personnaliser votre expérience d'apprentissage.</li>
             <li>Délivrer vos certificats de réussite.</li>
             <li>Traiter vos dons de manière sécurisée.</li>
+            <li>Assurer la sécurité et la modération des échanges sur la plateforme.</li>
             <li>Communiquer avec vous concernant votre compte ou nos services.</li>
           </ul>
 
-          <h2>4. Sécurité de vos données</h2>
+          <h2>4. Modération et conservation des données</h2>
           <p>
-            La sécurité de vos données est une priorité. Nous utilisons des services de stockage de données sécurisés comme Firebase Firestore, qui applique des mesures de sécurité robustes, y compris le chiffrement, pour protéger vos informations.
+            Afin d'assurer un environnement sûr et respectueux, les messages échangés sur la plateforme peuvent être analysés par un système de modération automatique.
+          </p>
+          <ul>
+            <li>
+              <strong>Analyse :</strong> Le contenu textuel de vos messages est analysé pour détecter les comportements inappropriés (demandes de paiement, partage de contact, abus, etc.).
+            </li>
+            <li>
+              <strong>Journalisation :</strong> Les résultats de cette analyse (mais pas nécessairement le contenu brut de tous les messages) sont stockés dans un journal de modération sécurisé.
+            </li>
+            <li>
+              <strong>Conservation :</strong> Ces journaux sont conservés pour une durée maximale de 30 jours à des fins de sécurité et de révision, puis sont automatiquement anonymisés ou supprimés. Seuls les cas nécessitant une enquête (escalade) peuvent être conservés plus longtemps.
+            </li>
+          </ul>
+
+
+          <h2>5. Sécurité de vos données</h2>
+          <p>
+            La sécurité de vos données est une priorité. Nous utilisons des services de stockage de données sécurisés comme Firebase Firestore, qui applique des mesures de sécurité robustes, y compris le chiffrement, pour protéger vos informations. L'accès aux journaux de modération est strictement réservé aux administrateurs de la plateforme.
           </p>
           
-          <h2>5. Partage de vos données</h2>
+          <h2>6. Partage de vos données</h2>
           <p>
             Nous ne vendons, n'échangeons ni ne transférons vos informations personnelles à des tiers. Vos données restent confidentielles et ne sont utilisées que dans le cadre des services de FormaAfrique.
           </p>
 
-          <h2>6. Vos droits</h2>
+          <h2>7. Vos droits</h2>
           <p>
-            Vous avez le droit d'accéder à vos données, de les corriger ou de demander leur suppression. Pour toute demande de suppression de compte et de données associées, veuillez nous contacter.
+            Vous avez le droit d'accéder à vos données, de les corriger ou de demander leur suppression. Pour toute demande de suppression de compte et de données associées, veuillez nous contacter. Vous avez également le droit de contester une décision de modération via les outils prévus à cet effet sur la plateforme.
           </p>
 
-          <h2>7. Nous contacter</h2>
+          <h2>8. Nous contacter</h2>
           <p>
             Si vous avez des questions sur cette politique ou si vous souhaitez exercer vos droits, veuillez nous contacter à : <a href="mailto:contact@formaafrique.org">contact@formaafrique.org</a>.
           </p>
