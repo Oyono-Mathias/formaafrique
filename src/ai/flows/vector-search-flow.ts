@@ -22,7 +22,7 @@ const knowledgeBase = [
     Document.fromText("Le module d'introduction au business plan couvre la définition de votre mission et l'analyse de marché.", { type: "module", id: "mod1", title: "Introduction au Business Plan" }),
 ];
 
-const retriever = memoryRetriever(knowledgeBase);
+const retriever = memoryRetriever({documents: knowledgeBase});
 
 const VectorSearchInputSchema = z.object({
   query: z.string().describe('The user\'s search query.'),
