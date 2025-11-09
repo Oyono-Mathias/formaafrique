@@ -70,7 +70,7 @@ service cloud.firestore {
     // Rules for Community Posts
     match /community_posts/{postId} {
         allow read: if request.auth != null;
-        allow create: if isOwner(request.resource.data.authorId);
+        allow create: if isOwner(request.resource.data.authorId) && isUserInFormation(request.resource.data.formationId);
         allow update, delete: if isOwner(get(/databases/$(database)/documents/community_posts/$(postId)).data.authorId) || isAdmin();
     }
 
