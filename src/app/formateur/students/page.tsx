@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useUser, useFirestore, useCollection } from '@/firebase';
 import type { Course, Enrollment, UserProfile } from '@/lib/types';
-import { Loader2 } from 'lucide-react';
+import { Loader2, MessageSquare } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -22,6 +22,9 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Timestamp, collection, getDocs, doc, getDoc, onSnapshot, query, Unsubscribe, where } from 'firebase/firestore';
 import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
+import { getOrCreateChat } from '@/actions/chat';
+import { useRouter } from 'next/navigation';
 
 interface EnrichedEnrollment extends Enrollment {
   studentEmail?: string;
@@ -31,6 +34,8 @@ interface EnrichedEnrollment extends Enrollment {
 export default function FormateurStudentsPage() {
   const { user } = useUser();
   const db = useFirestore();
+  const router = useRouter();
+
   const { data: coursesData, loading: coursesLoading } = useCollection<Course>(
     'formations',
     // user?.uid ? { where: ['instructorId', '==', user.uid] } : undefined
@@ -39,6 +44,11 @@ export default function FormateurStudentsPage() {
   const [enrollments, setEnrollments] = useState<EnrichedEnrollment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const handleStartChat = (studentId: string) => {
+    if (!user) return;
+    getOrCreateChat(user.uid, studentId);
+  };
 
   useEffect(() => {
     if (coursesLoading) {
@@ -107,15 +117,14 @@ export default function FormateurStudentsPage() {
                     return newEnrollments;
                 });
                 
-                // Only set loading to false when all listeners have fired at least once
-                if (++listenersInitialized === totalCourses) {
+                if (++listenersInitialized >= totalCourses) {
                     setLoading(false);
                 }
 
             }, (err) => {
                 console.error("Error with snapshot listener:", err);
                 setError("Impossible de charger les étudiants en temps réel.");
-                if (++listenersInitialized === totalCourses) {
+                if (++listenersInitialized >= totalCourses) {
                     setLoading(false);
                 }
             });
@@ -190,7 +199,7 @@ export default function FormateurStudentsPage() {
                     <TableHead>Étudiant</TableHead>
                     <TableHead className="hidden md:table-cell">Formation</TableHead>
                     <TableHead>Progression</TableHead>
-                    <TableHead className="text-right">Date d'inscription</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -207,13 +216,14 @@ export default function FormateurStudentsPage() {
                         <div className='flex items-center gap-2'>
                            <Progress value={enrollment.progression || 0} className="w-[100px]" />
                            <span className='text-xs font-semibold text-muted-foreground'>{enrollment.progression || 0}%</span>
-                           <Badge variant={getStatusVariant(enrollment)} className="hidden lg:inline-flex">
-                               {getStatus(enrollment)}
-                            </Badge>
                         </div>
                       </TableCell>
-                      <TableCell className="text-right text-sm text-muted-foreground">
-                        {formatDate(enrollment.enrollmentDate)}
+                      <TableCell className="text-right">
+                         <form action={() => handleStartChat(enrollment.studentId)}>
+                            <Button type="submit" variant="outline" size="sm">
+                                <MessageSquare className="mr-2 h-4 w-4" /> Message
+                            </Button>
+                        </form>
                       </TableCell>
                     </TableRow>
                   ))}
