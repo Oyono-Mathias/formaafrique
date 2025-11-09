@@ -1,4 +1,5 @@
 
+
 import type { Timestamp } from 'firebase/firestore';
 
 export interface Category {
@@ -36,6 +37,24 @@ export interface Course {
   keywords: string[];
   createdAt: Timestamp;
   updatedAt: Timestamp;
+}
+
+export interface ContentIndex {
+    id?: string; // Should be 'contentIndex'
+    lastSyncedAt: Timestamp;
+    counts: {
+        categories: number;
+        formations: number;
+        modules: number;
+        videos: number;
+    };
+    summary: {
+        [formationId: string]: {
+            title: string;
+            shortSummary: string;
+            keywords: string[];
+        };
+    };
 }
 
 
