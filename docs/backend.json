@@ -24,72 +24,24 @@
           "format": "date-time",
           "description": "The timestamp when the user account was created."
         },
-        "role": {
+        "formationId": {
           "type": "string",
-          "enum": [
-            "admin",
-            "etudiant",
-            "formateur"
-          ],
-          "description": "The role of the user in the system."
+          "description": "The ID of the formation the user is associated with (e.g., 'python', 'sante')."
         },
-        "status": {
-            "type": "string",
-            "enum": ["actif", "suspendu"],
-            "description": "The status of the user account."
-        },
-        "paysOrigine": {
+        "moduleLevel": {
           "type": "string",
-          "description": "The user's country of origin."
-        },
-        "paysActuel": {
-          "type": "string",
-          "description": "The user's current country of residence."
-        },
-        "bio": {
-          "type": "string",
-          "description": "A short biography or description written by the user."
-        },
-        "skills": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "A list of skills the user has."
-        },
-        "followers": {
-          "type": "array",
-          "items": { "type": "string" },
-          "description": "List of user UIDs who are following this user."
-        },
-        "following": {
-          "type": "array",
-          "items": { "type": "string" },
-          "description": "List of user UIDs this user is following."
+          "description": "The user's level in the module, e.g., 'debutant'."
         },
         "friends": {
           "type": "array",
           "items": { "type": "string" },
           "description": "List of user UIDs who are friends with this user."
-        },
-        "online": {
-          "type": "boolean",
-          "description": "Indicates if the user is currently online."
-        },
-        "lastSeen": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Timestamp of the user's last activity."
         }
       },
       "required": [
         "name",
         "email",
-        "createdAt",
-        "role",
-        "status",
-        "paysOrigine",
-        "paysActuel"
+        "createdAt"
       ]
     },
     "InstructorProfile": {
