@@ -43,8 +43,8 @@ service cloud.firestore {
       allow update: if isAdmin();
     }
     
-    // --- Enrollments Subcollection ---
-    // A user can only manage their own enrollments.
+    // --- Enrollments Subcollection (User Progress) ---
+    // A user can only manage their own enrollments/progress.
     match /users/{userId}/enrollments/{enrollmentId} {
         allow read, write: if isOwner(userId);
     }
@@ -52,6 +52,7 @@ service cloud.firestore {
     // --- Formations (Courses) Collection ---
     match /formations/{formationId} {
       // Anyone can read published courses.
+      // Validated instructors and admins can read any course.
       allow read: if resource.data.published == true || isValidatedFormateur() || isAdmin();
       
       // Only validated instructors or admins can create courses.
@@ -72,17 +73,32 @@ service cloud.firestore {
 
     // --- Donations Collection ---
     match /donations/{donationId} {
-      // A user can create their own donation document.
+      // A user can create their own donation document, but only with a pending status.
       allow create: if isAuth() && request.resource.data.donateurId == request.auth.uid && request.resource.data.statut == 'en_attente';
       // A user can read their own donations. Admins can read all.
       allow read: if (isAuth() && resource.data.donateurId == request.auth.uid) || isAdmin();
-      // No one can update a donation from the client. This must be done by a trusted server (webhook).
+      // No one can update a donation from the client. This MUST be done by a trusted server (webhook).
       allow update, delete: if false;
     }
     
+    // --- Aggregated Stats & Analytics (Server-only write) ---
+    match /formateur_stats/{authorId} {
+        // The instructor can read their own stats. Admins can read any.
+        allow read: if isOwner(authorId) || isAdmin();
+        // Writes are only allowed from the backend (Admin SDK).
+        allow write: if false;
+    }
+
+    match /analytics/{courseId}/{subcollection}/{docId} {
+        // Allow admins to read analytics data for dashboards.
+        allow read: if isAdmin();
+        // Writes are only allowed from the backend.
+        allow write: if false;
+    }
+
     // --- Instructor & Admin Collections ---
     match /instructor_requests/{requestId} {
-        allow read: if isAdmin();
+        allow read: if isOwner(requestId) || isAdmin();
         allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
         allow update: if isAdmin(); // Only admins can approve/reject.
     }
@@ -118,7 +134,7 @@ service cloud.firestore {
     
     // --- Moderation & AI Collections (Admin-only) ---
     match /moderationLogs/{logId} {
-        allow read, write: if isAdmin();
+        allow read, write: if false; // Server-only writes
     }
     
     match /aiFlags/{flagId} {
@@ -128,12 +144,6 @@ service cloud.firestore {
     match /moderationAppeals/{appealId} {
         allow read, update: if isAdmin();
         allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
-    }
-    
-    // --- Default Deny ---
-    // Deny all other access by default.
-    match /{document=**} {
-      allow read, write: if false;
     }
   }
 }
