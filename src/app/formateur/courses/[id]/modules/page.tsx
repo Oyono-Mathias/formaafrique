@@ -29,7 +29,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import ReactPlayer from 'react-player';
-import { getVideoDetails } from '@/lib/video-utils';
+import { getVideoDetails, processDriveVideo } from '@/lib/video-utils';
 import { Label } from '@/components/ui/label';
 
 const moduleSchema = z.object({
@@ -118,21 +118,22 @@ export default function ManageModulesPage() {
             platform: videoDetails.platform,
             videoId: videoDetails.id,
             moduleId: selectedModule.id,
+            published: true, // Publié par défaut
         };
 
         if (editingVideo) {
-            await updateDoc(doc(videosCollectionRef, editingVideo.id!), videoData);
+            const videoRef = doc(videosCollectionRef, editingVideo.id!);
+            await updateDoc(videoRef, videoData);
             toast({ title: 'Vidéo mise à jour !' });
         } else {
             const videosSnapshot = await getDocs(videosCollectionRef);
-            await addDoc(videosCollectionRef, { ...videoData, order: (videosSnapshot.docs.length || 0) + 1 });
-            toast({ title: 'Vidéo ajoutée !' });
-        }
-        
-        // Si c'est une vidéo Drive, on pourrait appeler la Cloud Function ici
-        if (videoDetails.platform === 'drive' && videoDetails.id) {
-            // await processDriveVideo(videoDetails.id, courseId, newVideoDoc.id);
-            toast({ title: "Traitement en cours", description: "La vidéo Google Drive est en cours de copie. Cela peut prendre quelques minutes."});
+            const newVideoDoc = await addDoc(videosCollectionRef, { ...videoData, order: (videosSnapshot.docs.length || 0) + 1 });
+            
+            // Si c'est une vidéo Drive, on appelle la Cloud Function ici
+            if (videoDetails.platform === 'drive' && videoDetails.id) {
+                // await processDriveVideo(videoDetails.id, courseId, newVideoDoc.id);
+                toast({ title: "Traitement en cours", description: "La vidéo Google Drive est en cours de copie. Cela peut prendre quelques minutes."});
+            }
         }
         
         setIsVideoModalOpen(false);

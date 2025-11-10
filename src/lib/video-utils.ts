@@ -88,8 +88,7 @@ export async function processDriveVideo(fileId: string, courseId: string, videoI
         },
         body: JSON.stringify({
             driveFileId: fileId,
-            targetCourseId: courseId,
-            targetVideoId: videoId,
+            targetFirestorePath: `formations/${courseId}/videos/${videoId}`,
         }),
     });
 
