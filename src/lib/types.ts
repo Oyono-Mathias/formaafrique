@@ -14,6 +14,10 @@ export interface Video {
   title: string;
   duration?: number;
   driveUrl: string;
+  embedUrl: string;
+  thumbnailUrl: string;
+  platform: 'youtube' | 'drive' | 'other';
+  videoId?: string;
   storagePath?: string;
   order: number;
   createdAt: Timestamp;
@@ -42,6 +46,9 @@ export interface Course {
   published: boolean;
   createdAt: Timestamp;
   updatedAt: Timestamp;
+  statut?: 'brouillon' | 'en_attente' | 'approuvee' | 'rejetee'; // Course validation status
+  motifRejet?: string; // Reason for rejection, if applicable
+  dateValidation?: Timestamp; // Date of approval/rejection
 }
 
 export interface ContentIndex {
@@ -174,6 +181,8 @@ export interface Donation {
   statut: 'succes' | 'en_attente' | 'echec';
   moyenPaiement: 'carte' | 'mobile_money' | 'inconnu';
   paysOrigine: string;
+  courseId?: string; // Optional: Link donation to a specific course
+  transactionId?: string; // ID from payment provider
 }
 
 export interface UserActivityLog {
@@ -203,7 +212,7 @@ export interface InstructorRequest {
     userName: string;
     userEmail: string;
     requestDate: Timestamp;
-    status: 'pending' | 'approved' | 'rejected';
+    status: 'pending' | 'approved' | 'rejected' | 'éligible' | 'en_attente' | 'refusé';
     specialite: string;
     motivation: string;
     videoUrl: string;
@@ -214,6 +223,9 @@ export interface InstructorRequest {
         youtubeUrl?: string;
     };
     scoreReputation?: number;
+    scoreFinal?: number;
+    feedbackMessage?: string;
+    badge?: string;
 }
 
 export interface CommunityPost {
@@ -339,4 +351,12 @@ export interface TutorFeedback {
 export interface GetCollectionApiRequest {
     path: string;
     filters?: { field: string; op: any; value: any }[];
+}
+
+// Interface for a wishlist item
+export interface WishlistItem {
+  id: string;
+  userId: string;
+  courseId: string;
+  createdAt: Timestamp;
 }

@@ -155,7 +155,10 @@
         "price": { "type": "number" },
         "published": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" },
-        "updatedAt": { "type": "string", "format": "date-time" }
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "statut": { "type": "string", "enum": ["brouillon", "en_attente", "approuvee", "rejetee"] },
+        "motifRejet": { "type": "string" },
+        "dateValidation": { "type": "string", "format": "date-time" }
       },
       "required": [
         "title",
@@ -165,7 +168,8 @@
         "createdAt",
         "updatedAt",
         "price",
-        "published"
+        "published",
+        "statut"
       ]
     },
     "Module": {
@@ -185,19 +189,21 @@
     "Video": {
         "title": "Video",
         "description": "Represents a video within a module.",
-        "type": "object",
+        "type.": "object",
         "properties": {
             "title": { "type": "string" },
             "duration": { "type": "number" },
-            "driveLink": { "type": "string", "format": "uri" },
-            "youtubeId": { "type": "string" },
-            "thumbnail": { "type": "string", "format": "uri"},
+            "driveUrl": { "type": "string", "format": "uri", "description": "Original URL from the user (e.g., YouTube or Google Drive)." },
+            "embedUrl": { "type": "string", "format": "uri", "description": "Standardized URL for embedding in a player." },
+            "thumbnailUrl": { "type": "string", "format": "uri", "description": "URL of the video thumbnail." },
+            "platform": { "type": "string", "enum": ["youtube", "drive", "other"] },
+            "videoId": { "type": "string", "description": "The unique ID of the video on its platform (e.g., YouTube video ID)." },
             "order": { "type": "number" },
             "moduleId": { "type": "string" },
             "createdAt": { "type": "string", "format": "date-time" },
             "published": { "type": "boolean" }
         },
-        "required": ["title", "order", "moduleId", "createdAt", "published"]
+        "required": ["title", "order", "moduleId", "createdAt", "published", "driveUrl", "embedUrl", "platform"]
     },
     "CourseProgress": {
       "title": "Course Progress",
@@ -243,9 +249,38 @@
           "type": "string",
           "format": "date-time",
           "description": "The timestamp of the enrollment."
+        },
+        "progression": { "type": "number", "description": "Overall course progress (0-100)." },
+        "modules": {
+            "type": "object",
+            "additionalProperties": {
+                "$ref": "#/entities/ModuleProgress"
+            }
         }
       },
-      "required": ["studentId", "studentName", "courseId", "courseTitle", "enrollmentDate"]
+      "required": ["studentId", "studentName", "courseId", "courseTitle", "enrollmentDate", "progression"]
+    },
+    "ModuleProgress": {
+        "title": "Module Progress",
+        "type": "object",
+        "properties": {
+            "progress": { "type": "number", "description": "Progress within the module (0-100)." },
+            "videos": {
+                "type": "object",
+                "additionalProperties": {
+                    "$ref": "#/entities/VideoProgress"
+                }
+            }
+        }
+    },
+    "VideoProgress": {
+        "title": "Video Progress",
+        "type": "object",
+        "properties": {
+            "watched": { "type": "boolean" },
+            "watchedAt": { "type": "string", "format": "date-time" },
+            "lastPosition": { "type": "number", "description": "Last playback position in seconds." }
+        }
     },
     "Donation": {
       "title": "Donation",
@@ -291,7 +326,9 @@
         "paysOrigine": {
           "type": "string",
           "description": "The country of origin of the donor."
-        }
+        },
+        "courseId": { "type": "string", "description": "Optional: Link donation to a specific course"},
+        "transactionId": { "type": "string", "description": "ID from payment provider"}
       },
       "required": ["donateurId", "donateurNom", "donateurEmail", "montant", "devise", "date", "statut"]
     },
@@ -337,7 +374,7 @@
         "userName": { "type": "string" },
         "userEmail": { "type": "string", "format": "email" },
         "requestDate": { "type": "string", "format": "date-time" },
-        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected", "éligible", "en_attente", "refusé"] },
         "specialite": { "type": "string" },
         "motivation": { "type": "string" },
         "videoUrl": { "type": "string", "format": "uri" },
@@ -352,7 +389,8 @@
         },
         "scoreReputation": { "type": "number" },
         "scoreFinal": { "type": "number" },
-        "feedbackMessage": { "type": "string"}
+        "feedbackMessage": { "type": "string"},
+        "badge": { "type": "string" }
       },
       "required": ["userId", "userName", "userEmail", "requestDate", "status", "specialite", "motivation", "videoUrl"]
     },
@@ -457,7 +495,8 @@
         "seen": {
           "type": "boolean",
           "description": "Indicates if the message has been seen by the recipient(s)."
-        }
+        },
+        "auto": { "type": "boolean", "description": "True if the message is from an AI agent." }
       },
       "required": ["from", "text", "timestamp", "seen"]
     },
@@ -526,7 +565,8 @@
           "type": "string",
           "format": "date-time",
           "description": "Timestamp when the message was sent."
-        }
+        },
+        "auto": { "type": "boolean", "description": "True if the message is from an AI agent." }
       },
       "required": ["authorId", "authorName", "text", "timestamp"]
     },
@@ -633,6 +673,17 @@
             "createdAt": { "type": "string", "format": "date-time" }
         },
         "required": ["userId", "query", "answer", "isHelpful", "createdAt"]
+    },
+    "WishlistItem": {
+      "title": "Wishlist Item",
+      "description": "Represents a user's wish to enroll in a course.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The UID of the user." },
+        "courseId": { "type": "string", "description": "The ID of the wished course." },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "courseId", "createdAt"]
     }
   },
   "auth": {
@@ -648,15 +699,13 @@
       },
       "description": "Stores public profile information for each user."
     },
-    "users/{userId}/progress/{courseId}": {
-      "schema": {
-        "$ref": "#/entities/CourseProgress"
-      },
-      "description": "Stores the learning progress for a user on a specific course."
-    },
     "users/{userId}/enrollments/{courseId}": {
         "schema": { "$ref": "#/entities/Enrollment" },
-        "description": "Stores all enrollments for a specific user."
+        "description": "Stores all enrollments for a specific user. The document ID is the courseId."
+    },
+     "users/{userId}/wishlist/{wishlistId}": {
+      "schema": { "$ref": "#/entities/WishlistItem" },
+      "description": "A user's list of wished courses."
     },
     "instructor_requests/{uid}": {
         "schema": { "$ref": "#/entities/InstructorRequest" },
@@ -679,6 +728,10 @@
     "formations/{formationId}/modules/{moduleId}/videos/{videoId}": {
       "schema": { "$ref": "#/entities/Video" },
       "description": "Stores all videos for a specific module."
+    },
+    "formations/{formationId}/enrollments/{enrollmentId}": {
+        "schema": { "$ref": "#/entities/Enrollment" },
+        "description": "Denormalized list of enrollments per course for quick lookups by formateurs."
     },
     "donations/{donationId}": {
         "schema": { "$ref": "#/entities/Donation" },
@@ -748,7 +801,9 @@
   "indexing": {
     "recommendations": [
         "Recommander de créer un index composite pour la collection 'formations' sur les champs 'authorId' et 'createdAt' pour permettre aux formateurs de trier leurs cours par date.",
-        "Recommander de créer un index composite pour la collection 'formations' sur les champs 'categoryId' et 'published' pour filtrer et afficher rapidement les cours publiés par catégorie."
+        "Recommander de créer un index composite pour la collection 'formations' sur les champs 'categoryId' et 'published' pour filtrer et afficher rapidement les cours publiés par catégorie.",
+        "Recommander de créer un index composite pour la collection 'friendRequests' sur les champs 'from' et 'to' pour vérifier efficacement les demandes existantes.",
+        "Recommander de créer un index composite pour la collection 'chats' sur le champ 'members' pour rechercher des conversations entre utilisateurs."
     ]
   }
 }
