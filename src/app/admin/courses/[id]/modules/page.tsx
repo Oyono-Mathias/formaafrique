@@ -33,6 +33,8 @@ import {
   Wrench,
   Check,
   X,
+  Youtube,
+  Heart,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -61,11 +63,9 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import ReactPlayer from 'react-player';
-import { formatVideoUrl } from '@/lib/video-utils';
+import { getVideoDetails } from '@/lib/video-utils';
 
 const moduleSchema = z.object({
   title: z
@@ -78,7 +78,9 @@ const moduleSchema = z.object({
 
 const videoSchema = z.object({
   title: z.string().min(3, 'Titre requis.'),
-  driveUrl: z.string().url('URL de vidéo valide requise.'),
+  driveUrl: z.string().refine(url => getVideoDetails(url) !== null, {
+    message: 'URL invalide. Veuillez utiliser un lien YouTube ou Google Drive public.',
+  }),
 });
 
 
@@ -179,38 +181,43 @@ export default function AdminManageModulesPage({
   async function onVideoSubmit(values: z.infer<typeof videoSchema>) {
     if (!db || !courseId || !selectedModule?.id) return;
     
-    const formattedUrl = formatVideoUrl(values.driveUrl);
+    const videoDetails = getVideoDetails(values.driveUrl);
+    if (!videoDetails) {
+        toast({ variant: "destructive", title: "URL de vidéo invalide" });
+        return;
+    }
 
     try {
-      const videosCollectionRef = collection(
-        db,
-        `formations/${courseId}/modules/${selectedModule.id}/videos`
-      );
-      
-      const videosSnapshot = await getDocs(videosCollectionRef);
-      const nextOrder = (videosSnapshot.docs.length || 0) + 1;
-      
-      const videoData = {
-          title: values.title,
-          driveUrl: formattedUrl
-      };
+        const videosCollectionRef = collection(db, `formations/${courseId}/modules/${selectedModule.id}/videos`);
+        
+        const videoData = {
+            title: values.title,
+            driveUrl: values.driveUrl,
+            embedUrl: videoDetails.embedUrl,
+            thumbnailUrl: videoDetails.thumbnailUrl,
+            platform: videoDetails.platform,
+            videoId: videoDetails.id,
+            published: true,
+            moduleId: selectedModule.id,
+        };
 
-      if (editingVideo) {
-        const videoRef = doc(db, `formations/${courseId}/modules/${selectedModule.id}/videos`, editingVideo.id!);
-        await updateDoc(videoRef, videoData);
-        toast({ title: 'Vidéo mise à jour !' });
-      } else {
-        await addDoc(videosCollectionRef, {
-          ...videoData,
-          order: nextOrder,
-          published: true, // Default to published
-          createdAt: serverTimestamp(),
-        });
-        toast({ title: 'Vidéo ajoutée !' });
-      }
-      videoForm.reset();
-      setIsVideoModalOpen(false);
-      setEditingVideo(null);
+        if (editingVideo) {
+            const videoRef = doc(db, `formations/${courseId}/modules/${selectedModule.id}/videos`, editingVideo.id!);
+            await updateDoc(videoRef, videoData);
+            toast({ title: 'Vidéo mise à jour !' });
+        } else {
+            const videosSnapshot = await getDocs(videosCollectionRef);
+            await addDoc(videosCollectionRef, {
+              ...videoData,
+              order: (videosSnapshot.docs.length || 0) + 1,
+              createdAt: serverTimestamp(),
+            });
+            toast({ title: 'Vidéo ajoutée !' });
+        }
+
+        videoForm.reset();
+        setIsVideoModalOpen(false);
+        setEditingVideo(null);
     } catch (error) {
       console.error('Error adding video:', error);
       toast({
@@ -450,7 +457,7 @@ export default function AdminManageModulesPage({
 
 function VideoDialog({ isOpen, setIsOpen, form, onSubmit, isEditing, moduleTitle }: any) {
   const rawVideoUrl = form.watch('driveUrl');
-  const formattedVideoUrl = formatVideoUrl(rawVideoUrl);
+  const videoDetails = getVideoDetails(rawVideoUrl);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -496,12 +503,24 @@ function VideoDialog({ isOpen, setIsOpen, form, onSubmit, isEditing, moduleTitle
                 </FormItem>
               )}
             />
-             {rawVideoUrl && ReactPlayer.canPlay(formattedVideoUrl) && (
-              <div className="space-y-2">
+             {videoDetails && (
+              <div className="space-y-4">
                 <Label>Prévisualisation</Label>
                 <div className="relative aspect-video w-full overflow-hidden rounded-md border bg-muted">
-                    <ReactPlayer url={formattedVideoUrl} controls width="100%" height="100%" />
+                    <ReactPlayer url={videoDetails.embedUrl} controls width="100%" height="100%" />
                 </div>
+                 <div className="flex items-center justify-between gap-4">
+                  {videoDetails.platform === 'youtube' && (
+                    <Button asChild variant="secondary" size="sm">
+                        <Link href={`https://www.youtube.com/channel/${videoDetails.id}?sub_confirmation=1`} target="_blank">
+                            <Youtube className='mr-2 h-4 w-4 text-red-500'/> S'abonner à la chaîne
+                        </Link>
+                    </Button>
+                  )}
+                  <Button variant="destructive" size="sm" className='bg-red-500 hover:bg-red-600'>
+                      <Heart className='mr-2 h-4 w-4'/> Faire un don
+                  </Button>
+                 </div>
               </div>
             )}
             <DialogFooter>

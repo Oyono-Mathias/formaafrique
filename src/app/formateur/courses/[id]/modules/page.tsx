@@ -21,34 +21,16 @@ import {
 import { useFirestore, useCollection, useDoc } from '@/firebase';
 import type { Course, Module, Video } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Loader2, PlusCircle, Video as VideoIcon, Trash2, Edit, PlaySquare } from 'lucide-react';
+import { ArrowLeft, Loader2, PlusCircle, Video as VideoIcon, Trash2, Edit, PlaySquare, Youtube, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import ReactPlayer from 'react-player';
-import { formatVideoUrl } from '@/lib/video-utils';
+import { getVideoDetails } from '@/lib/video-utils';
 import { Label } from '@/components/ui/label';
-
-/**
- * @page ModuleManager
- * @description Interface pour ajouter, modifier, réorganiser et supprimer les modules et les vidéos d'un cours.
- * @hooks
- *   - useParams: pour obtenir l'ID du cours depuis l'URL.
- *   - useDoc, useCollection: pour récupérer les données du cours et de ses modules en temps réel.
- *   - useState: pour gérer l'état des modales (ajout/édition de module/vidéo).
- *   - useForm: pour la validation des formulaires.
- * @firestore
- *   - Écoute la collection `formations/{courseId}/modules`.
- *   - Écrit/met à jour/supprime des documents dans `formations/{courseId}/modules` et `.../videos`.
- * @ux
- *   - Les modules sont affichés sous forme de cartes.
- *   - Un bouton "Ajouter un module" ouvre une modale.
- *   - Chaque carte de module a des boutons pour "Modifier", "Supprimer" et "Ajouter une vidéo".
- *   - L'ajout/modification de vidéo se fait également via une modale avec prévisualisation.
- */
 
 const moduleSchema = z.object({
   title: z.string().min(3, { message: 'Le titre doit avoir au moins 3 caractères.' }),
@@ -57,7 +39,9 @@ const moduleSchema = z.object({
 
 const videoSchema = z.object({
   title: z.string().min(3, 'Titre requis.'),
-  driveUrl: z.string().url('URL de vidéo valide requise (YouTube, Google Drive...).'),
+  driveUrl: z.string().refine(url => getVideoDetails(url) !== null, {
+    message: 'URL invalide. Veuillez utiliser un lien YouTube ou Google Drive public.',
+  }),
 });
 
 // --- Main Page Component ---
@@ -116,10 +100,25 @@ export default function ManageModulesPage() {
   
   const onVideoSubmit = async (values: z.infer<typeof videoSchema>) => {
     if (!db || !courseId || !selectedModule?.id) return;
-    const formattedUrl = formatVideoUrl(values.driveUrl);
+    
+    const videoDetails = getVideoDetails(values.driveUrl);
+    if (!videoDetails) {
+        toast({ variant: "destructive", title: "URL de vidéo invalide" });
+        return;
+    }
+
     try {
         const videosCollectionRef = collection(db, `formations/${courseId}/modules/${selectedModule.id}/videos`);
-        const videoData = { title: values.title, driveUrl: formattedUrl };
+        
+        const videoData = {
+            title: values.title,
+            driveUrl: values.driveUrl, // On sauvegarde l'URL originale
+            embedUrl: videoDetails.embedUrl, // Et l'URL d'intégration
+            thumbnailUrl: videoDetails.thumbnailUrl, // Et la miniature si elle existe (YouTube)
+            platform: videoDetails.platform,
+            videoId: videoDetails.id,
+            moduleId: selectedModule.id,
+        };
 
         if (editingVideo) {
             await updateDoc(doc(videosCollectionRef, editingVideo.id!), videoData);
@@ -129,6 +128,13 @@ export default function ManageModulesPage() {
             await addDoc(videosCollectionRef, { ...videoData, order: (videosSnapshot.docs.length || 0) + 1 });
             toast({ title: 'Vidéo ajoutée !' });
         }
+        
+        // Si c'est une vidéo Drive, on pourrait appeler la Cloud Function ici
+        if (videoDetails.platform === 'drive' && videoDetails.id) {
+            // await processDriveVideo(videoDetails.id, courseId, newVideoDoc.id);
+            toast({ title: "Traitement en cours", description: "La vidéo Google Drive est en cours de copie. Cela peut prendre quelques minutes."});
+        }
+        
         setIsVideoModalOpen(false);
     } catch (e) { console.error(e); toast({ variant: 'destructive', title: 'Erreur' }); }
   };
@@ -194,7 +200,8 @@ export default function ManageModulesPage() {
 // --- VideoUploader Component ---
 function VideoUploader({ isOpen, setIsOpen, form, onSubmit, isEditing, moduleTitle }: any) {
   const rawVideoUrl = form.watch('driveUrl');
-  const formattedVideoUrl = formatVideoUrl(rawVideoUrl);
+  const videoDetails = getVideoDetails(rawVideoUrl);
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-2xl">
@@ -206,9 +213,28 @@ function VideoUploader({ isOpen, setIsOpen, form, onSubmit, isEditing, moduleTit
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
             <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Titre de la vidéo</FormLabel><FormControl><Input {...field} placeholder="Ex: Les bases du bilan" /></FormControl><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="driveUrl" render={({ field }) => (<FormItem><FormLabel>URL de la vidéo</FormLabel><FormControl><Input {...field} placeholder="https://www.youtube.com/watch?v=..." /></FormControl><FormMessage /></FormItem>)} />
-            {rawVideoUrl && ReactPlayer.canPlay(formattedVideoUrl) && (
-              <div className="space-y-2"><Label>Prévisualisation</Label><div className="relative aspect-video w-full overflow-hidden rounded-md border bg-muted"><ReactPlayer url={formattedVideoUrl} controls width="100%" height="100%" /></div></div>
+            
+            {videoDetails && (
+              <div className="space-y-4">
+                <Label>Prévisualisation</Label>
+                <div className="relative aspect-video w-full overflow-hidden rounded-md border bg-muted">
+                  <ReactPlayer url={videoDetails.embedUrl} controls width="100%" height="100%" />
+                </div>
+                 <div className="flex items-center justify-between gap-4">
+                  {videoDetails.platform === 'youtube' && (
+                    <Button asChild variant="secondary" size="sm">
+                        <Link href={`https://www.youtube.com/channel/${videoDetails.id}?sub_confirmation=1`} target="_blank">
+                            <Youtube className='mr-2 h-4 w-4 text-red-500'/> S'abonner à la chaîne
+                        </Link>
+                    </Button>
+                  )}
+                  <Button variant="destructive" size="sm" className='bg-red-500 hover:bg-red-600'>
+                      <Heart className='mr-2 h-4 w-4'/> Faire un don
+                  </Button>
+                 </div>
+              </div>
             )}
+            
             <DialogFooter>
               <DialogClose asChild><Button type="button" variant="secondary">Annuler</Button></DialogClose>
               <Button type="submit" disabled={form.formState.isSubmitting}>{form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{isEditing ? 'Enregistrer' : 'Ajouter'}</Button>

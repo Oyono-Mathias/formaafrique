@@ -1,3 +1,4 @@
+
 'use client';
 
 import { notFound, useRouter } from 'next/navigation';
@@ -25,9 +26,9 @@ type ApercuPageProps = {
 export default function ApercuPage({ params }: ApercuPageProps) {
   const { id: courseId } = use(params);
 
-  const { data: course, loading: courseLoading } = useDoc<Course>('courses', courseId);
-  const { data: modulesData, loading: modulesLoading } = useCollection<Module>(courseId ? `courses/${courseId}/modules` : null);
-  const modules = useMemo(() => (modulesData || []).sort((a,b) => a.ordre - b.ordre), [modulesData]);
+  const { data: course, loading: courseLoading } = useDoc<Course>('formations', courseId);
+  const { data: modulesData, loading: modulesLoading } = useCollection<Module>(courseId ? `formations/${courseId}/modules` : null);
+  const modules = useMemo(() => (modulesData || []).sort((a,b) => a.order - b.order), [modulesData]);
 
   const [currentModuleId, setCurrentModuleId] = useState<string | null>(null);
   
@@ -37,7 +38,7 @@ export default function ApercuPage({ params }: ApercuPageProps) {
     }
   }, [modules, currentModuleId]);
   
-  const { data: videosData, loading: videosLoading } = useCollection<Video>(currentModuleId ? `courses/${courseId}/modules/${currentModuleId}/videos` : null);
+  const { data: videosData, loading: videosLoading } = useCollection<Video>(currentModuleId ? `formations/${courseId}/modules/${currentModuleId}/videos` : null);
 
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   
@@ -46,7 +47,7 @@ export default function ApercuPage({ params }: ApercuPageProps) {
   const { currentModule, sortedVideos } = useMemo(() => {
       const allVideos = videosData || [];
       const currentMod = modules.find(m => m.id === currentModuleId);
-      const sortedVids = [...allVideos].sort((a,b) => a.ordre - b.ordre);
+      const sortedVids = [...allVideos].sort((a,b) => a.order - b.order);
       return { currentModule: currentMod, sortedVideos: sortedVids };
   }, [modules, videosData, currentModuleId]);
 
@@ -88,9 +89,9 @@ export default function ApercuPage({ params }: ApercuPageProps) {
             </Button>
           </div>
           <div className="aspect-video bg-black rounded-lg overflow-hidden mb-6 shadow-lg">
-             {selectedVideo?.url ? (
+             {selectedVideo?.embedUrl ? (
                 <ReactPlayer
-                    url={selectedVideo.url}
+                    url={selectedVideo.embedUrl}
                     controls
                     width="100%"
                     height="100%"
@@ -103,15 +104,15 @@ export default function ApercuPage({ params }: ApercuPageProps) {
              )}
           </div>
           <h1 className="text-3xl md:text-4xl font-bold font-headline text-primary mb-2">
-            {selectedVideo?.titre || currentModule?.titre || course.titre}
+            {selectedVideo?.title || currentModule?.title || course.title}
           </h1>
           <p className="text-muted-foreground mb-6">
-            Aperçu de la formation : <span className="text-primary font-semibold">{course.titre}</span>
+            Aperçu de la formation : <span className="text-primary font-semibold">{course.title}</span>
           </p>
           <Separator />
           <div className="prose max-w-none mt-8">
             <h2 className="font-headline text-2xl">À propos de cette leçon</h2>
-            <p>{currentModule?.description || "Contenu de la leçon à venir."}</p>
+            <p>{currentModule?.summary || "Contenu de la leçon à venir."}</p>
           </div>
         </div>
       </div>
@@ -129,7 +130,7 @@ export default function ApercuPage({ params }: ApercuPageProps) {
                     >
                          <div className="flex items-center gap-3">
                           <PlayCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                          <span>{module.titre}</span>
+                          <span>{module.title}</span>
                         </div>
                     </AccordionTrigger>
                     <AccordionContent>
@@ -147,7 +148,7 @@ export default function ApercuPage({ params }: ApercuPageProps) {
                                 >
                                   <div className="flex items-center">
                                     <PlayCircle className="h-4 w-4 mr-3 text-muted-foreground flex-shrink-0" />
-                                    <span className="font-medium">{video.titre}</span>
+                                    <span className="font-medium">{video.title}</span>
                                   </div>
                                 </button>
                               </li>
