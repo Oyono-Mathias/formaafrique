@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { ShieldAlert, BarChart3, Check, Trash2, UserX, MoreVertical, Search, Filter, Loader2 } from 'lucide-react';
+import { ShieldAlert, BarChart3, Check, Trash2, UserX, MoreVertical, Search, Filter, Loader2, Eye } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -80,7 +80,7 @@ export default function AdminModerationPage() {
     const getSeverityBadge = (severity?: 'low' | 'medium' | 'high') => {
         switch (severity) {
             case 'high': return <Badge variant="destructive">Haute</Badge>;
-            case 'medium': return <Badge variant="secondary" className='bg-amber-500 text-white'>Moyenne</Badge>;
+            case 'medium': return <Badge variant="secondary" className='bg-amber-500 text-white hover:bg-amber-500/80'>Moyenne</Badge>;
             default: return <Badge variant="outline">Basse</Badge>;
         }
     }
@@ -89,9 +89,9 @@ export default function AdminModerationPage() {
     return (
         <div className="space-y-8">
             <div>
-                <h1 className="text-3xl font-bold font-headline">Console de Modération</h1>
+                <h1 className="text-3xl font-bold font-headline">Console de Modération IA</h1>
                 <p className="text-muted-foreground">
-                Gérez les contenus signalés et prenez des mesures de modération.
+                Gérez les contenus signalés par l'IA et prenez des mesures de modération.
                 </p>
             </div>
 
@@ -120,51 +120,57 @@ export default function AdminModerationPage() {
                     {loading ? (
                          <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin" /></div>
                     ) : (
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Auteur</TableHead>
-                                    <TableHead>Motif</TableHead>
-                                    <TableHead className="text-center">Sévérité</TableHead>
-                                    <TableHead>Date</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {flags && flags.length > 0 ? flags.map(flag => (
-                                    <TableRow key={flag.id}>
-                                        <TableCell>{usersMap.get(flag.fromUid)?.name || flag.fromUid}</TableCell>
-                                        <TableCell><Badge variant="outline">{flag.reason}</Badge></TableCell>
-                                        <TableCell className="text-center">{getSeverityBadge(flag.severity)}</TableCell>
-                                        <TableCell>{formatDistanceToNow(flag.timestamp.toDate(), { addSuffix: true, locale: fr })}</TableCell>
-                                        <TableCell className="text-right">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" disabled={!!actionState}><MoreVertical className="h-4 w-4"/></Button></DropdownMenuTrigger>
-                                            <DropdownMenuContent>
-                                                <DropdownMenuItem onClick={() => handleAction(flag, 'dismissed')} disabled={actionState?.id === flag.id}>
-                                                    {actionState?.id === flag.id && actionState.type === 'resolving' ? <Loader2 className='animate-spin mr-2 h-4 w-4'/> : <Check className="mr-2 h-4 w-4"/>}
-                                                    Approuver (ignorer)
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => handleAction(flag, 'resolved')} disabled={actionState?.id === flag.id}>
-                                                     {actionState?.id === flag.id && actionState.type === 'deleting' ? <Loader2 className='animate-spin mr-2 h-4 w-4'/> : <Trash2 className="mr-2 h-4 w-4"/>}
-                                                    Confirmer & supprimer
-                                                </DropdownMenuItem>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuItem className="text-destructive" onClick={() => handleAction(flag, 'suspend')} disabled={actionState?.id === flag.id}>
-                                                    {actionState?.id === flag.id && actionState.type === 'suspending' ? <Loader2 className='animate-spin mr-2 h-4 w-4'/> : <UserX className="mr-2 h-4 w-4"/>}
-                                                    Suspendre l'auteur
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                        </TableCell>
-                                    </TableRow>
-                                )) : (
+                        <div className="overflow-x-auto">
+                            <Table>
+                                <TableHeader>
                                     <TableRow>
-                                        <TableCell colSpan={5} className="h-24 text-center">Aucun signalement en attente.</TableCell>
+                                        <TableHead>Auteur</TableHead>
+                                        <TableHead>Motif</TableHead>
+                                        <TableHead className="text-center">Sévérité</TableHead>
+                                        <TableHead>Date</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
+                                </TableHeader>
+                                <TableBody>
+                                    {flags && flags.length > 0 ? flags.map(flag => (
+                                        <TableRow key={flag.id}>
+                                            <TableCell>{usersMap.get(flag.fromUid)?.name || flag.fromUid}</TableCell>
+                                            <TableCell><Badge variant="outline">{flag.reason}</Badge></TableCell>
+                                            <TableCell className="text-center">{getSeverityBadge(flag.severity)}</TableCell>
+                                            <TableCell>{formatDistanceToNow(flag.timestamp.toDate(), { addSuffix: true, locale: fr })}</TableCell>
+                                            <TableCell className="text-right">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" disabled={!!actionState}><MoreVertical className="h-4 w-4"/></Button></DropdownMenuTrigger>
+                                                <DropdownMenuContent>
+                                                    <DropdownMenuItem onSelect={() => { /* View message content logic */ }}>
+                                                        <Eye className="mr-2 h-4 w-4"/> Voir le message
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator/>
+                                                    <DropdownMenuItem onSelect={() => handleAction(flag, 'dismissed')} disabled={actionState?.id === flag.id}>
+                                                        {actionState?.id === flag.id && actionState.type === 'resolving' ? <Loader2 className='animate-spin mr-2 h-4 w-4'/> : <Check className="mr-2 h-4 w-4"/>}
+                                                        Approuver (ignorer)
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onSelect={() => handleAction(flag, 'resolved')} disabled={actionState?.id === flag.id}>
+                                                         {actionState?.id === flag.id && actionState.type === 'deleting' ? <Loader2 className='animate-spin mr-2 h-4 w-4'/> : <Trash2 className="mr-2 h-4 w-4"/>}
+                                                        Confirmer & supprimer
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem className="text-destructive" onClick={() => handleAction(flag, 'suspend')} disabled={actionState?.id === flag.id}>
+                                                        {actionState?.id === flag.id && actionState.type === 'suspending' ? <Loader2 className='animate-spin mr-2 h-4 w-4'/> : <UserX className="mr-2 h-4 w-4"/>}
+                                                        Suspendre l'auteur
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                            </TableCell>
+                                        </TableRow>
+                                    )) : (
+                                        <TableRow>
+                                            <TableCell colSpan={5} className="h-24 text-center">Aucun signalement en attente.</TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
                     )}
                 </CardContent>
             </Card>
