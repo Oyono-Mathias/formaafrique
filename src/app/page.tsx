@@ -17,8 +17,8 @@ import { Timestamp } from 'firebase/firestore';
 
 export default function HomePage() {
   const heroImage = PlaceHolderImages.find((img) => img.id === 'hero');
-  const { data: coursesData, loading, error } = useCollection<Course>('courses', {
-      where: ['publie', '==', true]
+  const { data: coursesData, loading, error } = useCollection<Course>('formations', {
+      where: ['published', '==', true]
   });
   const courses = coursesData || [];
 
@@ -26,8 +26,8 @@ export default function HomePage() {
     // Trier les cours par date de création (du plus récent au plus ancien) et prendre les 3 premiers
     return [...courses]
         .sort((a, b) => {
-            const dateA = a.date_creation instanceof Timestamp ? a.date_creation.toMillis() : new Date(a.date_creation as string).getTime();
-            const dateB = b.date_creation instanceof Timestamp ? b.date_creation.toMillis() : new Date(b.date_creation as string).getTime();
+            const dateA = a.createdAt instanceof Timestamp ? a.createdAt.toMillis() : 0;
+            const dateB = b.createdAt instanceof Timestamp ? b.createdAt.toMillis() : 0;
             return dateB - dateA;
         })
         .slice(0, 3);
@@ -91,7 +91,7 @@ export default function HomePage() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                   {featuredCourses.map((course) => {
-                    const courseImage = PlaceHolderImages.find((img) => img.id === course.image);
+                    const courseImage = PlaceHolderImages.find((img) => img.id === 'course-project-management'); // Simplified
                     return (
                       <Card key={course.id} className="flex flex-col overflow-hidden transition-transform duration-300 hover:scale-105 hover:shadow-xl">
                         <CardHeader className="p-0">
@@ -99,7 +99,7 @@ export default function HomePage() {
                             {courseImage && (
                               <Image
                                 src={courseImage.imageUrl}
-                                alt={course.titre}
+                                alt={course.title}
                                 fill
                                 className="object-cover"
                                 data-ai-hint={courseImage.imageHint}
@@ -108,11 +108,11 @@ export default function HomePage() {
                           </div>
                         </CardHeader>
                         <CardContent className="flex-grow p-6">
-                          <Badge variant="secondary" className="mb-2">{course.categorie}</Badge>
+                          <Badge variant="secondary" className="mb-2">{course.categoryId}</Badge>
                           <CardTitle className="text-xl font-headline leading-tight hover:text-primary">
-                            <Link href={`/courses/${course.id}`}>{course.titre}</Link>
+                            <Link href={`/courses/${course.id}`}>{course.title}</Link>
                           </CardTitle>
-                          <p className="mt-2 text-sm text-muted-foreground line-clamp-3">{course.description}</p>
+                          <p className="mt-2 text-sm text-muted-foreground line-clamp-3">{course.summary}</p>
                         </CardContent>
                         <CardFooter className="p-6 pt-0 flex justify-between items-center">
                           <Button asChild variant="link">
