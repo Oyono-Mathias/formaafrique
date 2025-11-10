@@ -140,9 +140,94 @@ Ce document détaille l'architecture des endpoints API et des fonctions serverle
 
 ---
 
-## 3. Traitement Média (Cloud Functions / Cloud Run)
+## 3. Données Analytiques et Statistiques
 
-### **3.1. Générer une miniature**
+### **3.1. Récupérer les statistiques globales d'un formateur**
+
+-   **Endpoint**: `GET /api/formateur/stats/{authorId}`
+-   **Rôle Requis**: `auteur` du profil ou `admin`.
+-   **Description**: Récupère les statistiques agrégées en temps réel depuis le document `formateur_stats/{authorId}` et y ajoute le top 5 des cours les plus populaires.
+-   **Réponse (Succès - 200 OK)**: Objet contenant les statistiques et la liste des meilleurs cours.
+-   **Gestion des Erreurs**: `401 Unauthorized` si l'utilisateur n'est pas le propriétaire ou admin.
+-   **Exemple JSON de Sortie**:
+    ```json
+    {
+      "stats": {
+        "totalCourses": 12,
+        "totalStudents": 1530,
+        "totalRevenue": 458000,
+        "totalWatchMinutes": 98700,
+        "lastUpdated": "2023-10-27T14:00:00Z"
+      },
+      "topCourses": [
+        { "id": "course1", "title": "Marketing Digital de A à Z", "enrolledCount": 450 },
+        { "id": "course2", "title": "Introduction à l'Agro-industrie", "enrolledCount": 320 },
+        { "id": "course3", "title": "Devenir Community Manager", "enrolledCount": 280 }
+      ]
+    }
+    ```
+
+### **3.2. Récupérer les données temporelles pour les graphiques**
+
+-   **Endpoint**: `GET /api/formateur/analytics/{authorId}?range=30d`
+-   **Rôle Requis**: `auteur` du profil ou `admin`.
+-   **Description**: Collecte les données journalières de la collection `analytics/{courseId}/daily_YYYYMMDD` pour tous les cours de l'auteur sur une période donnée (`7d`, `30d`, `90d`).
+-   **Réponse (Succès - 200 OK)**: Un tableau de points de données pour construire des graphiques.
+-   **Gestion des Erreurs**: `400 Bad Request` si le paramètre `range` est invalide.
+-   **Exemple JSON de Sortie**:
+    ```json
+    {
+      "timeSeries": [
+        { "date": "2023-10-01", "enrollments": 10, "views": 150, "watchMinutes": 3200, "revenue": 5000 },
+        { "date": "2023-10-02", "enrollments": 12, "views": 180, "watchMinutes": 3800, "revenue": 6000 },
+        ...
+      ]
+    }
+    ```
+    
+### **3.3. Enregistrer le temps de visionnage**
+
+-   **Fonction**: `onVideoViewIncrement` (Cloud Function Callable)
+-   **Rôle Requis**: Tout utilisateur authentifié.
+-   **Description**: Cette fonction est appelée directement par le lecteur vidéo du client. C'est le seul point d'entrée pour incrémenter les statistiques de visionnage, garantissant que les données ne peuvent pas être falsifiées.
+-   **Input JSON**:
+    ```json
+    {
+      "videoId": "video123",
+      "courseId": "course456",
+      "watchMinutes": 1.5
+    }
+    ```
+-   **Réponse (Succès - 200 OK)**:
+     ```json
+    {
+      "success": true,
+      "message": "Analytics updated successfully."
+    }
+    ```
+    
+### **3.4. Obtenir le classement des étudiants**
+
+-   **Endpoint**: `GET /api/formateur/leaderboard/{authorId}?period=month`
+-   **Rôle Requis**: `auteur` du profil ou `admin`.
+-   **Description**: Calcule et retourne le classement des étudiants basé sur des métriques comme le temps de visionnage total ou les points d'expérience (XP) gagnés sur une période donnée (`week`, `month`, `all_time`).
+-   **Réponse (Succès - 200 OK)**: Liste des meilleurs étudiants.
+-   **Exemple JSON de Sortie**:
+    ```json
+    {
+      "leaderboard": [
+        { "studentId": "studentUID1", "name": "Fatima Diallo", "xpGained": 520, "avatarUrl": "..." },
+        { "studentId": "studentUID2", "name": "Samuel Adebayo", "xpGained": 480, "avatarUrl": "..." },
+        { "studentId": "studentUID3", "name": "Chloé Dubois", "xpGained": 450, "avatarUrl": "..." }
+      ]
+    }
+    ```
+
+---
+
+## 4. Traitement Média (Cloud Functions / Cloud Run)
+
+### **4.1. Générer une miniature**
 
 -   **Fonction**: `generateThumbnail` (déclenchée par un événement Storage)
 -   **Type**: Cloud Function (Event-driven)
@@ -152,7 +237,7 @@ Ce document détaille l'architecture des endpoints API et des fonctions serverle
 -   **Input**: Événement de Cloud Storage.
 -   **Réponse**: Aucune (met à jour Firestore directement).
 
-### **3.2. Copier une vidéo depuis Google Drive**
+### **4.2. Copier une vidéo depuis Google Drive**
 
 -   **Fonction**: `copyFromDrive` (appelable)
 -   **Type**: Cloud Function (HTTPS Callable)
@@ -174,9 +259,9 @@ Ce document détaille l'architecture des endpoints API et des fonctions serverle
     ```
 ---
 
-## 4. Gestion Financière et Communautaire
+## 5. Gestion Financière et Communautaire
 
-### **4.1. Créer une intention de don**
+### **5.1. Créer une intention de don**
 
 -   **Endpoint**: `POST /api/donations/create-intent`
 -   **Rôle Requis**: `etudiant` (ou tout utilisateur authentifié).
@@ -197,7 +282,7 @@ Ce document détaille l'architecture des endpoints API et des fonctions serverle
     }
     ```
 
-### **4.2. Modérer un message**
+### **5.2. Modérer un message**
 
 -   **Endpoint**: `POST /api/ai/moderate-message` (Genkit Flow)
 -   **Rôle Requis**: Tout utilisateur authentifié (appelé en interne).
@@ -220,9 +305,9 @@ Ce document détaille l'architecture des endpoints API et des fonctions serverle
 
 ---
 
-## 5. Génération de Documents
+## 6. Génération de Documents
 
-### **5.1. Générer un certificat**
+### **6.1. Générer un certificat**
 
 -   **Fonction**: `generateCertificate`
 -   **Type**: Cloud Function (HTTPS Callable)
