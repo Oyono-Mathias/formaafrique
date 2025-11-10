@@ -1,6 +1,7 @@
+
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { translations, TranslationKey } from '@/lib/translations';
 
 // Élargir le type pour inclure toutes les langues supportées
@@ -28,15 +29,23 @@ const supportedLanguages: { code: Language; name: string }[] = [
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguage] = useState<Language>('fr');
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const t = (key: TranslationKey): string => {
-    // S'assurer que translations[language] existe, sinon utiliser 'fr' par défaut.
-    const langDict = translations[language] || translations['fr'];
+    // During server render or initial client render, always default to French to avoid mismatch.
+    const lang = isClient ? language : 'fr';
+    const langDict = translations[lang] || translations['fr'];
     return langDict[key] || translations['fr'][key] || key;
   };
 
+  const value = { language, setLanguage, t, supportedLanguages };
+
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t, supportedLanguages }}>
+    <LanguageContext.Provider value={value}>
       {children}
     </LanguageContext.Provider>
   );
