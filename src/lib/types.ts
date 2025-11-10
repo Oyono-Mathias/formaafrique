@@ -36,10 +36,12 @@ export interface Course {
   summary: string;
   categoryId: string;
   keywords: string[];
+  coverUrl?: string; // URL for the course cover image
+  authorId: string; // UID of the instructor
+  price: number;
+  published: boolean;
   createdAt: Timestamp;
   updatedAt: Timestamp;
-  authorId?: string; // Add authorId to course
-  published?: boolean;
 }
 
 export interface ContentIndex {
@@ -91,6 +93,8 @@ export interface UserProfile {
   moduleLevel?: string;
   infractions?: number;
   scoreReputation?: number;
+  xp?: number;
+  badges?: string[];
 }
 
 export interface InstructorProfile extends UserProfile {
@@ -103,9 +107,13 @@ export interface InstructorProfile extends UserProfile {
         twitterUrl?: string;
         youtubeUrl?: string;
     };
-    validation_status?: 'incomplete' | 'pending' | 'validated';
+    validation_status: 'incomplete' | 'pending' | 'validated' | 'rejected';
     score_validation?: number;
     derniere_mise_a_jour?: string;
+    charteAcceptee: boolean;
+    nombreEtudiants?: number;
+    nombreFormationsPubliees?: number;
+    notationMoyenne?: number;
 }
 
 export interface VideoProgress {
@@ -332,4 +340,3 @@ export interface GetCollectionApiRequest {
     path: string;
     filters?: { field: string; op: any; value: any }[];
 }
-

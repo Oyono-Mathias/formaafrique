@@ -3,7 +3,7 @@
   "entities": {
     "UserProfile": {
       "title": "User Profile",
-      "description": "Represents a user's profile in the system.",
+      "description": "Represents a user's profile in the system. Can be an 'etudiant', 'formateur', or 'admin'.",
       "type": "object",
       "properties": {
         "name": {
@@ -43,14 +43,6 @@
             "items": { "type": "string" },
             "description": "List of earned badges."
         },
-        "verifiedPhone": {
-            "type": "boolean",
-            "description": "Indicates if the user's phone number is verified."
-        },
-        "verifiedEmail": {
-            "type": "boolean",
-            "description": "Indicates if the user's email is verified."
-        },
         "friends": {
           "type": "array",
           "items": { "type": "string" },
@@ -79,7 +71,7 @@
     },
     "InstructorProfile": {
         "title": "Instructor Profile",
-        "description": "Extends UserProfile with instructor-specific fields.",
+        "description": "Extends UserProfile with instructor-specific fields. This is merged into the UserProfile entity when role is 'formateur'.",
         "type": "object",
         "allOf": [{ "$ref": "#/entities/UserProfile" }],
         "properties": {
@@ -107,7 +99,7 @@
             },
             "validation_status": {
                 "type": "string",
-                "enum": ["incomplete", "pending", "validated"],
+                "enum": ["incomplete", "pending", "validated", "rejected"],
                 "description": "The validation status of the instructor's profile."
             },
             "score_validation": {
@@ -118,8 +110,16 @@
                 "type": "string",
                 "format": "date-time",
                 "description": "The timestamp of the last profile update for validation."
-            }
-        }
+            },
+            "charteAcceptee": {
+                "type": "boolean",
+                "description": "Indicates if the instructor has accepted the charter."
+            },
+            "nombreEtudiants": { "type": "number"},
+            "nombreFormationsPubliees": { "type": "number"},
+            "notationMoyenne": { "type": "number"}
+        },
+        "required": ["validation_status", "charteAcceptee"]
     },
     "Category": {
         "title": "Category",
@@ -163,7 +163,9 @@
         "categoryId",
         "authorId",
         "createdAt",
-        "updatedAt"
+        "updatedAt",
+        "price",
+        "published"
       ]
     },
     "Module": {
@@ -652,17 +654,13 @@
       },
       "description": "Stores the learning progress for a user on a specific course."
     },
-    "users/{userId}/friends/{friendId}": {
-      "schema": { "$ref": "#/entities/UserProfile" },
-      "description": "Denormalized data of a user's friends for quick access."
+    "users/{userId}/enrollments/{courseId}": {
+        "schema": { "$ref": "#/entities/Enrollment" },
+        "description": "Stores all enrollments for a specific user."
     },
     "instructor_requests/{uid}": {
         "schema": { "$ref": "#/entities/InstructorRequest" },
         "description": "Stores applications from users wanting to become instructors."
-    },
-    "formateurs_valides/{uid}": {
-        "schema": { "$ref": "#/entities/InstructorProfile" },
-        "description": "Stores profiles of validated instructors."
     },
     "categories/{categoryId}": {
         "schema": { "$ref": "#/entities/Category" },
@@ -681,10 +679,6 @@
     "formations/{formationId}/modules/{moduleId}/videos/{videoId}": {
       "schema": { "$ref": "#/entities/Video" },
       "description": "Stores all videos for a specific module."
-    },
-    "formations/{courseId}/enrollments/{enrollmentId}": {
-        "schema": { "$ref": "#/entities/Enrollment" },
-        "description": "Stores all enrollments for a specific course. (Note: could also be a subcollection of users)"
     },
     "donations/{donationId}": {
         "schema": { "$ref": "#/entities/Donation" },
@@ -753,8 +747,8 @@
   },
   "indexing": {
     "recommendations": [
-        "Recommander de créer un index composite pour la collection 'community_posts' sur les champs 'formationId' et 'createdAt' afin d'optimiser les requêtes de fils de discussion par formation, triés par date.",
-        "Recommander de créer un index sur 'formations' sur les champs 'categoryId' et 'published' pour filtrer et afficher rapidement les cours publiés par catégorie."
+        "Recommander de créer un index composite pour la collection 'formations' sur les champs 'authorId' et 'createdAt' pour permettre aux formateurs de trier leurs cours par date.",
+        "Recommander de créer un index composite pour la collection 'formations' sur les champs 'categoryId' et 'published' pour filtrer et afficher rapidement les cours publiés par catégorie."
     ]
   }
 }
