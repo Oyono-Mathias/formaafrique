@@ -19,15 +19,17 @@ export function NextLayout({ children }: { children: React.ReactNode }) {
 
     const isAppSection = noHeaderFooterRoutes.some(route => pathname.startsWith(route));
     
-    if (!isAppSection) {
-        return (
-            <>
-                <Header />
-                <main className="flex-grow">{children}</main>
-                <Footer />
-            </>
-        )
+    // This component now ONLY decides whether to show the public Header and Footer.
+    // All auth/role protection is handled by the specific layouts (e.g., /dashboard/layout.tsx).
+    if (isAppSection) {
+        return <>{children}</>;
     }
 
-    return <>{children}</>;
+    return (
+        <>
+            <Header />
+            <main className="flex-grow">{children}</main>
+            <Footer />
+        </>
+    )
 }

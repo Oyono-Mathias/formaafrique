@@ -2,37 +2,17 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useUser } from "@/firebase"; // Hook personnalisé à créer
-import { Loader2 } from "lucide-react";
+import { useRouter, usePathname } from "next/navigation";
+import { useUser, useAuth } from "@/firebase";
+import { Loader2, LayoutDashboard, BookCopy, Users, Wallet, Settings, LogOut, Menu, Bell, AlertCircle } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from 'next/navigation';
-import {
-  LayoutDashboard,
-  BookCopy,
-  Users,
-  Wallet,
-  Settings,
-  LogOut,
-  Menu,
-  Bell,
-  AlertCircle,
-} from 'lucide-react';
 import { Logo } from '@/components/icons/logo';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { useToast } from '@/hooks/use-toast';
 import NotificationBell from '@/components/notifications/notification-bell';
@@ -164,7 +144,8 @@ export default function FormateurLayout({ children }: { children: React.ReactNod
             </div>
       );
   }
-
+  
+  // If user is a validated instructor, show the layout and children.
   return (
     <div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr]">
       <aside className="hidden border-r bg-[#111827] text-white lg:block">

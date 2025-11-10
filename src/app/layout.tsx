@@ -29,6 +29,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  console.log("RootLayout rendering...");
   return (
     <html lang="fr" className={cn("h-full font-sans", ptSans.variable)}>
       <body className={cn('antialiased flex flex-col min-h-screen')}>
