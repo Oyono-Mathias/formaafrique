@@ -91,6 +91,7 @@ export default function FormateurLayout({ children }: { children: React.ReactNod
   const { user, userProfile, loading } = useUser();
   const auth = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const { toast } = useToast();
   
   useEffect(() => {
@@ -110,13 +111,20 @@ export default function FormateurLayout({ children }: { children: React.ReactNod
       router.replace('/dashboard'); // Redirect non-instructors
     }
 
-    // Check if the instructor profile is incomplete
+    // Cast to InstructorProfile to access validation_status
     const instructor = userProfile as InstructorProfile;
-    if (instructor && instructor.role === 'formateur' && instructor.validation_status === 'incomplete') {
+
+    // If the profile is incomplete and we are not on the update page, redirect
+    if (instructor && instructor.role === 'formateur' && instructor.validation_status === 'incomplete' && pathname !== '/formateur/mise-a-jour') {
+        toast({
+            title: 'Profil incomplet',
+            description: 'Veuillez mettre à jour votre profil pour continuer.',
+            variant: 'destructive'
+        });
         router.replace('/formateur/mise-a-jour');
     }
 
-  }, [user, userProfile, loading, router, toast]);
+  }, [user, userProfile, loading, router, toast, pathname]);
 
   const handleSignOut = async () => {
     if (!auth) return;
@@ -124,6 +132,7 @@ export default function FormateurLayout({ children }: { children: React.ReactNod
     router.push('/login');
   };
 
+  // While loading, show a full-screen loader
   if (loading || !userProfile || userProfile.role !== 'formateur') {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -133,8 +142,15 @@ export default function FormateurLayout({ children }: { children: React.ReactNod
     );
   }
 
-  // If validation is pending, show a specific message
-  if ((userProfile as InstructorProfile).validation_status === 'pending') {
+  const instructor = userProfile as InstructorProfile;
+  // If the profile update page, show it without the main layout
+  if (instructor.validation_status === 'incomplete' && pathname === '/formateur/mise-a-jour') {
+      return <>{children}</>;
+  }
+
+
+  // If validation is pending, show a specific message instead of the full dashboard
+  if (instructor.validation_status === 'pending') {
       return (
            <div className="flex h-screen w-full items-center justify-center bg-background p-4">
                 <div className='text-center'>
@@ -150,6 +166,7 @@ export default function FormateurLayout({ children }: { children: React.ReactNod
       )
   }
 
+  // If validated, show the full dashboard layout
   return (
     <div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr]">
       <aside className="hidden border-r bg-[#111827] text-white lg:block">
