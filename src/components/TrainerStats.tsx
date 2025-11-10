@@ -8,6 +8,7 @@ import { useUser } from '@/firebase';
 import { db } from '@/firebase/config';
 import { doc, onSnapshot, query, collection, where } from 'firebase/firestore';
 import type { Course } from '@/lib/types';
+import StatsChart from './StatsChart';
 
 interface InstructorStatsData {
   totalCourses: number;
@@ -15,6 +16,13 @@ interface InstructorStatsData {
   totalRevenue: number;
   totalWatchMinutes: number;
 }
+
+const generateMockSeries = (days: number, max: number) => {
+  return Array.from({ length: days }, (_, i) => ({
+    date: new Date(Date.now() - (days - i -1) * 24 * 60 * 60 * 1000).toISOString(),
+    value: Math.floor(Math.random() * max),
+  }));
+};
 
 /**
  * @component TrainerStats
@@ -39,6 +47,11 @@ export default function TrainerStats() {
   const [stats, setStats] = useState<InstructorStatsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Mock data for charts
+  const [enrollmentsSeries] = useState(() => generateMockSeries(30, 20));
+  const [revenueSeries] = useState(() => generateMockSeries(30, 5000));
+
 
   useEffect(() => {
     if (!user?.uid) {
@@ -106,24 +119,28 @@ export default function TrainerStats() {
       value: stats?.totalCourses ?? 0,
       icon: BookOpen,
       description: 'Nombre total de vos formations.',
+      series: null,
     },
     {
       label: 'Étudiants inscrits',
       value: stats?.totalStudents ?? 0,
       icon: Users,
       description: "Nombre total d'étudiants uniques.",
+      series: enrollmentsSeries,
     },
     {
       label: 'Revenus Totaux (Est.)',
       value: formatCurrency(stats?.totalRevenue ?? 0),
       icon: Wallet,
       description: 'Gains générés par vos ventes.',
+      series: revenueSeries,
     },
     {
       label: 'Heures de visionnage',
       value: formatWatchHours(stats?.totalWatchMinutes ?? 0),
       icon: Clock,
       description: 'Temps total passé sur vos vidéos.',
+      series: null,
     },
   ];
 
@@ -131,13 +148,13 @@ export default function TrainerStats() {
       return (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
               {[...Array(4)].map((_, i) => (
-                <Card key={i} className="h-32 animate-pulse">
+                <Card key={i} className="h-40 animate-pulse">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <div className='h-4 bg-gray-200 rounded w-1/2'></div>
                     </CardHeader>
                     <CardContent>
                         <div className='h-8 bg-gray-200 rounded w-1/3 mt-2'></div>
-                        <div className='h-3 bg-gray-200 rounded w-3/4 mt-2'></div>
+                        <div className='h-12 bg-gray-200 rounded w-full mt-4'></div>
                     </CardContent>
                 </Card>
               ))}
@@ -152,15 +169,21 @@ export default function TrainerStats() {
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4" aria-label="Statistiques du formateur">
       {statCards.map((stat) => (
-        <Card key={stat.label} className="rounded-2xl shadow-sm transition-all hover:shadow-md">
+        <Card key={stat.label} className="rounded-2xl shadow-sm transition-all hover:shadow-md flex flex-col">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{stat.label}</CardTitle>
             <stat.icon className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stat.value}</div>
-            <p className="text-xs text-muted-foreground">{stat.description}</p>
-            {/* Sparkline chart would be added here */}
+          <CardContent className="flex flex-col flex-grow justify-between">
+            <div>
+                <div className="text-2xl font-bold">{stat.value}</div>
+                <p className="text-xs text-muted-foreground">{stat.description}</p>
+            </div>
+            {stat.series && (
+              <div className="mt-4">
+                <StatsChart series={stat.series} label={`Graphique de ${stat.label.toLowerCase()}`} />
+              </div>
+            )}
           </CardContent>
         </Card>
       ))}
