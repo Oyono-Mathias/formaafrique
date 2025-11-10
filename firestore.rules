@@ -18,7 +18,6 @@ service cloud.firestore {
 
     function isAdmin() {
       // Check the user's custom claim or their role in the 'users' collection.
-      // Using a document read is more flexible than custom claims for this example.
       return isAuth() && getUserData(request.auth.uid).role == 'admin';
     }
     
@@ -64,8 +63,8 @@ service cloud.firestore {
     
     // --- Modules & Videos Subcollections ---
     match /formations/{formationId}/{subcollection}/{documentId} {
-        // Anyone can read if the parent course is readable (implicitly checked by path).
-        allow read: if true; 
+        // Anyone can read if the parent course is readable.
+        allow read: if get(/databases/$(database)/documents/formations/$(formationId)).data.published == true || (isAuth() && get(/databases/$(database)/documents/formations/$(formationId)).data.authorId == request.auth.uid) || isAdmin();
         
         // Only the author of the course or an admin can write to subcollections.
         allow write: if (isAuth() && get(/databases/$(database)/documents/formations/$(formationId)).data.authorId == request.auth.uid) || isAdmin();
@@ -90,8 +89,8 @@ service cloud.firestore {
     }
 
     match /analytics/{courseId}/{subcollection}/{docId} {
-        // Allow admins to read analytics data for dashboards.
-        allow read: if isAdmin();
+        // Allow admins and the course author to read analytics data for dashboards.
+        allow read: if (isAuth() && get(/databases/$(database)/documents/formations/$(courseId)).data.authorId == request.auth.uid) || isAdmin();
         // Writes are only allowed from the backend.
         allow write: if false;
     }

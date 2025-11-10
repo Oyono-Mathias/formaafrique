@@ -14,7 +14,7 @@ const logErrorToFirestore = async (error: Error, context: any) => {
     try {
         await db.collection('admin_notifications').add({
             type: 'function_error',
-            title: `Erreur dans la fonction : ${context.functionName}`,
+            title: `Erreur dans la fonction : ${context.functionName || 'inconnue'}`,
             message: error.message || 'Une erreur inconnue est survenue.',
             details: {
                 stack: error.stack,
@@ -60,7 +60,7 @@ import * as analyticsFunctions from './analytics';
 import * as scheduledFunctions from './scheduled';
 import * as paymentFunctions from './payments';
 
-export const onVideoViewIncrement = analyticsFunctions.onVideoViewIncrement;
-export const onNewEnrollment = analyticsFunctions.onNewEnrollment;
+export const onVideoViewIncrement = wrapHttpsFunction(analyticsFunctions.onVideoViewIncrement);
+export const onNewEnrollment = wrapEventFunction(analyticsFunctions.onNewEnrollment);
 export const scheduledDailyAggregator = scheduledFunctions.scheduledDailyAggregator;
 export const onDonationWebhook = paymentFunctions.onDonationWebhook;

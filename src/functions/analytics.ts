@@ -17,9 +17,7 @@ const db = admin.firestore();
  *
  * @usage Called by the client player periodically during video playback.
  */
-export const onVideoViewIncrement = functions
-  .region('europe-west1') // Example region
-  .https.onCall(async (data: { videoId: string; courseId: string; watchMinutes: number }, context) => {
+export const onVideoViewIncrement = async (data: { videoId: string; courseId: string; watchMinutes: number }, context: functions.https.CallableContext) => {
     // 1. Security Check: Ensure the user is authenticated.
     if (!context.auth) {
       throw new functions.https.HttpsError(
@@ -38,65 +36,57 @@ export const onVideoViewIncrement = functions
         );
     }
 
-    try {
-      // Note: In a real app, the module ID would be dynamic.
-      const videoRef = db.doc(`formations/${courseId}/modules/MODULE_ID_PLACEHOLDER/videos/${videoId}`);
-      const courseRef = db.doc(`formations/${courseId}`);
-      const userProgressRef = db.doc(`users/${uid}/enrollments/${courseId}`);
+    // Note: In a real app, the module ID would be dynamic.
+    // For this skeleton, we assume it's passed or can be found.
+    const videoRef = db.doc(`formations/${courseId}/modules/MODULE_ID_PLACEHOLDER/videos/${videoId}`);
+    const courseRef = db.doc(`formations/${courseId}`);
+    const userProgressRef = db.doc(`users/${uid}/enrollments/${courseId}`);
+    
+    const courseSnap = await courseRef.get();
+    if (!courseSnap.exists) throw new Error("Course not found");
+    const authorId = courseSnap.data()?.authorId;
+    if (!authorId) throw new Error("Author not found for the course");
+    const formateurStatsRef = db.doc(`formateur_stats/${authorId}`);
+
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const dailyAnalyticsRef = db.doc(`analytics/${courseId}/daily_stats/${today}`);
+
+    await db.runTransaction(async (transaction) => {
+      // --- Get current data ---
+      const userProgressDoc = await transaction.get(userProgressRef);
+      const currentWatchTime = userProgressDoc.data()?.watchMinutes || 0;
+      const newTotalWatchTime = currentWatchTime + watchMinutes;
       
-      const courseSnap = await courseRef.get();
-      if (!courseSnap.exists) throw new Error("Course not found");
-      const authorId = courseSnap.data()?.authorId;
-      if (!authorId) throw new Error("Author not found for the course");
-      const formateurStatsRef = db.doc(`formateur_stats/${authorId}`);
-
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-      const dailyAnalyticsRef = db.doc(`analytics/${courseId}/daily_stats/${today}`);
-
-      await db.runTransaction(async (transaction) => {
-        // --- Get current data ---
-        const userProgressDoc = await transaction.get(userProgressRef);
-        const currentWatchTime = userProgressDoc.data()?.watchMinutes || 0;
-        const newTotalWatchTime = currentWatchTime + watchMinutes;
-        
-        // --- Update all documents ---
-        transaction.set(videoRef, { 
-            views: admin.firestore.FieldValue.increment(1),
-            totalWatchMinutes: admin.firestore.FieldValue.increment(watchMinutes)
-        }, { merge: true });
-        
-        transaction.set(courseRef, { 
-            totalViews: admin.firestore.FieldValue.increment(1),
-            totalWatchMinutes: admin.firestore.FieldValue.increment(watchMinutes),
-        }, { merge: true });
-        
-        transaction.update(userProgressRef, {
-            watchMinutes: newTotalWatchTime,
-            lastSeenAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
-        
-        transaction.set(dailyAnalyticsRef, {
-            videoViews: admin.firestore.FieldValue.increment(1),
-            watchMinutes: admin.firestore.FieldValue.increment(watchMinutes),
-        }, { merge: true });
-
-        transaction.set(formateurStatsRef, { 
-            totalWatchMinutes: admin.firestore.FieldValue.increment(watchMinutes) 
-        }, { merge: true });
+      // --- Update all documents ---
+      transaction.set(videoRef, { 
+          views: admin.firestore.FieldValue.increment(1),
+          totalWatchMinutes: admin.firestore.FieldValue.increment(watchMinutes)
+      }, { merge: true });
+      
+      transaction.set(courseRef, { 
+          totalViews: admin.firestore.FieldValue.increment(1),
+          totalWatchMinutes: admin.firestore.FieldValue.increment(watchMinutes),
+      }, { merge: true });
+      
+      transaction.update(userProgressRef, {
+          watchMinutes: newTotalWatchTime,
+          lastSeenAt: admin.firestore.FieldValue.serverTimestamp(),
       });
+      
+      transaction.set(dailyAnalyticsRef, {
+          date: today,
+          courseId: courseId,
+          videoViews: admin.firestore.FieldValue.increment(1),
+          watchMinutes: admin.firestore.FieldValue.increment(watchMinutes),
+      }, { merge: true });
 
-      return { success: true, message: 'Analytics updated successfully.' };
+      transaction.set(formateurStatsRef, { 
+          totalWatchMinutes: admin.firestore.FieldValue.increment(watchMinutes) 
+      }, { merge: true });
+    });
 
-    } catch (error: any) {
-      console.error("Error in onVideoViewIncrement:", error.message, { data });
-      // Re-throwing the error to be caught by the global error handler
-      throw new functions.https.HttpsError(
-        'internal',
-        'An error occurred while updating analytics.',
-        error.message
-      );
-    }
-});
+    return { success: true, message: 'Analytics updated successfully.' };
+};
 
 
 /**
@@ -106,40 +96,30 @@ export const onVideoViewIncrement = functions
  * @description A Firestore trigger that updates aggregated stats when a new
  * enrollment document is created.
  */
-export const onNewEnrollment = functions
-  .region('europe-west1')
-  .firestore.document('users/{userId}/enrollments/{courseId}')
-  .onCreate(async (snap, context) => {
+export const onNewEnrollment = async (snap: functions.firestore.QueryDocumentSnapshot, context: functions.EventContext) => {
     const { courseId } = context.params;
     
     const courseRef = db.doc(`formations/${courseId}`);
     const today = new Date().toISOString().split('T')[0];
     const dailyAnalyticsRef = db.doc(`analytics/${courseId}/daily_stats/${today}`);
 
-    try {
-        const courseSnap = await courseRef.get();
-        if (!courseSnap.exists) {
-            console.error(`Course ${courseId} not found.`);
-            return;
-        }
-        const authorId = courseSnap.data()?.authorId;
-        if (!authorId) {
-            console.error(`Author not found for course ${courseId}.`);
-            return;
-        }
-        const formateurStatsRef = db.doc(`formateur_stats/${authorId}`);
-
-        const batch = db.batch();
-        batch.set(courseRef, { enrolledCount: admin.firestore.FieldValue.increment(1) }, { merge: true });
-        batch.set(formateurStatsRef, { totalStudents: admin.firestore.FieldValue.increment(1) }, { merge: true });
-        batch.set(dailyAnalyticsRef, { newEnrollments: admin.firestore.FieldValue.increment(1) }, { merge: true });
-
-        await batch.commit();
-        console.log(`Successfully updated stats for new enrollment in course ${courseId}.`);
-
-    } catch(error) {
-        console.error(`Error in onNewEnrollment for course ${courseId}:`, error);
-        // The global wrapper will catch and log this error.
-        throw error;
+    const courseSnap = await courseRef.get();
+    if (!courseSnap.exists) {
+        console.error(`Course ${courseId} not found.`);
+        return;
     }
-});
+    const authorId = courseSnap.data()?.authorId;
+    if (!authorId) {
+        console.error(`Author not found for course ${courseId}.`);
+        return;
+    }
+    const formateurStatsRef = db.doc(`formateur_stats/${authorId}`);
+
+    const batch = db.batch();
+    batch.set(courseRef, { enrolledCount: admin.firestore.FieldValue.increment(1) }, { merge: true });
+    batch.set(formateurStatsRef, { totalStudents: admin.firestore.FieldValue.increment(1) }, { merge: true });
+    batch.set(dailyAnalyticsRef, { date: today, courseId: courseId, newEnrollments: admin.firestore.FieldValue.increment(1) }, { merge: true });
+
+    await batch.commit();
+    console.log(`Successfully updated stats for new enrollment in course ${courseId}.`);
+};

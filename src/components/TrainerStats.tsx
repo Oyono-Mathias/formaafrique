@@ -57,7 +57,7 @@ export default function TrainerStats() {
   const [error, setError] = useState<string | null>(null);
   
   const [enrollmentsSeries] = useState(() => generateMockSeries(30, 20));
-  const [revenueSeries] = useState(() => generateMockSeries(30, 5000));
+  const [revenueSeries] = useState(() => generateMockseries(30, 5000));
 
 
   useEffect(() => {
@@ -104,7 +104,6 @@ export default function TrainerStats() {
     const donationsQuery = query(collection(db, 'donations'), where('courseId', 'in', ['...']), orderBy('date', 'desc'), limit(5)); // Placeholder
     // Since we can't easily get all courseIds for the `in` filter on the client in a scalable way, we will simulate this part for now.
     // In a real app, a Cloud Function would be better or donations would have an `authorId`.
-    // For the purpose of this component, let's assume a simplified query or mock data.
     const mockDonations: Donation[] = []; // This would be populated by the listener
     setLastDonations(mockDonations);
 
