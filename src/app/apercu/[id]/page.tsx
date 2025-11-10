@@ -24,7 +24,7 @@ type ApercuPageProps = {
 };
 
 export default function ApercuPage({ params }: ApercuPageProps) {
-  const { id: courseId } = use(params);
+  const { id: courseId } = params;
 
   const { data: course, loading: courseLoading } = useDoc<Course>('formations', courseId);
   const { data: modulesData, loading: modulesLoading } = useCollection<Module>(courseId ? `formations/${courseId}/modules` : null);

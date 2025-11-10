@@ -239,7 +239,7 @@ function VideoUploader({ isOpen, setIsOpen, form, onSubmit, isEditing, moduleTit
             
             <DialogFooter>
               <DialogClose asChild><Button type="button" variant="secondary">Annuler</Button></DialogClose>
-              <Button type="submit" disabled={form.formState.isSubmitting}>{form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{isEditing ? 'Enregistrer' : 'Ajouter'}</Button>
+              <Button type="submit" disabled={form.formState.isSubmitting}>{form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {isEditing ? 'Enregistrer' : 'Ajouter'}</Button>
             </DialogFooter>
           </form>
         </Form>
