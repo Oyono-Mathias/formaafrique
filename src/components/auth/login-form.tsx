@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, User } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth, useFirestore } from '@/firebase';
 import { isFirebaseConfigured } from '@/firebase/config';
@@ -44,14 +44,16 @@ export default function LoginForm() {
     },
   });
 
-  const handleSuccessfulLogin = async (user: any) => {
+  const handleSuccessfulLogin = async (user: User) => {
     if (!db) return;
     const userDocRef = doc(db, 'users', user.uid);
     const userDoc = await getDoc(userDocRef);
 
+    let profileToUse: UserProfile | null = null;
+
     if (!userDoc.exists()) {
       // Create profile if it's a first-time login (e.g., with Google)
-      const newUserProfile: Omit<UserProfile, 'createdAt' | 'photoURL'> & { createdAt: any, photoURL: string | null } = {
+      const newUserProfileData: Omit<UserProfile, 'createdAt' | 'photoURL'> & { createdAt: any, photoURL: string | null } = {
         name: user.displayName || 'Nouvel Utilisateur',
         email: user.email!,
         createdAt: serverTimestamp(),
@@ -68,17 +70,17 @@ export default function LoginForm() {
         lastSeen: serverTimestamp(),
         photoURL: user.photoURL || null,
       };
-      await setDoc(userDocRef, newUserProfile);
+      await setDoc(userDocRef, newUserProfileData);
+      profileToUse = newUserProfileData as UserProfile;
     } else {
         await setDoc(userDocRef, { online: true, lastSeen: serverTimestamp() }, { merge: true });
+        profileToUse = userDoc.data() as UserProfile;
     }
 
     toast({
       title: 'Connexion réussie',
       description: 'Redirection vers votre tableau de bord...',
     });
-
-    const profileToUse = (userDoc.exists() ? userDoc.data() : null) as UserProfile | null;
 
     if (profileToUse?.role === 'admin') {
       router.replace('/admin');

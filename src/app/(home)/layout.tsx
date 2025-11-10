@@ -14,27 +14,29 @@ export default function HomeLayout({
   const router = useRouter();
 
   useEffect(() => {
-    // We only redirect if loading is complete and we have a user and their profile
+    // If the user profile is loaded, and the user is on the home page, redirect them to their correct dashboard.
+    // This should only happen if they manually navigate to '/'.
     if (!loading && user && userProfile) {
-        switch (userProfile.role) {
-            case 'admin':
-                router.replace('/admin');
-                break;
-            case 'formateur':
-                router.replace('/formateur');
-                break;
-            case 'etudiant':
-            default:
-                 router.replace('/dashboard'); // Fallback to student dashboard
+        if (window.location.pathname === '/') {
+            switch (userProfile.role) {
+                case 'admin':
+                    router.replace('/admin');
+                    break;
+                case 'formateur':
+                    router.replace('/formateur');
+                    break;
+                case 'etudiant':
+                default:
+                     router.replace('/dashboard');
+            }
         }
     }
-  // No dependency on router to avoid re-triggering on navigation
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, userProfile, loading]);
 
-  // While loading, or if a user is logged in but their profile is not yet loaded,
-  // show a loading screen. This prevents the public content from flashing before redirection.
-  if (loading || user) {
+  // If the user is logged in, but we are still determining their role, show a loading screen.
+  // This prevents the public page from flashing for a logged-in user who just arrived at the site.
+  if (user && loading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -43,6 +45,12 @@ export default function HomeLayout({
     );
   }
 
-  // Only show public content if not loading and no user is logged in.
+  // If the user is not logged in, or if they are on a different public page (like /about), show the content.
+  if (!user) {
+    return <>{children}</>;
+  }
+  
+  // If user is logged in but for some reason we are not redirecting yet, we can show a loader or children.
+  // Showing children is safer to avoid loops if they land on e.g. /about while logged in.
   return <>{children}</>;
 }
