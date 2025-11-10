@@ -24,10 +24,14 @@ import { Timestamp } from 'firebase/firestore';
 export default function FormateurDashboardPage() {
   const { user, loading: userLoading } = useUser();
   
-  // Dans une application à grande échelle, on filtrerait par `authorId`.
-  // Pour cette démo, nous récupérons tous les cours.
+  const collectionOptions = useMemo(() => {
+    if (!user?.uid) return undefined;
+    return { where: [['authorId', '==', user.uid]] as [['authorId', '==', string]]};
+  }, [user?.uid]);
+  
   const { data: coursesData, loading: coursesLoading } = useCollection<Course>(
-    'formations'
+    user?.uid ? 'formations' : null,
+    collectionOptions
   );
   
   const courses = useMemo(() => coursesData || [], [coursesData]);

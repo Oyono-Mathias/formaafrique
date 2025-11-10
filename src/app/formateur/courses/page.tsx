@@ -44,8 +44,7 @@ export default function FormateurCoursesPage() {
   // Memoize the options object to prevent re-renders in useCollection
   const collectionOptions = useMemo(() => {
     if (!user?.uid) return undefined;
-    // This is a simplified query, it should be instructorId
-    return { where: ['title', '!=', ''] as [string, '!=', string]};
+    return { where: [['authorId', '==', user.uid]] as [['authorId', '==', string]]};
   }, [user?.uid]);
 
   const { data: coursesData, loading, error } = useCollection<Course>(

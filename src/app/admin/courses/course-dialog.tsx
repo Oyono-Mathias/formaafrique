@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -131,15 +132,14 @@ export default function CourseDialog({
     const keywordsArray = values.keywords ? values.keywords.split(',').map(s => s.trim()).filter(s => s) : [];
 
     try {
-      const dataPayload = {
-          ...values,
-          keywords: keywordsArray,
-          updatedAt: serverTimestamp()
-      };
-
       if (isEditing && course?.id) {
         // Update existing course
         const courseDocRef = doc(db, 'formations', course.id);
+        const dataPayload = {
+          ...values,
+          keywords: keywordsArray,
+          updatedAt: serverTimestamp()
+        };
         await updateDoc(courseDocRef, dataPayload);
         toast({
           title: 'Formation mise à jour',
@@ -148,10 +148,16 @@ export default function CourseDialog({
         setIsOpen(false);
       } else {
         // Create new course
-        const docRef = await addDoc(collection(db, 'formations'), {
-          ...dataPayload,
+        const dataPayload = {
+          ...values,
+          authorId: user.uid, // Add authorId on creation
+          keywords: keywordsArray,
+          price: 0,
+          published: false,
           createdAt: serverTimestamp(),
-        });
+          updatedAt: serverTimestamp(),
+        };
+        const docRef = await addDoc(collection(db, 'formations'), dataPayload);
         toast({
           title: 'Formation créée avec succès !',
           description: 'Vous pouvez maintenant ajouter des modules et des vidéos.',
