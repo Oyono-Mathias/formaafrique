@@ -23,6 +23,8 @@ export interface Video {
   createdAt: Timestamp;
   published: boolean;
   moduleId: string; // Keep track of the parent module
+  views?: number; // Maintained by Cloud Function
+  totalWatchMinutes?: number; // Maintained by Cloud Function
 }
 
 export interface Module {
@@ -49,6 +51,11 @@ export interface Course {
   statut?: 'brouillon' | 'en_attente' | 'approuvee' | 'rejetee'; // Course validation status
   motifRejet?: string; // Reason for rejection, if applicable
   dateValidation?: Timestamp; // Date of approval/rejection
+  // Aggregated stats maintained by Cloud Functions
+  enrolledCount?: number;
+  totalViews?: number;
+  totalWatchMinutes?: number;
+  averageCompletionRate?: number;
 }
 
 export interface ContentIndex {
@@ -127,6 +134,7 @@ export interface VideoProgress {
   watched: boolean;
   watchedAt?: Timestamp;
   lastPosition?: number;
+  watchMinutes?: number;
 }
 
 export interface ModuleProgress {
@@ -143,6 +151,8 @@ export interface Enrollment {
     enrollmentDate: Timestamp;
     progression: number; // Overall course progress (0 to 100)
     modules?: { [moduleId: string]: ModuleProgress };
+    lastSeenAt?: Timestamp;
+    watchMinutes?: number;
 }
 
 
@@ -160,15 +170,6 @@ export interface Testimonial {
   course: string;
   quote: string;
   imageId: string;
-}
-
-export interface CourseProgress {
-    id?: string;
-    courseId: string;
-    userId: string;
-    progressPercentage: number;
-    lastUpdated: Timestamp;
-    courseTitle: string;
 }
 
 export interface Donation {
@@ -346,18 +347,31 @@ export interface TutorFeedback {
   createdAt: Timestamp;
 }
 
-
-// This is a temporary API route to fetch collections from the client side
-// as server components are not fully supported with the current firebase setup
-export interface GetCollectionApiRequest {
-    path: string;
-    filters?: { field: string; op: any; value: any }[];
-}
-
-// Interface for a wishlist item
 export interface WishlistItem {
   id: string;
   userId: string;
   courseId: string;
   createdAt: Timestamp;
+}
+
+// --- Analytics & Stats ---
+
+export interface InstructorStats {
+  id?: string; // authorId
+  totalCourses: number;
+  totalStudents: number;
+  totalRevenue: number;
+  totalWatchMinutes: number;
+  lastUpdated: Timestamp;
+}
+
+export interface DailyAnalytics {
+  id?: string; // YYYY-MM-DD
+  date: string;
+  courseId: string;
+  newEnrollments: number;
+  videoViews: number;
+  watchMinutes: number;
+  donationsAmount: number;
+  revenueAmount: number;
 }

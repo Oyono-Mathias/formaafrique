@@ -6,144 +6,49 @@
       "description": "Represents a user's profile in the system. Can be an 'etudiant', 'formateur', or 'admin'.",
       "type": "object",
       "properties": {
-        "name": {
-          "type": "string",
-          "description": "The user's full name."
-        },
-        "email": {
-          "type": "string",
-          "format": "email",
-          "description": "The user's email address."
-        },
-        "photoURL": {
-          "type": "string",
-          "format": "uri",
-          "description": "URL of the user's profile picture."
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "The timestamp when the user account was created."
-        },
-        "formationId": {
-          "type": "string",
-          "description": "The ID of the formation the user is associated with (e.g., 'python', 'sante')."
-        },
-        "role": {
-            "type": "string",
-            "enum": ["etudiant", "formateur", "admin"],
-            "description": "The role of the user in the system."
-        },
-        "xp": {
-            "type": "number",
-            "description": "Experience points for gamification."
-        },
-        "badges": {
-            "type": "array",
-            "items": { "type": "string" },
-            "description": "List of earned badges."
-        },
-        "friends": {
-          "type": "array",
-          "items": { "type": "string" },
-          "description": "List of user UIDs who are friends with this user."
-        },
-        "status": {
-          "type": "string",
-          "enum": ["actif", "suspendu"],
-          "description": "The current status of the user account."
-        },
-        "infractions": {
-            "type": "number",
-            "description": "A count of user infractions against community guidelines."
-        },
-        "scoreReputation": {
-          "type": "number",
-          "description": "A calculated score representing user's reputation."
-        }
+        "name": { "type": "string", "description": "The user's full name." },
+        "email": { "type": "string", "format": "email", "description": "The user's email address." },
+        "photoURL": { "type": "string", "format": "uri", "description": "URL of the user's profile picture." },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "formationId": { "type": "string", "description": "The ID of the formation the user is associated with (e.g., 'python', 'sante')." },
+        "role": { "type": "string", "enum": ["etudiant", "formateur", "admin"] },
+        "xp": { "type": "number", "description": "Experience points for gamification." },
+        "badges": { "type": "array", "items": { "type": "string" } },
+        "friends": { "type": "array", "items": { "type": "string" }, "description": "List of user UIDs who are friends with this user." },
+        "status": { "type": "string", "enum": ["actif", "suspendu"] },
+        "infractions": { "type": "number", "description": "A count of user infractions against community guidelines." },
+        "scoreReputation": { "type": "number", "description": "A calculated score representing user's reputation." }
       },
-      "required": [
-        "name",
-        "email",
-        "createdAt",
-        "role"
-      ]
+      "required": ["name", "email", "createdAt", "role"]
     },
     "InstructorProfile": {
-        "title": "Instructor Profile",
-        "description": "Extends UserProfile with instructor-specific fields. This is merged into the UserProfile entity when role is 'formateur'.",
-        "type": "object",
-        "allOf": [{ "$ref": "#/entities/UserProfile" }],
-        "properties": {
-            "specialite": {
-                "type": "string",
-                "description": "The instructor's area of specialization."
-            },
-            "headline": {
-                "type": "string",
-                "description": "A professional headline for the instructor."
-            },
-            "videoUrl": {
-                "type": "string",
-                "format": "uri",
-                "description": "URL to the instructor's presentation video."
-            },
-            "socialLinks": {
-                "type": "object",
-                "properties": {
-                    "facebookUrl": { "type": "string", "format": "uri" },
-                    "instagramUrl": { "type": "string", "format": "uri" },
-                    "twitterUrl": { "type": "string", "format": "uri" },
-                    "youtubeUrl": { "type": "string", "format": "uri" }
-                }
-            },
-            "validation_status": {
-                "type": "string",
-                "enum": ["incomplete", "pending", "validated", "rejected"],
-                "description": "The validation status of the instructor's profile."
-            },
-            "score_validation": {
-                "type": "number",
-                "description": "The validation score calculated by the AI."
-            },
-            "derniere_mise_a_jour": {
-                "type": "string",
-                "format": "date-time",
-                "description": "The timestamp of the last profile update for validation."
-            },
-            "charteAcceptee": {
-                "type": "boolean",
-                "description": "Indicates if the instructor has accepted the charter."
-            },
-            "nombreEtudiants": { "type": "number"},
-            "nombreFormationsPubliees": { "type": "number"},
-            "notationMoyenne": { "type": "number"}
+      "title": "Instructor Profile",
+      "description": "Extends UserProfile with instructor-specific fields. This is merged into the UserProfile entity when role is 'formateur'.",
+      "type": "object",
+      "allOf": [{ "$ref": "#/entities/UserProfile" }],
+      "properties": {
+        "specialite": { "type": "string", "description": "The instructor's area of specialization." },
+        "headline": { "type": "string", "description": "A professional headline for the instructor." },
+        "videoUrl": { "type": "string", "format": "uri" },
+        "socialLinks": {
+          "type": "object",
+          "properties": {
+            "facebookUrl": { "type": "string", "format": "uri" },
+            "instagramUrl": { "type": "string", "format": "uri" },
+            "twitterUrl": { "type": "string", "format": "uri" },
+            "youtubeUrl": { "type": "string", "format": "uri" }
+          }
         },
-        "required": ["validation_status", "charteAcceptee"]
-    },
-    "Category": {
-        "title": "Category",
-        "description": "Represents a course category.",
-        "type": "object",
-        "properties": {
-            "name": {
-                "type": "string",
-                "description": "The name of the category."
-            },
-            "description": {
-                "type": "string",
-                "description": "A short description of the category."
-            },
-            "createdAt": {
-              "type": "string",
-              "format": "date-time"
-            }
-        },
-        "required": ["name", "description", "createdAt"]
+        "validation_status": { "type": "string", "enum": ["incomplete", "pending", "validated", "rejected"] },
+        "score_validation": { "type": "number", "description": "The validation score calculated by the AI." },
+        "derniere_mise_a_jour": { "type": "string", "format": "date-time" },
+        "charteAcceptee": { "type": "boolean" }
+      },
+      "required": ["validation_status", "charteAcceptee"]
     },
     "Course": {
       "title": "Formation (Course)",
-      "description": "Represents a course on the platform.",
+      "description": "Represents a course on the platform. Includes aggregated statistics.",
       "type": "object",
       "properties": {
         "title": { "type": "string" },
@@ -158,644 +63,200 @@
         "updatedAt": { "type": "string", "format": "date-time" },
         "statut": { "type": "string", "enum": ["brouillon", "en_attente", "approuvee", "rejetee"] },
         "motifRejet": { "type": "string" },
-        "dateValidation": { "type": "string", "format": "date-time" }
+        "dateValidation": { "type": "string", "format": "date-time" },
+        "enrolledCount": { "type": "number", "description": "Maintained by Cloud Function. Total number of enrolled students." },
+        "totalViews": { "type": "number", "description": "Maintained by Cloud Function. Sum of all video views in this course." },
+        "totalWatchMinutes": { "type": "number", "description": "Maintained by Cloud Function. Sum of all minutes watched in this course." },
+        "averageCompletionRate": { "type": "number", "description": "Maintained by Cloud Function. Average completion percentage across all enrollments." }
       },
-      "required": [
-        "title",
-        "summary",
-        "categoryId",
-        "authorId",
-        "createdAt",
-        "updatedAt",
-        "price",
-        "published",
-        "statut"
-      ]
+      "required": ["title", "summary", "categoryId", "authorId", "createdAt", "updatedAt", "price", "published", "statut"]
     },
     "Module": {
-        "title": "Module",
-        "description": "Represents a module within a course.",
-        "type": "object",
-        "properties": {
-            "title": { "type": "string" },
-            "summary": { "type": "string" },
-            "order": { "type": "number" },
-            "courseId": { "type": "string" },
-            "createdAt": { "type": "string", "format": "date-time" },
-            "updatedAt": { "type": "string", "format": "date-time" }
-        },
-        "required": ["title", "order", "courseId", "createdAt", "updatedAt"]
+      "title": "Module", "type": "object",
+      "properties": {
+        "title": { "type": "string" }, "summary": { "type": "string" },
+        "order": { "type": "number" }, "courseId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "order", "courseId", "createdAt", "updatedAt"]
     },
     "Video": {
-        "title": "Video",
-        "description": "Represents a video within a module.",
-        "type.": "object",
-        "properties": {
-            "title": { "type": "string" },
-            "duration": { "type": "number" },
-            "driveUrl": { "type": "string", "format": "uri", "description": "Original URL from the user (e.g., YouTube or Google Drive)." },
-            "embedUrl": { "type": "string", "format": "uri", "description": "Standardized URL for embedding in a player." },
-            "thumbnailUrl": { "type": "string", "format": "uri", "description": "URL of the video thumbnail." },
-            "platform": { "type": "string", "enum": ["youtube", "drive", "other"] },
-            "videoId": { "type": "string", "description": "The unique ID of the video on its platform (e.g., YouTube video ID)." },
-            "order": { "type": "number" },
-            "moduleId": { "type": "string" },
-            "createdAt": { "type": "string", "format": "date-time" },
-            "published": { "type": "boolean" }
-        },
-        "required": ["title", "order", "moduleId", "createdAt", "published", "driveUrl", "embedUrl", "platform"]
-    },
-    "CourseProgress": {
-      "title": "Course Progress",
-      "description": "Tracks a user's progress in a specific course.",
-      "type": "object",
+      "title": "Video", "type": "object",
       "properties": {
-        "percentage": { "type": "number" },
-        "currentVideoPosition": { "type": "number" },
-        "lastSeen": { "type": "string", "format": "date-time" },
-        "watchedVideos": {
-            "type": "array",
-            "items": { "type": "string" },
-            "description": "List of watched video IDs."
-        }
+        "title": { "type": "string" }, "duration": { "type": "number" },
+        "driveUrl": { "type": "string", "format": "uri" },
+        "embedUrl": { "type": "string", "format": "uri" },
+        "thumbnailUrl": { "type": "string", "format": "uri" },
+        "platform": { "type": "string", "enum": ["youtube", "drive", "other"] },
+        "videoId": { "type": "string" }, "order": { "type": "number" },
+        "moduleId": { "type": "string" }, "createdAt": { "type": "string", "format": "date-time" },
+        "published": { "type": "boolean" },
+        "views": { "type": "number", "description": "Maintained by Cloud Function." },
+        "totalWatchMinutes": { "type": "number", "description": "Maintained by Cloud Function." }
       },
-      "required": [
-        "percentage",
-        "lastSeen"
-      ]
+      "required": ["title", "order", "moduleId", "createdAt", "published", "driveUrl", "embedUrl", "platform"]
     },
-     "Enrollment": {
+    "Enrollment": {
       "title": "Enrollment",
       "description": "Represents a student's enrollment in a course.",
       "type": "object",
       "properties": {
-        "studentId": {
-          "type": "string",
-          "description": "The UID of the enrolled student."
-        },
-        "studentName": {
-            "type": "string",
-            "description": "The name of the student for easy display."
-        },
-        "courseId": {
-          "type": "string",
-          "description": "The ID of the course."
-        },
-        "courseTitle": {
-            "type": "string",
-            "description": "The title of the course for easy display."
-        },
-        "enrollmentDate": {
-          "type": "string",
-          "format": "date-time",
-          "description": "The timestamp of the enrollment."
-        },
+        "studentId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "courseId": { "type": "string" },
+        "courseTitle": { "type": "string" },
+        "enrollmentDate": { "type": "string", "format": "date-time" },
         "progression": { "type": "number", "description": "Overall course progress (0-100)." },
-        "modules": {
-            "type": "object",
-            "additionalProperties": {
-                "$ref": "#/entities/ModuleProgress"
-            }
-        }
+        "watchMinutes": { "type": "number", "description": "Total minutes watched by this user for this course." },
+        "lastSeenAt": { "type": "string", "format": "date-time" },
+        "modules": { "type": "object", "additionalProperties": { "$ref": "#/entities/ModuleProgress" } }
       },
       "required": ["studentId", "studentName", "courseId", "courseTitle", "enrollmentDate", "progression"]
     },
     "ModuleProgress": {
-        "title": "Module Progress",
-        "type": "object",
-        "properties": {
-            "progress": { "type": "number", "description": "Progress within the module (0-100)." },
-            "videos": {
-                "type": "object",
-                "additionalProperties": {
-                    "$ref": "#/entities/VideoProgress"
-                }
-            }
-        }
+      "title": "Module Progress", "type": "object",
+      "properties": {
+        "progress": { "type": "number" },
+        "videos": { "type": "object", "additionalProperties": { "$ref": "#/entities/VideoProgress" } }
+      }
     },
     "VideoProgress": {
-        "title": "Video Progress",
-        "type": "object",
-        "properties": {
-            "watched": { "type": "boolean" },
-            "watchedAt": { "type": "string", "format": "date-time" },
-            "lastPosition": { "type": "number", "description": "Last playback position in seconds." }
-        }
+      "title": "Video Progress", "type": "object",
+      "properties": {
+        "watched": { "type": "boolean" }, "watchedAt": { "type": "string", "format": "date-time" },
+        "lastPosition": { "type": "number", "description": "Last playback position in seconds." },
+        "watchMinutes": { "type": "number" }
+      }
     },
     "Donation": {
-      "title": "Donation",
-      "description": "Represents a donation made on the platform.",
-      "type": "object",
+      "title": "Donation", "type": "object",
       "properties": {
-        "donateurId": {
-          "type": "string",
-          "description": "The UID of the user who made the donation."
-        },
-        "donateurNom": {
-          "type": "string",
-          "description": "The name of the donor."
-        },
-        "donateurEmail": {
-          "type": "string",
-          "format": "email",
-          "description": "The email of the donor."
-        },
-        "montant": {
-          "type": "number",
-          "description": "The amount of the donation."
-        },
-        "devise": {
-          "type": "string",
-          "description": "The currency of the donation (e.g., EUR, XAF)."
-        },
-        "date": {
-          "type": "string",
-          "format": "date-time",
-          "description": "The timestamp of the donation."
-        },
-        "statut": {
-          "type": "string",
-          "enum": ["succes", "en_attente", "echec"],
-          "description": "The status of the donation transaction."
-        },
-        "moyenPaiement": {
-          "type": "string",
-          "enum": ["carte", "mobile_money", "inconnu"],
-          "description": "The payment method used for the donation."
-        },
-        "paysOrigine": {
-          "type": "string",
-          "description": "The country of origin of the donor."
-        },
-        "courseId": { "type": "string", "description": "Optional: Link donation to a specific course"},
-        "transactionId": { "type": "string", "description": "ID from payment provider"}
+        "donateurId": { "type": "string" }, "donateurNom": { "type": "string" },
+        "donateurEmail": { "type": "string", "format": "email" }, "montant": { "type": "number" },
+        "devise": { "type": "string" }, "date": { "type": "string", "format": "date-time" },
+        "statut": { "type": "string", "enum": ["succes", "en_attente", "echec"] },
+        "moyenPaiement": { "type": "string", "enum": ["carte", "mobile_money", "inconnu"] },
+        "paysOrigine": { "type": "string" }, "courseId": { "type": "string" },
+        "transactionId": { "type": "string" }
       },
       "required": ["donateurId", "donateurNom", "donateurEmail", "montant", "devise", "date", "statut"]
     },
     "UserActivityLog": {
-        "title": "User Activity Log",
-        "description": "Tracks important actions performed by users.",
-        "type": "object",
-        "properties": {
-            "userId": { "type": "string", "description": "The UID of the user who performed the action." },
-            "name": { "type": "string", "description": "The name of the user." },
-            "role": { "type": "string", "description": "The role of the user at the time of action." },
-            "action": { "type": "string", "description": "The type of action performed (e.g., 'connexion', 'publication_cours')." },
-            "details": { "type": "string", "description": "A descriptive text of the action." },
-            "timestamp": { "type": "string", "format": "date-time" },
-            "status": { "type": "string", "enum": ["succes", "echec"], "description": "The outcome of the action." }
-        },
-        "required": ["userId", "name", "role", "action", "timestamp", "status"]
+      "title": "User Activity Log", "type": "object",
+      "properties": {
+        "userId": { "type": "string" }, "name": { "type": "string" }, "role": { "type": "string" },
+        "action": { "type": "string" }, "details": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["succes", "echec"] }
+      },
+      "required": ["userId", "name", "role", "action", "timestamp", "status"]
     },
     "AdminNotification": {
-        "title": "Admin Notification",
-        "description": "Represents a notification for platform administrators.",
-        "type": "object",
-        "properties": {
-            "type": {
-                "type": "string",
-                "enum": ["nouveau_cours", "nouveau_paiement", "nouvelle_inscription", "modification_profil", "demande_validation", "possible_scam"],
-                "description": "The type of event that triggered the notification."
-            },
-            "title": { "type": "string", "description": "A short, descriptive title for the notification." },
-            "message": { "type": "string", "description": "A detailed message explaining the event." },
-            "createdAt": { "type": "string", "format": "date-time" },
-            "read": { "type": "boolean", "description": "Whether the notification has been read by an admin." },
-            "link": { "type": "string", "format": "uri", "description": "A direct link to the relevant resource (e.g., a course or a user profile)." }
-        },
-        "required": ["type", "title", "message", "createdAt", "read"]
+      "title": "Admin Notification", "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["nouveau_cours", "nouveau_paiement", "nouvelle_inscription", "modification_profil", "demande_validation", "possible_scam"] },
+        "title": { "type": "string" }, "message": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }, "read": { "type": "boolean" },
+        "link": { "type": "string", "format": "uri" }
+      },
+      "required": ["type", "title", "message", "createdAt", "read"]
     },
     "InstructorRequest": {
-      "title": "Instructor Request",
-      "description": "A user's application to become an instructor.",
-      "type": "object",
+      "title": "Instructor Request", "type": "object",
       "properties": {
-        "userId": { "type": "string" },
-        "userName": { "type": "string" },
-        "userEmail": { "type": "string", "format": "email" },
+        "userId": { "type": "string" }, "userName": { "type": "string" }, "userEmail": { "type": "string", "format": "email" },
         "requestDate": { "type": "string", "format": "date-time" },
         "status": { "type": "string", "enum": ["pending", "approved", "rejected", "éligible", "en_attente", "refusé"] },
-        "specialite": { "type": "string" },
-        "motivation": { "type": "string" },
+        "specialite": { "type": "string" }, "motivation": { "type": "string" },
         "videoUrl": { "type": "string", "format": "uri" },
         "socialLinks": {
-          "type": "object",
-          "properties": {
+          "type": "object", "properties": {
             "facebookUrl": { "type": "string", "format": "uri" },
             "instagramUrl": { "type": "string", "format": "uri" },
             "twitterUrl": { "type": "string", "format": "uri" },
             "youtubeUrl": { "type": "string", "format": "uri" }
           }
-        },
-        "scoreReputation": { "type": "number" },
-        "scoreFinal": { "type": "number" },
-        "feedbackMessage": { "type": "string"},
-        "badge": { "type": "string" }
+        }, "scoreReputation": { "type": "number" }, "scoreFinal": { "type": "number" },
+        "feedbackMessage": { "type": "string" }, "badge": { "type": "string" }
       },
       "required": ["userId", "userName", "userEmail", "requestDate", "status", "specialite", "motivation", "videoUrl"]
     },
-    "CommunityPost": {
-      "title": "Community Post",
-      "description": "Represents a discussion post in the community forum.",
-      "type": "object",
-      "properties": {
-        "title": { "type": "string", "description": "The title of the discussion post." },
-        "content": { "type": "string", "description": "The main content of the post." },
-        "authorId": { "type": "string", "description": "The UID of the user who created the post." },
-        "authorName": { "type": "string", "description": "The name of the user who created the post." },
-        "authorImage": { "type": "string", "format": "uri", "description": "URL of the author's profile picture." },
-        "tags": { "type": "array", "items": { "type": "string" }, "description": "Tags associated with the post." },
-        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp when the post was created." },
-        "commentCount": { "type": "number", "description": "Number of comments on the post." },
-        "voteCount": { "type": "number", "description": "Number of upvotes on the post." },
-        "formationId": { "type": "string", "description": "ID of the formation this post belongs to." }
-      },
-      "required": ["title", "content", "authorId", "authorName", "createdAt", "commentCount", "voteCount", "formationId"]
-    },
-    "FriendRequest": {
-      "title": "Friend Request",
-      "description": "Represents a request from one user to befriend another.",
-      "type": "object",
-      "properties": {
-        "from": {
-          "type": "string",
-          "description": "The UID of the user sending the request."
-        },
-        "to": {
-          "type": "string",
-          "description": "The UID of the user receiving the request."
-        },
-        "status": {
-          "type": "string",
-          "enum": ["pending", "accepted", "declined"],
-          "description": "The status of the friend request."
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Timestamp when the request was sent."
-        }
-      },
-      "required": ["from", "to", "status", "createdAt"]
-    },
     "Chat": {
-      "title": "Chat",
-      "description": "Represents a private conversation between two or more users.",
-      "type": "object",
+      "title": "Chat", "type": "object",
       "properties": {
-        "members": {
-          "type": "array",
-          "items": { "type": "string" },
-          "description": "Array of UIDs of the members of this chat."
-        },
-        "lastMessage": {
-          "type": "string",
-          "description": "The content of the last message sent in the chat."
-        },
-        "lastTimestamp": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Timestamp of the last message."
-        },
-        "unreadCounts": {
-          "type": "object",
-          "additionalProperties": { "type": "number" },
-          "description": "Map of user UIDs to their unread message count in this chat."
-        },
-        "formationId": {
-            "type": "string",
-            "description": "ID of the formation this chat belongs to."
-        }
+        "members": { "type": "array", "items": { "type": "string" } },
+        "lastMessage": { "type": "string" }, "lastTimestamp": { "type": "string", "format": "date-time" },
+        "unreadCounts": { "type": "object", "additionalProperties": { "type": "number" } },
+        "formationId": { "type": "string" }
       },
       "required": ["members", "lastTimestamp", "formationId"]
     },
     "Message": {
-      "title": "Message",
-      "description": "Represents a single message within a chat.",
-      "type": "object",
+      "title": "Message", "type": "object",
       "properties": {
-        "from": {
-          "type": "string",
-          "description": "The UID of the user who sent the message."
-        },
-        "text": {
-          "type": "string",
-          "description": "The text content of the message."
-        },
-        "attachments": {
-          "type": "array",
-          "items": { "type": "string", "format": "uri" },
-          "description": "List of URLs for any attachments (images, files)."
-        },
-        "timestamp": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Timestamp when the message was sent."
-        },
-        "seen": {
-          "type": "boolean",
-          "description": "Indicates if the message has been seen by the recipient(s)."
-        },
-        "auto": { "type": "boolean", "description": "True if the message is from an AI agent." }
+        "from": { "type": "string" }, "text": { "type": "string" },
+        "attachments": { "type": "array", "items": { "type": "string", "format": "uri" } },
+        "timestamp": { "type": "string", "format": "date-time" }, "seen": { "type": "boolean" },
+        "auto": { "type": "boolean" }
       },
       "required": ["from", "text", "timestamp", "seen"]
     },
-    "Notification": {
-      "title": "Notification",
-      "description": "Represents a notification for a user.",
+    "InstructorStats": {
+      "title": "Instructor Stats",
+      "description": "Aggregated statistics for a specific instructor, updated by Cloud Functions.",
       "type": "object",
       "properties": {
-        "toUid": { "type": "string", "description": "The UID of the user receiving the notification." },
-        "fromUid": { "type": "string", "description": "The UID of the user who triggered the notification." },
-        "type": { "type": "string", "enum": ["friend_request", "new_message", "course_update", "moderation_warning"], "description": "The type of notification." },
-        "payload": { "type": "object", "description": "Additional data related to the notification." },
-        "read": { "type": "boolean", "description": "Whether the notification has been read." },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "totalCourses": { "type": "number" },
+        "totalStudents": { "type": "number" },
+        "totalRevenue": { "type": "number" },
+        "totalWatchMinutes": { "type": "number" },
+        "lastUpdated": { "type": "string", "format": "date-time" }
       },
-      "required": ["toUid", "fromUid", "type", "read", "createdAt"]
+      "required": ["totalCourses", "totalStudents", "totalRevenue", "totalWatchMinutes", "lastUpdated"]
     },
-    "GroupChat": {
-      "title": "Group Chat",
-      "description": "Represents a group conversation for a specific formation.",
+    "DailyAnalytics": {
+      "title": "Daily Analytics",
+      "description": "Daily aggregated metrics for a specific course, updated by Cloud Functions.",
       "type": "object",
       "properties": {
-        "formationId": {
-          "type": "string",
-          "description": "The ID of the formation this group chat belongs to."
-        },
-        "name": {
-          "type": "string",
-          "description": "The name of the group chat (e.g., 'Communauté Python')."
-        },
-        "description": {
-          "type": "string",
-          "description": "A short description of the group chat's purpose."
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Timestamp when the group chat was created."
-        }
+        "date": { "type": "string", "format": "date" },
+        "courseId": { "type": "string" },
+        "newEnrollments": { "type": "number" },
+        "videoViews": { "type": "number" },
+        "watchMinutes": { "type": "number" },
+        "donationsAmount": { "type": "number" },
+        "revenueAmount": { "type": "number" }
       },
-      "required": ["formationId", "name", "createdAt"]
-    },
-    "GroupMessage": {
-      "title": "Group Message",
-      "description": "Represents a single message within a group chat.",
-      "type": "object",
-      "properties": {
-        "authorId": {
-          "type": "string",
-          "description": "The UID of the user who sent the message."
-        },
-        "authorName": {
-          "type": "string",
-          "description": "The name of the user, denormalized for easy display."
-        },
-        "authorImage": {
-          "type": "string",
-          "format": "uri",
-          "description": "URL of the author's profile picture."
-        },
-        "text": {
-          "type": "string",
-          "description": "The text content of the message."
-        },
-        "timestamp": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Timestamp when the message was sent."
-        },
-        "auto": { "type": "boolean", "description": "True if the message is from an AI agent." }
-      },
-      "required": ["authorId", "authorName", "text", "timestamp"]
-    },
-    "ModerationLog": {
-        "title": "Moderation Log",
-        "description": "Stores the result of an AI moderation check for a message.",
-        "type": "object",
-        "properties": {
-            "msgId": { "type": "string" },
-            "chatId": { "type": "string" },
-            "fromUid": { "type": "string" },
-            "text": { "type": "string" },
-            "verdict": { "type": "string", "enum": ["allowed", "blocked", "review", "warn", "quarantine", "escalate"] },
-            "action": { "type": "string", "enum": ["none", "flag", "block_and_flag"], "description": "The recommended action to take." },
-            "category": { "type": "string", "enum": ["none", "payment_request", "external_contact", "off_topic", "abuse"], "description": "The primary category of the detected infraction." },
-            "score": { "type": "number" },
-            "timestamp": { "type": "string", "format": "date-time" }
-        },
-        "required": ["msgId", "chatId", "fromUid", "text", "verdict", "timestamp", "score", "category", "action"]
-    },
-    "AiFlag": {
-        "title": "AI Flag",
-        "description": "Stores messages flagged by the AI for review or because they were blocked.",
-        "type": "object",
-        "properties": {
-            "msgId": { "type": "string" },
-            "chatId": { "type": "string" },
-            "fromUid": { "type": "string" },
-            "reason": { "type": "string", "description": "The primary category that triggered the flag." },
-            "severity": { "type": "string", "enum": ["low", "medium", "high"] },
-            "status": { "type": "string", "enum": ["pending_review", "resolved", "dismissed"] },
-            "timestamp": { "type": "string", "format": "date-time" }
-        },
-        "required": ["msgId", "chatId", "fromUid", "reason", "severity", "status", "timestamp"]
-    },
-    "ModerationAppeal": {
-        "title": "Moderation Appeal",
-        "description": "A user's request to review a moderation action.",
-        "type": "object",
-        "properties": {
-            "userId": { "type": "string", "description": "The UID of the user making the appeal." },
-            "flagId": { "type": "string", "description": "The ID of the AiFlag being appealed." },
-            "reason": { "type": "string", "description": "The user's justification for the appeal." },
-            "status": { "type": "string", "enum": ["pending", "approved", "rejected"], "description": "The status of the appeal." },
-            "createdAt": { "type": "string", "format": "date-time" }
-        },
-        "required": ["userId", "flagId", "reason", "status", "createdAt"]
-    },
-    "ContentIndex": {
-        "title": "Content Index",
-        "description": "A summary document of all educational content on the platform.",
-        "type": "object",
-        "properties": {
-            "lastSyncedAt": { "type": "string", "format": "date-time" },
-            "counts": {
-                "type": "object",
-                "properties": {
-                    "categories": { "type": "number" },
-                    "formations": { "type": "number" },
-                    "modules": { "type": "number" },
-                    "videos": { "type": "number" }
-                },
-                "required": ["categories", "formations", "modules", "videos"]
-            },
-            "summary": {
-                "type": "object",
-                "additionalProperties": {
-                    "type": "object",
-                    "properties": {
-                        "title": { "type": "string" },
-                        "shortSummary": { "type": "string" },
-                        "keywords": { "type": "array", "items": { "type": "string" } }
-                    },
-                    "required": ["title", "shortSummary"]
-                }
-            }
-        },
-        "required": ["lastSyncedAt", "counts", "summary"]
-    },
-    "Embedding": {
-        "title": "Embedding",
-        "description": "Represents a vector embedding for a piece of content.",
-        "type": "object",
-        "properties": {
-            "type": { "type": "string", "enum": ["video", "module", "formation"] },
-            "text": { "type": "string", "description": "The source text that was embedded." },
-            "embedding": { "type": "array", "items": { "type": "number" } },
-            "createdAt": { "type": "string", "format": "date-time" },
-            "updatedAt": { "type": "string", "format": "date-time" }
-        },
-        "required": ["type", "text", "embedding", "createdAt", "updatedAt"]
-    },
-    "TutorFeedback": {
-        "title": "Tutor Feedback",
-        "description": "Represents feedback on an AI tutor's response.",
-        "type": "object",
-        "properties": {
-            "userId": { "type": "string" },
-            "formationId": { "type": "string" },
-            "query": { "type": "string" },
-            "answer": { "type": "string" },
-            "isHelpful": { "type": "boolean" },
-            "notes": { "type": "string" },
-            "createdAt": { "type": "string", "format": "date-time" }
-        },
-        "required": ["userId", "query", "answer", "isHelpful", "createdAt"]
-    },
-    "WishlistItem": {
-      "title": "Wishlist Item",
-      "description": "Represents a user's wish to enroll in a course.",
-      "type": "object",
-      "properties": {
-        "userId": { "type": "string", "description": "The UID of the user." },
-        "courseId": { "type": "string", "description": "The ID of the wished course." },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["userId", "courseId", "createdAt"]
+      "required": ["date", "courseId", "newEnrollments", "videoViews", "watchMinutes", "donationsAmount", "revenueAmount"]
     }
   },
-  "auth": {
-    "providers": [
-      "email",
-      "google"
-    ]
-  },
   "firestore": {
-    "users/{userId}": {
-      "schema": {
-        "$ref": "#/entities/UserProfile"
-      },
-      "description": "Stores public profile information for each user."
+    "users/{userId}": { "schema": { "$ref": "#/entities/UserProfile" } },
+    "users/{userId}/enrollments/{courseId}": { "schema": { "$ref": "#/entities/Enrollment" } },
+    "users/{userId}/wishlist/{wishlistId}": { "schema": { "type": "object", "properties": { "courseId": { "type": "string" } } } },
+    "instructor_requests/{uid}": { "schema": { "$ref": "#/entities/InstructorRequest" } },
+    "categories/{categoryId}": { "schema": { "type": "object", "properties": { "name": { "type": "string" } } } },
+    "formations/{formationId}": { "schema": { "$ref": "#/entities/Course" } },
+    "formations/{formationId}/modules/{moduleId}": { "schema": { "$ref": "#/entities/Module" } },
+    "formations/{formationId}/modules/{moduleId}/videos/{videoId}": { "schema": { "$ref": "#/entities/Video" } },
+    "formations/{formationId}/enrollments/{enrollmentId}": { "schema": { "$ref": "#/entities/Enrollment" } },
+    "donations/{donationId}": { "schema": { "$ref": "#/entities/Donation" } },
+    "chats/{chatId}": { "schema": { "$ref": "#/entities/Chat" } },
+    "chats/{chatId}/messages/{messageId}": { "schema": { "$ref": "#/entities/Message" } },
+    "notifications/{notificationId}": { "schema": { "type": "object", "properties": {} } },
+    "moderationLogs/{logId}": { "schema": { "$ref": "#/entities/ModerationLog" } },
+    "aiFlags/{flagId}": { "schema": { "$ref": "#/entities/AiFlag" } },
+    "moderationAppeals/{appealId}": { "schema": { "$ref": "#/entities/ModerationAppeal" } },
+    "embeddings/{embeddingId}": { "schema": { "$ref": "#/entities/Embedding" } },
+    "tutorFeedbacks/{feedbackId}": { "schema": { "$ref": "#/entities/TutorFeedback" } },
+    "formateur_stats/{authorId}": {
+      "schema": { "$ref": "#/entities/InstructorStats" },
+      "description": "Stores aggregated real-time statistics for each instructor."
     },
-    "users/{userId}/enrollments/{courseId}": {
-        "schema": { "$ref": "#/entities/Enrollment" },
-        "description": "Stores all enrollments for a specific user. The document ID is the courseId."
-    },
-     "users/{userId}/wishlist/{wishlistId}": {
-      "schema": { "$ref": "#/entities/WishlistItem" },
-      "description": "A user's list of wished courses."
-    },
-    "instructor_requests/{uid}": {
-        "schema": { "$ref": "#/entities/InstructorRequest" },
-        "description": "Stores applications from users wanting to become instructors."
-    },
-    "categories/{categoryId}": {
-        "schema": { "$ref": "#/entities/Category" },
-        "description": "Stores all course categories."
-    },
-    "formations/{formationId}": {
-      "schema": {
-        "$ref": "#/entities/Course"
-      },
-      "description": "Stores all the available courses on the platform."
-    },
-    "formations/{formationId}/modules/{moduleId}": {
-      "schema": { "$ref": "#/entities/Module" },
-      "description": "Stores all modules for a specific course."
-    },
-    "formations/{formationId}/modules/{moduleId}/videos/{videoId}": {
-      "schema": { "$ref": "#/entities/Video" },
-      "description": "Stores all videos for a specific module."
-    },
-    "formations/{formationId}/enrollments/{enrollmentId}": {
-        "schema": { "$ref": "#/entities/Enrollment" },
-        "description": "Denormalized list of enrollments per course for quick lookups by formateurs."
-    },
-    "donations/{donationId}": {
-        "schema": { "$ref": "#/entities/Donation" },
-        "description": "Stores all donations made on the platform."
-    },
-    "user_activity_logs/{logId}": {
-        "schema": { "$ref": "#/entities/UserActivityLog" },
-        "description": "Stores a chronological log of all important user actions."
-    },
-    "admin_notifications/{notificationId}": {
-        "schema": { "$ref": "#/entities/AdminNotification" },
-        "description": "Stores notifications intended for platform administrators."
-    },
-    "community_posts/{postId}": {
-      "schema": { "$ref": "#/entities/CommunityPost" },
-      "description": "Stores discussion posts, can be filtered by formationId."
-    },
-    "friendRequests/{requestId}": {
-      "schema": { "$ref": "#/entities/FriendRequest" },
-      "description": "Stores all friend requests between users."
-    },
-    "chats/{chatId}": {
-      "schema": { "$ref": "#/entities/Chat" },
-      "description": "Stores metadata for each private conversation."
-    },
-    "chats/{chatId}/messages/{messageId}": {
-      "schema": { "$ref": "#/entities/Message" },
-      "description": "Stores all messages for a specific chat."
-    },
-    "notifications/{notificationId}": {
-      "schema": { "$ref": "#/entities/Notification" },
-      "description": "Stores notifications for users, such as friend requests."
-    },
-    "group_chats/{chatId}": {
-      "schema": { "$ref": "#/entities/GroupChat" },
-      "description": "Stores metadata for each formation's group chat."
-    },
-    "group_chats/{chatId}/messages/{messageId}": {
-      "schema": { "$ref": "#/entities/GroupMessage" },
-      "description": "Stores all messages for a specific group chat."
-    },
-    "moderationLogs/{logId}": {
-        "schema": { "$ref": "#/entities/ModerationLog" },
-        "description": "Stores the results of AI content moderation for chat messages."
-    },
-    "aiFlags/{flagId}": {
-        "schema": { "$ref": "#/entities/AiFlag" },
-        "description": "Stores messages flagged by the AI for review or action."
-    },
-    "moderationAppeals/{appealId}": {
-        "schema": { "$ref": "#/entities/ModerationAppeal" },
-        "description": "Stores user appeals against moderation actions."
-    },
-    "meta/contentIndex": {
-        "schema": { "$ref": "#/entities/ContentIndex" },
-        "description": "Singleton document containing a summary of all platform content."
-    },
-    "embeddings/{embeddingId}": {
-        "schema": { "$ref": "#/entities/Embedding" },
-        "description": "Stores vector embeddings for content to be used in semantic search."
-    },
-    "tutorFeedbacks/{feedbackId}": {
-        "schema": { "$ref": "#/entities/TutorFeedback" },
-        "description": "Stores user feedback on AI tutor responses."
+    "analytics/{courseId}/daily_stats/{date_YYYY_MM_DD}": {
+      "schema": { "$ref": "#/entities/DailyAnalytics" },
+      "description": "Stores daily aggregated metrics for a specific course."
     }
   },
   "indexing": {
@@ -805,5 +266,43 @@
         "Recommander de créer un index composite pour la collection 'friendRequests' sur les champs 'from' et 'to' pour vérifier efficacement les demandes existantes.",
         "Recommander de créer un index composite pour la collection 'chats' sur le champ 'members' pour rechercher des conversations entre utilisateurs."
     ]
-  }
+  },
+  "examples": [
+    {
+        "path": "courses/exampleCourse123",
+        "document": {
+          "title": "Introduction à l'IA",
+          "authorId": "formateurUID1",
+          "published": true,
+          "price": 0,
+          "createdAt": "2024-05-10T10:00:00Z",
+          "enrolledCount": 150,
+          "totalViews": 1250,
+          "totalWatchMinutes": 7500
+        }
+    },
+    {
+        "path": "analytics/exampleCourse123/daily_stats/2024-05-10",
+        "document": {
+          "date": "2024-05-10",
+          "courseId": "exampleCourse123",
+          "newEnrollments": 12,
+          "videoViews": 240,
+          "watchMinutes": 1500,
+          "donationsAmount": 50,
+          "revenueAmount": 0
+        }
+    },
+    {
+        "path": "formateur_stats/formateurUID1",
+        "document": {
+          "authorId": "formateurUID1",
+          "totalCourses": 5,
+          "totalStudents": 450,
+          "totalRevenue": 1230.50,
+          "totalWatchMinutes": 35000,
+          "lastUpdated": "2024-05-10T14:30:00Z"
+        }
+    }
+  ]
 }
