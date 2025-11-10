@@ -192,8 +192,8 @@ export default function DashboardLayout({
     router.push('/');
   };
 
-  const isMessagesPage = pathname.startsWith('/messages');
-  if (isMessagesPage) {
+  const isFullPageLayout = pathname.startsWith('/messages') || pathname.startsWith('/courses/');
+  if (isFullPageLayout) {
       return (
            <div className="h-screen overflow-hidden">
                 {children}
@@ -203,7 +203,7 @@ export default function DashboardLayout({
 
   const MobileNavBar = () => (
     <nav className="fixed bottom-0 left-0 right-0 h-16 bg-card border-t shadow-lg flex justify-around items-center lg:hidden z-20">
-        {navLinks.slice(0, 5).map(link => ( // Show first 5 for mobile bar
+        {navLinks.slice(0, 5).map(link => (
             <NavLink key={link.href} {...link} isMobile />
         ))}
     </nav>
@@ -211,13 +211,11 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen w-full bg-background text-foreground flex flex-col lg:flex-row">
-      {/* Desktop Sidebar */}
       <aside className="hidden lg:block w-64 flex-shrink-0 border-r border-border bg-card">
         <SidebarContent />
       </aside>
 
       <div className="flex flex-col flex-1 overflow-hidden">
-        {/* Header */}
         <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-border bg-background/80 backdrop-blur-sm px-4 lg:px-8">
            <div className="lg:hidden">
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -273,7 +271,6 @@ export default function DashboardLayout({
           </div>
         </header>
 
-        {/* Main Content */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto animate-fade-in text-foreground">
             <div className="pb-16 lg:pb-0">
                 {children}

@@ -4,7 +4,7 @@
 import { notFound, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { PlayCircle, CheckCircle, Lock, Loader2, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
-import React, { use, useMemo, useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import ReactPlayer from 'react-player';
 import {
   collection,
@@ -141,7 +141,6 @@ export default function ModulePage({ params }: ModulePageProps) {
     };
   }, [selectedVideo, sortedVideos]);
 
-  // Effect to select first video of the module
   useEffect(() => {
     if (sortedVideos.length > 0 && !selectedVideo) {
       setSelectedVideo(sortedVideos[0]);
@@ -153,7 +152,6 @@ export default function ModulePage({ params }: ModulePageProps) {
       return enrollment.modules[moduleId].videos || {};
   }, [enrollment, moduleId]);
 
-  // Effect to handle seeking to last position
    useEffect(() => {
     if (selectedVideo && playerRef.current && videoProgressMap[selectedVideo.id!]?.lastPosition) {
       const lastPosition = videoProgressMap[selectedVideo.id!]?.lastPosition!;
@@ -161,19 +159,16 @@ export default function ModulePage({ params }: ModulePageProps) {
     }
   }, [selectedVideo, videoProgressMap]);
 
-  // Handlers
   const handleProgress = async ({ played, playedSeconds }: { played: number; playedSeconds: number }) => {
     if (!user || !db || !selectedVideo || !enrollment) return;
     const videoId = selectedVideo.id!;
     const videoProg = videoProgressMap[videoId];
 
-    // Mark as watched
     if (played > 0.9 && !videoProg?.watched) {
       await updateVideoProgress(videoId, { watched: true, watchedAt: serverTimestamp() as any });
       toast({ title: "Leçon terminée !", description: `"${selectedVideo.title}" marquée comme terminée.`});
     }
     
-    // Save last position periodically
     if (playedSeconds > 5 && Math.round(playedSeconds) % 10 === 0) {
       await updateVideoProgress(videoId, { lastPosition: playedSeconds });
     }
@@ -190,7 +185,6 @@ export default function ModulePage({ params }: ModulePageProps) {
         description: "Vous avez terminé cette formation. Vous pouvez maintenant consulter votre certificat.",
         duration: 8000,
       });
-      // Ensure final progress is 100%
       if (enrollment && user) {
         updateDoc(doc(db, 'users', user.uid, 'enrollments', courseId), { progression: 100 });
       }
@@ -199,13 +193,13 @@ export default function ModulePage({ params }: ModulePageProps) {
   };
   
   const updateVideoProgress = async (videoId: string, data: Partial<VideoProgress>) => {
-      if (!user || !db || !enrollment) return;
+      if (!user || !db || !enrollment || !course) return;
       
       const newVideoProgress = { ...videoProgressMap[videoId], ...data };
       const newModulesData = { 
         ...enrollment.modules,
         [moduleId]: {
-            ...enrollment.modules?.[moduleId],
+            ...(enrollment.modules?.[moduleId] || { progress: 0 }),
             videos: {
                 ...enrollment.modules?.[moduleId]?.videos,
                 [videoId]: newVideoProgress,
@@ -235,7 +229,7 @@ export default function ModulePage({ params }: ModulePageProps) {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-[calc(100vh-4rem)]">
+      <div className="flex justify-center items-center h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
         <p className="ml-4">Chargement du module...</p>
       </div>
@@ -243,7 +237,11 @@ export default function ModulePage({ params }: ModulePageProps) {
   }
   
   if (!courseId || !moduleId || !course || !currentModule || !user) {
-    notFound();
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <p className="text-destructive">Désolé, ce module est introuvable.</p>
+      </div>
+    );
   }
 
   const playerConfig = {
@@ -262,7 +260,7 @@ export default function ModulePage({ params }: ModulePageProps) {
   };
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-4rem)] bg-background">
+    <div className="flex flex-col h-screen bg-background">
        <header className="p-4 border-b flex justify-between items-center bg-card">
         <Button variant="ghost" asChild>
             <Link href={`/courses/${courseId}`}>
@@ -284,7 +282,7 @@ export default function ModulePage({ params }: ModulePageProps) {
         </div>
        </header>
 
-      <div className="flex-grow flex flex-col md:flex-row">
+      <div className="flex-grow flex flex-col md:flex-row overflow-hidden">
         <main className="flex-1 p-4 md:p-8">
              <div className="aspect-video bg-black rounded-lg overflow-hidden mb-6 shadow-lg">
              {selectedVideo?.embedUrl ? (

@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -167,9 +168,7 @@ export default function AdminLayout({
               <AdminSidebar onSignOut={handleSignOut} />
             </SheetContent>
           </Sheet>
-          <div className="flex-1">
-            {/* Can be used for a search bar later */}
-          </div>
+          <div className="flex-1" />
           <div className="flex items-center gap-4">
              <NotificationBell />
             <DropdownMenu>

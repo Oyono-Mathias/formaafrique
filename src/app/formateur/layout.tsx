@@ -109,13 +109,12 @@ export default function FormateurLayout({ children }: { children: React.ReactNod
         description: "Vous n'êtes pas un formateur. Redirection...",
       });
       router.replace('/dashboard'); // Redirect non-instructors
+      return;
     }
 
-    // Cast to InstructorProfile to access validation_status
     const instructor = userProfile as InstructorProfile;
 
-    // If the profile is incomplete and we are not on the update page, redirect
-    if (instructor && instructor.role === 'formateur' && instructor.validation_status === 'incomplete' && pathname !== '/formateur/mise-a-jour') {
+    if (instructor?.validation_status === 'incomplete' && pathname !== '/formateur/mise-a-jour') {
         toast({
             title: 'Profil incomplet',
             description: 'Veuillez mettre à jour votre profil pour continuer.',
@@ -132,7 +131,6 @@ export default function FormateurLayout({ children }: { children: React.ReactNod
     router.push('/login');
   };
 
-  // While loading, show a full-screen loader
   if (loading || !userProfile || userProfile.role !== 'formateur') {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -143,13 +141,11 @@ export default function FormateurLayout({ children }: { children: React.ReactNod
   }
 
   const instructor = userProfile as InstructorProfile;
-  // If the profile update page, show it without the main layout
+
   if (instructor.validation_status === 'incomplete' && pathname === '/formateur/mise-a-jour') {
       return <>{children}</>;
   }
 
-
-  // If validation is pending, show a specific message instead of the full dashboard
   if (instructor.validation_status === 'pending') {
       return (
            <div className="flex h-screen w-full items-center justify-center bg-background p-4">
@@ -163,10 +159,9 @@ export default function FormateurLayout({ children }: { children: React.ReactNod
                     </Button>
                 </div>
             </div>
-      )
+      );
   }
 
-  // If validated, show the full dashboard layout
   return (
     <div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr]">
       <aside className="hidden border-r bg-[#111827] text-white lg:block">
@@ -186,9 +181,7 @@ export default function FormateurLayout({ children }: { children: React.ReactNod
               <Sidebar onSignOut={handleSignOut} />
             </SheetContent>
           </Sheet>
-          <div className="flex-1">
-            {/* Search bar can go here */}
-          </div>
+          <div className="flex-1" />
           <div className="flex items-center gap-4">
              <NotificationBell />
             <DropdownMenu>

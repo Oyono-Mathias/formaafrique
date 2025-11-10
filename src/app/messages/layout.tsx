@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser } from '@/firebase';
@@ -33,7 +34,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
       <aside className="w-full md:w-80 lg:w-96 border-r flex-shrink-0">
         <ChatList />
       </aside>
-      <main className="flex-1 hidden md:block">
+      <main className="flex-1 h-screen overflow-hidden hidden md:block">
         {children}
       </main>
     </div>
