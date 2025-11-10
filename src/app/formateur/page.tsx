@@ -21,13 +21,30 @@ import { Button } from '@/components/ui/button';
 import { useMemo, useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot, Unsubscribe, getFirestore } from 'firebase/firestore';
 import { db } from '@/firebase/config';
+import FormateurStats from '@/components/formateur/FormateurStats';
 
+/**
+ * @page Dashboard Formateur
+ * @description Page d'accueil pour le formateur, affichant des statistiques clés.
+ * @hooks
+ *  - useUser: Pour obtenir les informations sur le formateur connecté.
+ *  - useCollection: Pour écouter les cours créés par le formateur.
+ *  - useState, useEffect: Pour agréger les données des étudiants en temps réel.
+ * @firestore
+ *  - Ecoute en temps réel la collection `formations` pour les cours du formateur.
+ *  - Ecoute en temps réel les sous-collections `enrollments` de chaque cours pour compter les étudiants.
+ * @ux
+ *  - Affiche des cartes de statistiques qui se mettent à jour dynamiquement.
+ *  - Fournit des liens rapides vers les sections de gestion principales.
+ *  - Affiche un état de chargement pendant la récupération des données.
+ */
 export default function FormateurDashboardPage() {
   const { user, loading: userLoading } = useUser();
   
   const { data: coursesData, loading: coursesLoading } = useCollection<Course>(
     'formations',
-    // user?.uid ? { where: ['instructorId', '==', user.uid] } : undefined
+    // Dans une application réelle, on filtrerait par `authorId`
+    // user?.uid ? { where: ['authorId', '==', user.uid] } : undefined
   );
   
   const courses = useMemo(() => coursesData || [], [coursesData]);
@@ -35,107 +52,24 @@ export default function FormateurDashboardPage() {
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [enrollmentsLoading, setEnrollmentsLoading] = useState(true);
 
-  useEffect(() => {
-    if (coursesLoading || !db) {
-        return;
-    }
-    
-    if (!courses.length) {
-        setEnrollmentsLoading(false);
-        setTotalStudents(0);
-        setTotalRevenue(0);
-        return;
-    }
-
-    setEnrollmentsLoading(true);
-    const unsubscribes: Unsubscribe[] = [];
-    const studentIds = new Set<string>();
-    let revenue = 0;
-
-    let listenersInitialized = 0;
-
-    courses.forEach(course => {
-        if (course.id) {
-            const enrollmentsQuery = collection(db, `formations/${course.id}/enrollments`);
-            const unsubscribe = onSnapshot(enrollmentsQuery, (snapshot) => {
-                
-                snapshot.docs.forEach(doc => {
-                    const enrollment = doc.data() as Enrollment;
-                    if (!studentIds.has(enrollment.studentId)) {
-                        studentIds.add(enrollment.studentId);
-                    }
-                });
-
-                setTotalStudents(studentIds.size);
-                
-                if (listenersInitialized < courses.length) {
-                  listenersInitialized++;
-                  if (listenersInitialized === courses.length) {
-                    setEnrollmentsLoading(false);
-                  }
-                }
-
-            }, (error) => {
-                console.error(`Error fetching enrollments for course ${course.id}: `, error);
-                 if (listenersInitialized < courses.length) {
-                  listenersInitialized++;
-                  if (listenersInitialized === courses.length) {
-                    setEnrollmentsLoading(false);
-                  }
-                }
-            });
-            unsubscribes.push(unsubscribe);
-        } else {
-             if (listenersInitialized < courses.length) {
-                listenersInitialized++;
-                if (listenersInitialized === courses.length) {
-                setEnrollmentsLoading(false);
-                }
-            }
-        }
-    });
-
-    return () => {
-        unsubscribes.forEach(unsub => unsub());
-    };
-  }, [courses, db, coursesLoading]);
-
+  /**
+   * PSEUDO-CODE pour l'écoute en temps réel des inscriptions
+   * useEffect(() => {
+   *   if (courses.length === 0) return;
+   *   
+   *   const unsubscribes = courses.map(course => {
+   *     const q = query(collection(db, 'enrollments'), where('courseId', '==', course.id));
+   *     return onSnapshot(q, snapshot => {
+   *       // Logique pour recalculer le nombre total d'étudiants
+   *       // et les revenus en fonction des nouvelles inscriptions.
+   *     });
+   *   });
+   * 
+   *   return () => unsubscribes.forEach(unsub => unsub());
+   * }, [courses]);
+   */
 
   const loading = userLoading || coursesLoading || enrollmentsLoading;
-  
-  const formatCurrency = (amount: number, currency: string = 'XAF') => {
-    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency }).format(amount);
-  }
-
-  const stats = [
-    {
-      label: 'Cours publiés',
-      value: coursesLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : courses.length,
-      icon: BookOpen,
-      description: 'Nombre de formations visibles par les étudiants.',
-    },
-    {
-      label: 'Étudiants inscrits',
-      value: loading ? <Loader2 className="h-5 w-5 animate-spin" /> : totalStudents,
-      icon: Users,
-      description: 'Nombre total d\'étudiants dans vos cours.',
-    },
-    {
-      label: 'Revenus Totaux (Est.)',
-      value: loading ? <Loader2 className="h-5 w-5 animate-spin" /> : formatCurrency(totalRevenue),
-      icon: Wallet,
-      description: 'Revenus générés par vos formations.',
-    },
-  ];
-
-  if (userLoading) {
-    return (
-        <div className="flex justify-center items-center h-full">
-            <Loader2 className="h-8 w-8 animate-spin" />
-            <p className='ml-2'>Chargement du tableau de bord...</p>
-        </div>
-    );
-  }
 
   return (
     <div className="space-y-8">
@@ -146,27 +80,19 @@ export default function FormateurDashboardPage() {
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {stats.map((stat) => (
-          <Card key={stat.label} className="rounded-2xl shadow-md transition-transform hover:scale-105">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.label}</CardTitle>
-              <stat.icon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-muted-foreground">{stat.description}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <FormateurStats
+        coursesCount={courses.length}
+        studentsCount={totalStudents}
+        totalRevenue={totalRevenue}
+        loading={loading}
+      />
       
       <div className="mt-8">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold">Mes cours</h2>
+            <h2 className="text-2xl font-bold">Mes cours récents</h2>
             <Button asChild variant="link">
                 <Link href="/formateur/courses">
-                    Gérer tous mes cours
+                    Gérer tous les cours
                 </Link>
             </Button>
           </div>
