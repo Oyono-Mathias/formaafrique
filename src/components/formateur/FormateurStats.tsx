@@ -1,14 +1,15 @@
 
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Loader2, BookOpen, Users, Wallet } from 'lucide-react';
+import { collection, query, onSnapshot, Unsubscribe } from 'firebase/firestore';
+import { db } from '@/firebase/config';
+import type { Course } from '@/lib/types';
 
 interface FormateurStatsProps {
-  coursesCount: number;
-  studentsCount: number;
-  totalRevenue: number;
+  courses: Course[];
   loading: boolean;
 }
 
@@ -16,35 +17,80 @@ interface FormateurStatsProps {
  * @component FormateurStats
  * @description Affiche les cartes de statistiques pour le tableau de bord du formateur.
  * @props
- *  - coursesCount: Nombre total de cours.
- *  - studentsCount: Nombre total d'étudiants.
- *  - totalRevenue: Revenu total estimé.
- *  - loading: État de chargement pour afficher un spinner.
- * @ux
- *  - Composant purement visuel, reçoit ses données via les props.
- *  - Affiche des spinners dans les cartes pendant le chargement.
+ *  - courses: La liste des cours du formateur.
+ *  - loading: État de chargement global pour afficher un spinner.
  */
 export default function FormateurStats({
-  coursesCount,
-  studentsCount,
-  totalRevenue,
-  loading,
+  courses,
+  loading: initialLoading,
 }: FormateurStatsProps) {
+  const [totalStudents, setTotalStudents] = useState(0);
+  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [enrollmentsLoading, setEnrollmentsLoading] = useState(true);
+
+  useEffect(() => {
+    if (initialLoading) return;
+    if (!courses || courses.length === 0) {
+      setEnrollmentsLoading(false);
+      setTotalStudents(0);
+      setTotalRevenue(0);
+      return;
+    }
+
+    const listeners: Unsubscribe[] = [];
+    const enrollmentsByCourse: { [courseId: string]: number } = {};
+    const revenueByCourse: { [courseId: string]: number } = {};
+
+    let coursesProcessed = 0;
+
+    courses.forEach(course => {
+      if (!course.id) {
+          coursesProcessed++;
+          return;
+      };
+
+      const enrollmentsQuery = query(collection(db, `formations/${course.id}/enrollments`));
+      
+      const unsubscribe = onSnapshot(enrollmentsQuery, (snapshot) => {
+        enrollmentsByCourse[course.id!] = snapshot.size;
+        revenueByCourse[course.id!] = snapshot.size * (course.price || 0);
+
+        setTotalStudents(Object.values(enrollmentsByCourse).reduce((a, b) => a + b, 0));
+        setTotalRevenue(Object.values(revenueByCourse).reduce((a, b) => a + b, 0));
+
+      }, (error) => {
+          console.error(`Error fetching enrollments for course ${course.id}:`, error);
+      });
+
+      listeners.push(unsubscribe);
+      coursesProcessed++;
+    });
+
+    if(coursesProcessed === courses.length) {
+        setEnrollmentsLoading(false);
+    }
+
+    return () => {
+      listeners.forEach(unsub => unsub());
+    };
+  }, [courses, initialLoading]);
 
   const formatCurrency = (amount: number, currency: string = 'XAF') => {
     return new Intl.NumberFormat('fr-FR', { style: 'currency', currency }).format(amount);
   }
 
+  const loading = initialLoading || enrollmentsLoading;
+
   const stats = [
     {
-      label: 'Cours publiés',
-      value: loading ? <Loader2 className="h-5 w-5 animate-spin" /> : coursesCount,
+      label: 'Cours créés',
+      value: initialLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : courses.length,
       icon: BookOpen,
-      description: 'Nombre de formations visibles par les étudiants.',
+      description: 'Nombre total de vos formations.',
     },
     {
       label: 'Étudiants inscrits',
-      value: loading ? <Loader2 className="h-5 w-5 animate-spin" /> : studentsCount,
+      value: loading ? <Loader2 className="h-5 w-5 animate-spin" /> : totalStudents,
       icon: Users,
       description: "Nombre total d'étudiants dans vos cours.",
     },
