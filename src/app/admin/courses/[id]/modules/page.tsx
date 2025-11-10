@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useState, useEffect, useMemo, use } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { useRouter, notFound } from 'next/navigation';
+import { useRouter, notFound, useParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -84,12 +84,9 @@ const videoSchema = z.object({
 });
 
 
-export default function AdminManageModulesPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  const courseId = params.id;
+export default function AdminManageModulesPage() {
+  const params = useParams();
+  const courseId = params.id as string;
   
   const { data: course, loading: courseLoading } = useDoc<Course>(
     'formations',
