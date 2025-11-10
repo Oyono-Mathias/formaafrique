@@ -30,11 +30,13 @@ export default function HomeLayout({
                  router.replace('/dashboard'); // Fallback to student dashboard
         }
     }
-  }, [user, userProfile, loading, router]);
+  // No dependency on router to avoid re-triggering on navigation
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, userProfile, loading]);
 
   // While loading, or if a user is logged in but their profile is not yet loaded,
   // show a loading screen. This prevents the public content from flashing before redirection.
-  if (loading || user) {
+  if (loading || (user && !userProfile)) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -44,5 +46,15 @@ export default function HomeLayout({
   }
 
   // Only show public content if not loading and no user is logged in.
-  return <>{children}</>;
+  if (!user) {
+     return <>{children}</>;
+  }
+
+  // If user is logged in but redirection hasn't happened yet, show loader
+  return (
+     <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <p className='ml-3'>Redirection en cours...</p>
+      </div>
+  );
 }

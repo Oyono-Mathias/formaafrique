@@ -95,8 +95,13 @@ function FormateurGuard({ children }: { children: React.ReactNode }) {
             return;
         }
         if (userProfile && userProfile.role !== 'formateur') {
-            toast({ variant: 'destructive', title: 'Accès refusé', description: "Vous n'êtes pas un formateur." });
-            router.replace('/dashboard');
+            toast({ variant: 'destructive', title: 'Accès refusé', description: "Redirection vers votre tableau de bord." });
+            // Redirect non-instructors to their respective dashboards
+             if (userProfile.role === 'admin') {
+                router.replace('/admin');
+            } else {
+                router.replace('/dashboard');
+            }
         }
     }, [user, userProfile, loading, router, toast]);
 
@@ -105,6 +110,17 @@ function FormateurGuard({ children }: { children: React.ReactNode }) {
             <div className="flex h-screen w-full items-center justify-center bg-background">
                 <Loader2 className="h-8 w-8 animate-spin" />
                 <p className='ml-3'>Vérification de votre statut...</p>
+            </div>
+        );
+    }
+    
+    // Explicitly check for formateur role before proceeding
+    if (userProfile.role !== 'formateur') {
+        // This is a fallback while redirecting
+        return (
+             <div className="flex h-screen w-full items-center justify-center bg-background">
+                <Loader2 className="h-8 w-8 animate-spin" />
+                <p className='ml-3'>Accès non autorisé, redirection...</p>
             </div>
         );
     }
