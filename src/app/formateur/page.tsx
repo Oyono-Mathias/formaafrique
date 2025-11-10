@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -35,18 +36,22 @@ export default function FormateurDashboardPage() {
   const [enrollmentsLoading, setEnrollmentsLoading] = useState(true);
 
   useEffect(() => {
-    if (!courses.length || !db) {
-        if (!coursesLoading) {
-            setEnrollmentsLoading(false);
-        }
+    if (coursesLoading || !db) {
+        return;
+    }
+    
+    if (!courses.length) {
+        setEnrollmentsLoading(false);
+        setTotalStudents(0);
+        setTotalRevenue(0);
         return;
     }
 
+    setEnrollmentsLoading(true);
     const unsubscribes: Unsubscribe[] = [];
     const studentIds = new Set<string>();
     let revenue = 0;
 
-    // Use a count to track when all listeners have reported their initial data
     let listenersInitialized = 0;
 
     courses.forEach(course => {
@@ -58,34 +63,37 @@ export default function FormateurDashboardPage() {
                     const enrollment = doc.data() as Enrollment;
                     if (!studentIds.has(enrollment.studentId)) {
                         studentIds.add(enrollment.studentId);
-                        // Assuming one enrollment corresponds to one sale at the course price
-                        // if(course.prix > 0) {
-                        //     revenue += course.prix;
-                        // }
                     }
                 });
 
                 setTotalStudents(studentIds.size);
-                setTotalRevenue(revenue);
                 
-                // This part is tricky; for simplicity, we'll stop loading when the first batch of listeners is done.
-                if (++listenersInitialized >= courses.length) {
+                if (listenersInitialized < courses.length) {
+                  listenersInitialized++;
+                  if (listenersInitialized === courses.length) {
                     setEnrollmentsLoading(false);
+                  }
                 }
 
             }, (error) => {
                 console.error(`Error fetching enrollments for course ${course.id}: `, error);
-                 if (++listenersInitialized >= courses.length) {
+                 if (listenersInitialized < courses.length) {
+                  listenersInitialized++;
+                  if (listenersInitialized === courses.length) {
                     setEnrollmentsLoading(false);
+                  }
                 }
             });
             unsubscribes.push(unsubscribe);
+        } else {
+             if (listenersInitialized < courses.length) {
+                listenersInitialized++;
+                if (listenersInitialized === courses.length) {
+                setEnrollmentsLoading(false);
+                }
+            }
         }
     });
-
-     if (courses.length > 0 && unsubscribes.length === 0) {
-      setEnrollmentsLoading(false);
-    }
 
     return () => {
         unsubscribes.forEach(unsub => unsub());

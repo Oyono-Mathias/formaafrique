@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -52,7 +53,6 @@ export default function FormateurStudentsPage() {
 
   useEffect(() => {
     if (coursesLoading) {
-      // Attendre la fin du chargement des cours
       setLoading(true);
       return;
     }
@@ -117,19 +117,32 @@ export default function FormateurStudentsPage() {
                     return newEnrollments;
                 });
                 
-                if (++listenersInitialized >= totalCourses) {
+                if (listenersInitialized < totalCourses) {
+                  listenersInitialized++;
+                  if (listenersInitialized === totalCourses) {
                     setLoading(false);
+                  }
                 }
 
             }, (err) => {
                 console.error("Error with snapshot listener:", err);
                 setError("Impossible de charger les étudiants en temps réel.");
-                if (++listenersInitialized >= totalCourses) {
+                if (listenersInitialized < totalCourses) {
+                  listenersInitialized++;
+                  if (listenersInitialized === totalCourses) {
                     setLoading(false);
+                  }
                 }
             });
             
             unsubscribes.push(unsubscribe);
+        } else {
+             if (listenersInitialized < totalCourses) {
+                listenersInitialized++;
+                if (listenersInitialized === totalCourses) {
+                setLoading(false);
+                }
+            }
         }
     });
 
