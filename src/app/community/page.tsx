@@ -78,7 +78,7 @@ export default function CommunityPage() {
 
     useEffect(() => {
         if (!groupChat?.id || !db) {
-            if(!chatsLoading) setLoading(false);
+            if(!loading) setLoading(false);
             return;
         }
         
@@ -115,7 +115,7 @@ export default function CommunityPage() {
             unsubscribe();
             isInitialLoad.current = true;
         }
-    }, [groupChat, db, toast, user?.uid]);
+    }, [groupChat, db, toast, user?.uid, loading]);
     
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

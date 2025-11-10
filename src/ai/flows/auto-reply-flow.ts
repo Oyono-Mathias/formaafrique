@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A Genkit flow for generating automatic replies in a chat.
@@ -52,6 +53,7 @@ const autoReplyPrompt = ai.definePrompt({
     2. Provide a brief, general answer if possible, or suggest where they might find help (e.g., "Consultez la section FAQ" or "Posez votre question dans le forum de la communauté").
     3. Assure them that a human will get back to them soon.
     4. Keep the reply under 50 words.
+    5. VERY IMPORTANT: If the user's message is a simple greeting like "bonjour", "salut", "yo", etc., just reply with a simple, friendly greeting and nothing else.
     
     Your response must be in JSON format.
   `,
@@ -64,6 +66,12 @@ const autoReplyFlow = ai.defineFlow(
     outputSchema: AutoReplyResponseSchema,
   },
   async (input) => {
+    // Simple logic to prevent auto-replying to very short/greeting messages
+    const simpleGreetingRegex = /^(salut|bonjour|yo|hello|hi|hey)$/i;
+    if (input.text.length < 10 && simpleGreetingRegex.test(input.text)) {
+        return { reply: "" }; // Return empty to not send a reply
+    }
+
     const { output } = await autoReplyPrompt(input);
     if (!output) {
       throw new Error('Auto-reply flow failed to produce an output.');

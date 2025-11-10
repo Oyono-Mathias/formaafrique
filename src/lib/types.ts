@@ -137,6 +137,7 @@ export interface ModuleProgress {
 export interface Enrollment {
     id?: string; // This will be the enrollment doc ID, typically same as courseId for simplicity
     studentId: string;
+    studentName: string;
     courseId: string;
     courseTitle: string;
     enrollmentDate: Timestamp;
@@ -316,7 +317,7 @@ export interface ModerationLog {
 
 export interface AiFlag {
     id?: string;
-    msgId: string;
+    msgId?: string;
     chatId: string;
     fromUid: string;
     reason: string;

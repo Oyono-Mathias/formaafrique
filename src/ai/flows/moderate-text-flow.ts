@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A Genkit flow for text moderation.
@@ -59,8 +60,8 @@ const moderationPrompt = ai.definePrompt({
 **2. BLOCAGE IMMÉDIAT : Partage de Contacts Externes (Catégorie : 'external_contact')**
    - **Détection** :
      - Numéros de téléphone (tout format, international ou local, ex: +237..., 00237..., suites de 9 chiffres).
-     - Adresses email (format standard `user@domain.com`).
-     - Liens vers des applications de messagerie (ex: `wa.me/`, `t.me/`, `api.whatsapp.com/send`).
+     - Adresses email (format standard \`user@domain.com\`).
+     - Liens vers des applications de messagerie (ex: \`wa.me/\`, \`t.me/\`, \`api.whatsapp.com/send\`).
    - **Keywords** : "contacte-moi sur WhatsApp", "mon numéro est", "mon email est".
    - **Verdict** : Si une information de contact personnelle est partagée, le verdict est **'block'**.
    - **Score** : Très élevé (0.98+).
