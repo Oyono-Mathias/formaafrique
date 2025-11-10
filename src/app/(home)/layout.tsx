@@ -24,8 +24,6 @@ export default function HomeLayout({
                 router.replace('/formateur');
                 break;
             case 'etudiant':
-                router.replace('/dashboard');
-                break;
             default:
                  router.replace('/dashboard'); // Fallback to student dashboard
         }
@@ -36,25 +34,15 @@ export default function HomeLayout({
 
   // While loading, or if a user is logged in but their profile is not yet loaded,
   // show a loading screen. This prevents the public content from flashing before redirection.
-  if (loading || (user && !userProfile)) {
+  if (loading || user) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin" />
-        <p className='ml-3'>Redirection vers votre tableau de bord...</p>
+        <p className='ml-3'>Chargement de votre session...</p>
       </div>
     );
   }
 
   // Only show public content if not loading and no user is logged in.
-  if (!user) {
-     return <>{children}</>;
-  }
-
-  // If user is logged in but redirection hasn't happened yet, show loader
-  return (
-     <div className="flex h-screen w-full items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <p className='ml-3'>Redirection en cours...</p>
-      </div>
-  );
+  return <>{children}</>;
 }
