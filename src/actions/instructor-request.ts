@@ -2,10 +2,9 @@
 'use server';
 
 import { db } from '@/firebase/config';
-import { collection, doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { collection, doc, setDoc, serverTimestamp, getDoc, updateDoc } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 import { evaluateCandidate } from '@/ai/flows/evaluate-candidate-flow';
-import { useToast } from '@/hooks/use-toast';
 
 interface RequestPayload {
   uid: string;
@@ -32,10 +31,10 @@ export async function createInstructorRequest(payload: RequestPayload) {
 
   const userProfile = userDoc.data() as UserProfile;
   const { uid, ...formData } = payload;
+  const requestDocRef = doc(db, 'instructor_requests', uid);
   
   try {
-    const requestDocRef = doc(db, 'instructor_requests', uid);
-    // 1. Create the initial request document
+    // 1. Create the initial request document with a 'pending' status
     await setDoc(requestDocRef, {
       userId: uid,
       userName: userProfile.name,
@@ -50,20 +49,20 @@ export async function createInstructorRequest(payload: RequestPayload) {
         youtubeUrl: formData.youtubeUrl || '',
       },
       requestDate: serverTimestamp(),
-      status: 'pending', // Set initial status to pending
+      status: 'pending', // Initial status
       scoreReputation: userProfile.scoreReputation || 0,
     });
 
-    // 2. Immediately trigger the AI evaluation after creation
-    // This will run in the background and update the document with the score and feedback
+    // 2. Immediately trigger the AI evaluation after creation.
+    // This runs in the background and updates the document with the score and feedback.
     evaluateCandidate({ uid: uid })
       .then(result => {
         console.log(`AI Evaluation complete for ${uid}: Score ${result.score_final}, Status ${result.statut}`);
-        // The flow itself updates the document, so no further action is needed here.
+        // The flow itself updates the 'instructor_requests' document. No further action needed here.
       })
       .catch(evalError => {
         console.error(`AI evaluation failed for ${uid}:`, evalError);
-        // Optionally, update the request to note the evaluation failure
+        // Optionally, update the request to note the evaluation failure and keep it pending for manual review.
         updateDoc(requestDocRef, { status: 'pending', feedbackMessage: "L'évaluation automatique a échoué. En attente d'une révision manuelle." });
       });
 
