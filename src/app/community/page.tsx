@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useUser, useCollection, useFirestore } from '@/firebase';
-import type { GroupChat, GroupMessage, UserProfile, AiFlag, AdminNotification } from '@/lib/types';
+import type { GroupChat, GroupMessage, UserProfile, AiFlag, AdminNotification, Notification } from '@/lib/types';
 import { Loader2, Send } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -53,8 +53,20 @@ export default function CommunityPage() {
             const chatSnap = await getDocs(q);
             
             if (chatSnap.empty) {
-                console.log(`No group chat found for formation: ${formationId}`);
-                setGroupChat(null);
+                console.log(`No group chat found for formation: ${formationId}, creating one...`);
+                try {
+                    const newChatRef = await addDoc(collection(db, "group_chats"), {
+                        formationId: formationId,
+                        name: getFormationName(formationId),
+                        description: `Espace de discussion pour la formation ${getFormationName(formationId)}.`,
+                        createdAt: serverTimestamp(),
+                    });
+                    setGroupChat({ id: newChatRef.id, formationId: formationId, name: getFormationName(formationId), description: `Espace de discussion pour la formation ${getFormationName(formationId)}.`, createdAt: serverTimestamp() as any });
+                } catch (e) {
+                    console.error("Failed to create group chat", e);
+                    toast({variant: "destructive", title: "Erreur", description: "Impossible de créer le chat de groupe."})
+                }
+
             } else {
                 const chatData = { id: chatSnap.docs[0].id, ...chatSnap.docs[0].data() } as GroupChat;
                 setGroupChat(chatData);
@@ -62,11 +74,11 @@ export default function CommunityPage() {
         };
 
         findOrCreateChat();
-    }, [formationId, db]);
+    }, [formationId, db, toast]);
 
     useEffect(() => {
         if (!groupChat?.id || !db) {
-            setLoading(false);
+            if(!chatsLoading) setLoading(false);
             return;
         }
         
@@ -183,7 +195,7 @@ export default function CommunityPage() {
             if (reply.reply) {
                  await addDoc(collection(db, `group_chats/${groupChat.id}/messages`), {
                     authorId: 'FormaAI',
-                    authorName: 'FormaAfrique Assistant',
+                    authorName: 'Assistant de Modération',
                     authorImage: '', // Add a URL to a bot avatar if you have one
                     text: reply.reply,
                     timestamp: serverTimestamp(),
@@ -199,8 +211,9 @@ export default function CommunityPage() {
         }
     };
 
+    const chatsLoading = !groupChat && loading;
 
-    if (loading && !groupChat) {
+    if (chatsLoading) {
         return <div className="flex h-full w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
     }
 
