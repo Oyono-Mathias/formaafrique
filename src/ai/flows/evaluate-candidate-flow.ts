@@ -116,10 +116,16 @@ const evaluateCandidateFlow = ai.defineFlow(
     if (!userDoc.exists()) {
         throw new Error(`User profile not found for UID: ${input.uid}`);
     }
+     if (!requestDoc.exists()) {
+        // This can happen if the flow is called before the request doc is created.
+        // It's better to wait or ensure the doc exists before calling.
+        // For now, we'll throw an error to make the dependency clear.
+        throw new Error(`Instructor request document not found for UID: ${input.uid}. Cannot perform evaluation.`);
+    }
 
     const userProfile = userDoc.data() as UserProfile;
-    const request = requestDoc.exists() ? requestDoc.data() as InstructorRequest : {} as Partial<InstructorRequest>;
-    const socialLinks = request.socialLinks || (userProfile as any).socialLinks || {};
+    const request = requestDoc.data() as InstructorRequest;
+    const socialLinks = request.socialLinks || {};
 
 
     // Step 2: Prepare data for the AI prompt
@@ -143,14 +149,13 @@ const evaluateCandidateFlow = ai.defineFlow(
       throw new Error("Candidate evaluation flow failed to produce an output.");
     }
     
-    // Step 4: Update the instructor request document with the AI's evaluation (if it exists)
-    if (requestDoc.exists()) {
-        await updateDoc(requestDocRef, {
-            scoreFinal: output.score_final,
-            status: output.statut, // Update status based on AI evaluation
-            feedbackMessage: output.message_feedback,
-        });
-    }
+    // Step 4: Update the instructor request document with the AI's evaluation
+    await updateDoc(requestDocRef, {
+        scoreFinal: output.score_final,
+        status: output.statut, // Update status based on AI evaluation
+        feedbackMessage: output.message_feedback,
+        badge: output.badge || '',
+    });
     
     console.log(`Evaluation for ${userProfile.name} completed. Score: ${output.score_final}, Status: ${output.statut}`);
     return output;

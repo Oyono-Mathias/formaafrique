@@ -64,7 +64,7 @@ export default function BecomeInstructorPage() {
     );
 
     const pendingRequest = useMemo(() => {
-        return (requests || []).find(r => r.status === 'pending');
+        return (requests || []).find(r => r.status === 'pending' || r.status === 'en_attente');
     }, [requests]);
 
     const prerequisites = useMemo(() => {
@@ -218,16 +218,20 @@ export default function BecomeInstructorPage() {
                                 </CardContent>
                             </Card>
                              <Card className={prerequisites.isProfileComplete ? "border-green-500" : "border-amber-500"}>
-                                <CardContent className="p-4 flex items-center gap-3">
-                                     {prerequisites.isProfileComplete ? <CheckCircle className="w-5 h-5 text-green-500"/> : <AlertCircle className="w-5 h-5 text-amber-500"/>}
-                                    <span className="font-medium">Profil complet (photo, bio ≥ 100 car.)</span>
+                                <CardContent className="p-4 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        {prerequisites.isProfileComplete ? <CheckCircle className="w-5 h-5 text-green-500"/> : <AlertCircle className="w-5 h-5 text-amber-500"/>}
+                                        <span className="font-medium">Profil complet (photo, bio ≥ 100 car.)</span>
+                                    </div>
                                      {!prerequisites.isProfileComplete && <Button asChild size="sm" variant="outline"><Link href="/dashboard/settings">Compléter</Link></Button>}
                                 </CardContent>
                             </Card>
                             <Card className={prerequisites.hasCompletedThreeCourses ? "border-green-500" : "border-amber-500"}>
-                                <CardContent className="p-4 flex items-center gap-3">
-                                    {prerequisites.hasCompletedThreeCourses ? <CheckCircle className="w-5 h-5 text-green-500"/> : <AlertCircle className="w-5 h-5 text-amber-500"/>}
-                                    <span className="font-medium">Avoir terminé au moins 3 formations ({prerequisites.completedCoursesCount}/3)</span>
+                                <CardContent className="p-4 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        {prerequisites.hasCompletedThreeCourses ? <CheckCircle className="w-5 h-5 text-green-500"/> : <AlertCircle className="w-5 h-5 text-amber-500"/>}
+                                        <span className="font-medium">Avoir terminé au moins 3 formations ({prerequisites.completedCoursesCount}/3)</span>
+                                    </div>
                                     {!prerequisites.hasCompletedThreeCourses && <Button asChild size="sm" variant="outline"><Link href="/courses">Explorer</Link></Button>}
                                 </CardContent>
                             </Card>

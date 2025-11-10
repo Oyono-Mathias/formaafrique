@@ -52,19 +52,9 @@ export async function createInstructorRequest(payload: RequestPayload) {
       status: 'pending', // Initial status
       scoreReputation: userProfile.scoreReputation || 0,
     });
-
-    // 2. Immediately trigger the AI evaluation after creation.
-    // This runs in the background and updates the document with the score and feedback.
-    evaluateCandidate({ uid: uid })
-      .then(result => {
-        console.log(`AI Evaluation complete for ${uid}: Score ${result.score_final}, Status ${result.statut}`);
-        // The flow itself updates the 'instructor_requests' document. No further action needed here.
-      })
-      .catch(evalError => {
-        console.error(`AI evaluation failed for ${uid}:`, evalError);
-        // Optionally, update the request to note the evaluation failure and keep it pending for manual review.
-        updateDoc(requestDocRef, { status: 'pending', feedbackMessage: "L'évaluation automatique a échoué. En attente d'une révision manuelle." });
-      });
+    
+    // Note: The AI evaluation is now triggered from the frontend after this function completes.
+    // This function's sole responsibility is creating the request document.
 
   } catch (error) {
     console.error("Error creating instructor request:", error);
