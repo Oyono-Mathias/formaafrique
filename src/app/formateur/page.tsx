@@ -68,6 +68,45 @@ export default function FormateurDashboardPage() {
    *   return () => unsubscribes.forEach(unsub => unsub());
    * }, [courses]);
    */
+   useEffect(() => {
+    if (coursesLoading) return;
+    if (!courses || courses.length === 0) {
+      setEnrollmentsLoading(false);
+      setTotalStudents(0);
+      setTotalRevenue(0);
+      return;
+    }
+
+    const listeners: Unsubscribe[] = [];
+    let studentCount = 0;
+    let revenue = 0;
+
+    const enrollmentsByCourse: { [courseId: string]: number } = {};
+    const revenueByCourse: { [courseId: string]: number } = {};
+
+    courses.forEach(course => {
+      if (!course.id) return;
+      const enrollmentsQuery = query(collection(db, `formations/${course.id}/enrollments`));
+      
+      const unsubscribe = onSnapshot(enrollmentsQuery, (snapshot) => {
+        enrollmentsByCourse[course.id!] = snapshot.size;
+        revenueByCourse[course.id!] = snapshot.size * (course.price || 0);
+
+        studentCount = Object.values(enrollmentsByCourse).reduce((a, b) => a + b, 0);
+        revenue = Object.values(revenueByCourse).reduce((a, b) => a + b, 0);
+        
+        setTotalStudents(studentCount);
+        setTotalRevenue(revenue);
+      });
+      listeners.push(unsubscribe);
+    });
+    
+    setEnrollmentsLoading(false);
+
+    return () => {
+      listeners.forEach(unsub => unsub());
+    };
+  }, [courses, coursesLoading, db]);
 
   const loading = userLoading || coursesLoading || enrollmentsLoading;
 
