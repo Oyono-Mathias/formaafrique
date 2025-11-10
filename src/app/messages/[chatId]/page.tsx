@@ -262,7 +262,7 @@ export default function ChatPage() {
                         createdAt: serverTimestamp(),
                         read: false,
                         link: `/messages/${chatId}`
-                    } as AdminNotification);
+                    } as Omit<AdminNotification, 'id'>);
                 }
                 
                 setIsProcessing(false);
