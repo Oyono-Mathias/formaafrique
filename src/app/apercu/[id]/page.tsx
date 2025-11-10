@@ -1,10 +1,9 @@
 
 'use client';
 
-import { notFound, useRouter } from 'next/navigation';
+import { notFound, useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { PlayCircle, CheckCircle, Lock, Loader2, ArrowLeft, Heart, Youtube } from 'lucide-react';
-import { use } from 'react';
 import ReactPlayer from 'react-player';
 
 import { PlaceHolderImages } from '@/lib/placeholder-images';

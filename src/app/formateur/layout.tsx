@@ -1,9 +1,12 @@
 
 "use client";
 
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useUser } from "@/firebase"; // Hook personnalisé à créer
+import { Loader2 } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   BookCopy,
@@ -11,7 +14,6 @@ import {
   Wallet,
   Settings,
   LogOut,
-  Loader2,
   Menu,
   Bell,
   AlertCircle,
@@ -19,7 +21,7 @@ import {
 import { Logo } from '@/components/icons/logo';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useUser, useAuth } from '@/firebase';
+import { useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -35,6 +37,7 @@ import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { useToast } from '@/hooks/use-toast';
 import NotificationBell from '@/components/notifications/notification-bell';
 import type { InstructorProfile } from '@/lib/types';
+
 
 const navLinks = [
   { href: '/formateur', label: 'Tableau de bord', icon: LayoutDashboard },
