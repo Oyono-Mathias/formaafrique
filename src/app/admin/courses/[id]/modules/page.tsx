@@ -512,13 +512,15 @@ function VideoDialog({ isOpen, setIsOpen, form, onSubmit, isEditing, moduleTitle
                  <div className="flex items-center justify-between gap-4">
                   {videoDetails.platform === 'youtube' && (
                     <Button asChild variant="secondary" size="sm">
-                        <Link href={`https://www.youtube.com/channel/${videoDetails.id}?sub_confirmation=1`} target="_blank">
-                            <Youtube className='mr-2 h-4 w-4 text-red-500'/> S'abonner à la chaîne
+                        <Link href={`https://www.youtube.com/watch?v=${videoDetails.id}`} target="_blank">
+                            <Youtube className='mr-2 h-4 w-4 text-red-500'/> S'abonner sur YouTube
                         </Link>
                     </Button>
                   )}
-                  <Button variant="destructive" size="sm" className='bg-red-500 hover:bg-red-600'>
-                      <Heart className='mr-2 h-4 w-4'/> Faire un don
+                  <Button variant="destructive" size="sm" className='bg-red-500 hover:bg-red-600' asChild>
+                      <Link href="/donate">
+                        <Heart className='mr-2 h-4 w-4'/> Faire un don
+                      </Link>
                   </Button>
                  </div>
               </div>

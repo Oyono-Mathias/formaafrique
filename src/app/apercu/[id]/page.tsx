@@ -3,7 +3,7 @@
 
 import { notFound, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { PlayCircle, CheckCircle, Lock, Loader2, ArrowLeft } from 'lucide-react';
+import { PlayCircle, CheckCircle, Lock, Loader2, ArrowLeft, Heart, Youtube } from 'lucide-react';
 import { use } from 'react';
 import ReactPlayer from 'react-player';
 
@@ -88,7 +88,7 @@ export default function ApercuPage({ params }: ApercuPageProps) {
                 </Link>
             </Button>
           </div>
-          <div className="aspect-video bg-black rounded-lg overflow-hidden mb-6 shadow-lg">
+          <div className="aspect-video bg-black rounded-lg overflow-hidden mb-4 shadow-lg">
              {selectedVideo?.embedUrl ? (
                 <ReactPlayer
                     url={selectedVideo.embedUrl}
@@ -103,7 +103,21 @@ export default function ApercuPage({ params }: ApercuPageProps) {
                 </div>
              )}
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold font-headline text-primary mb-2">
+           <div className="flex items-center justify-between gap-4">
+                <Button variant="destructive" className='bg-red-500 hover:bg-red-600' asChild>
+                    <Link href="/donate">
+                        <Heart className='mr-2 h-4 w-4'/> Faire un don
+                    </Link>
+                </Button>
+                 {selectedVideo?.platform === 'youtube' && (
+                    <Button asChild variant="secondary">
+                        <Link href={`https://www.youtube.com/watch?v=${selectedVideo.videoId}`} target="_blank">
+                            <Youtube className='mr-2 h-4 w-4 text-red-500'/> S'abonner sur YouTube
+                        </Link>
+                    </Button>
+                )}
+            </div>
+          <h1 className="text-3xl md:text-4xl font-bold font-headline text-primary mb-2 mt-6">
             {selectedVideo?.title || currentModule?.title || course.title}
           </h1>
           <p className="text-muted-foreground mb-6">
