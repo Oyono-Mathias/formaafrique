@@ -39,58 +39,61 @@ export const onVideoViewIncrement = functions
     }
 
     try {
+      // Note: In a real app, the module ID would be dynamic.
+      const videoRef = db.doc(`formations/${courseId}/modules/MODULE_ID_PLACEHOLDER/videos/${videoId}`);
       const courseRef = db.doc(`formations/${courseId}`);
-      const videoRef = db.doc(`formations/${courseId}/modules/MODULE_ID_PLACEHOLDER/videos/${videoId}`); // Note: Path needs to be more robust
       const userProgressRef = db.doc(`users/${uid}/enrollments/${courseId}`);
-
-      // In a real scenario, you would fetch the course to get the authorId
+      
       const courseSnap = await courseRef.get();
       if (!courseSnap.exists) throw new Error("Course not found");
       const authorId = courseSnap.data()?.authorId;
+      if (!authorId) throw new Error("Author not found for the course");
       const formateurStatsRef = db.doc(`formateur_stats/${authorId}`);
 
-      // Daily analytics document
       const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
       const dailyAnalyticsRef = db.doc(`analytics/${courseId}/daily_stats/${today}`);
 
-
-      // 2. Perform atomic updates using a transaction
       await db.runTransaction(async (transaction) => {
+        // --- Get current data ---
         const userProgressDoc = await transaction.get(userProgressRef);
-        const currentProgress = userProgressDoc.data()?.progression || 0;
         const currentWatchTime = userProgressDoc.data()?.watchMinutes || 0;
-
-        // Recalculate progress (example logic)
         const newTotalWatchTime = currentWatchTime + watchMinutes;
-        // const totalCourseDuration = ... (fetch this or store on course doc)
-        // const newPercentage = (newTotalWatchTime / totalCourseDuration) * 100;
         
-        // Update documents
-        transaction.update(videoRef, { views: admin.firestore.FieldValue.increment(1) });
-        transaction.update(courseRef, { 
+        // --- Update all documents ---
+        transaction.set(videoRef, { 
+            views: admin.firestore.FieldValue.increment(1),
+            totalWatchMinutes: admin.firestore.FieldValue.increment(watchMinutes)
+        }, { merge: true });
+        
+        transaction.set(courseRef, { 
             totalViews: admin.firestore.FieldValue.increment(1),
             totalWatchMinutes: admin.firestore.FieldValue.increment(watchMinutes),
-        });
+        }, { merge: true });
+        
         transaction.update(userProgressRef, {
             watchMinutes: newTotalWatchTime,
-            // progression: newPercentage,
             lastSeenAt: admin.firestore.FieldValue.serverTimestamp(),
         });
+        
         transaction.set(dailyAnalyticsRef, {
             videoViews: admin.firestore.FieldValue.increment(1),
             watchMinutes: admin.firestore.FieldValue.increment(watchMinutes),
         }, { merge: true });
-        transaction.update(formateurStatsRef, { totalWatchMinutes: admin.firestore.FieldValue.increment(watchMinutes) });
+
+        transaction.set(formateurStatsRef, { 
+            totalWatchMinutes: admin.firestore.FieldValue.increment(watchMinutes) 
+        }, { merge: true });
       });
 
-      // 3. Return a success response
       return { success: true, message: 'Analytics updated successfully.' };
 
-    } catch (error) {
-      console.error("Error in onVideoViewIncrement:", error);
+    } catch (error: any) {
+      console.error("Error in onVideoViewIncrement:", error.message, { data });
+      // Re-throwing the error to be caught by the global error handler
       throw new functions.https.HttpsError(
         'internal',
-        'An error occurred while updating analytics.'
+        'An error occurred while updating analytics.',
+        error.message
       );
     }
 });
@@ -126,10 +129,9 @@ export const onNewEnrollment = functions
         }
         const formateurStatsRef = db.doc(`formateur_stats/${authorId}`);
 
-        // Batch updates
         const batch = db.batch();
-        batch.update(courseRef, { enrolledCount: admin.firestore.FieldValue.increment(1) });
-        batch.update(formateurStatsRef, { totalStudents: admin.firestore.FieldValue.increment(1) });
+        batch.set(courseRef, { enrolledCount: admin.firestore.FieldValue.increment(1) }, { merge: true });
+        batch.set(formateurStatsRef, { totalStudents: admin.firestore.FieldValue.increment(1) }, { merge: true });
         batch.set(dailyAnalyticsRef, { newEnrollments: admin.firestore.FieldValue.increment(1) }, { merge: true });
 
         await batch.commit();
@@ -137,5 +139,7 @@ export const onNewEnrollment = functions
 
     } catch(error) {
         console.error(`Error in onNewEnrollment for course ${courseId}:`, error);
+        // The global wrapper will catch and log this error.
+        throw error;
     }
 });
