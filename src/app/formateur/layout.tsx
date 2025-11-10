@@ -15,6 +15,8 @@ import {
   Loader2,
   Menu,
   Bell,
+  AlertCircle,
+  Clock,
 } from 'lucide-react';
 import { Logo } from '@/components/icons/logo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -28,6 +30,7 @@ import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import NotificationBell from '@/components/notifications/notification-bell';
 import type { InstructorProfile } from '@/lib/types';
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 const formateurNavLinks = [
   { href: '/formateur', label: 'Dashboard', icon: LayoutDashboard },
@@ -80,71 +83,80 @@ function FormateurSidebar({ onSignOut }: { onSignOut: () => void }) {
   );
 }
 
+function FormateurGuard({ children }: { children: React.ReactNode }) {
+    const { user, userProfile, loading } = useUser();
+    const router = useRouter();
+    const { toast } = useToast();
+
+    useEffect(() => {
+        if (loading) return;
+        if (!user) {
+            router.replace('/login');
+            return;
+        }
+        if (userProfile && userProfile.role !== 'formateur') {
+            toast({ variant: 'destructive', title: 'Accès refusé', description: "Vous n'êtes pas un formateur." });
+            router.replace('/dashboard');
+        }
+    }, [user, userProfile, loading, router, toast]);
+
+    if (loading || !userProfile) {
+        return (
+            <div className="flex h-screen w-full items-center justify-center bg-background">
+                <Loader2 className="h-8 w-8 animate-spin" />
+                <p className='ml-3'>Vérification de votre statut...</p>
+            </div>
+        );
+    }
+    
+    const instructorProfile = userProfile as InstructorProfile;
+    const status = instructorProfile.validation_status;
+
+    if (status === 'validated') {
+        return <>{children}</>;
+    }
+
+    return (
+        <div className="flex h-screen items-center justify-center p-4">
+            <Card className="max-w-xl text-center">
+                <CardHeader>
+                    {status === 'pending' && (
+                        <>
+                            <Clock className="mx-auto h-12 w-12 text-blue-500" />
+                            <CardTitle className="mt-4 text-blue-700">Votre profil est en cours de validation</CardTitle>
+                            <CardDescription>
+                                Merci pour votre patience. Notre équipe examine actuellement votre profil. Vous serez notifié par e-mail dès que la validation sera terminée.
+                            </CardDescription>
+                        </>
+                    )}
+                     {(status === 'incomplete' || status === 'rejected') && (
+                        <>
+                            <AlertCircle className="mx-auto h-12 w-12 text-amber-500" />
+                            <CardTitle className="mt-4 text-amber-700">Action requise pour votre profil</CardTitle>
+                             <CardDescription>
+                                {status === 'rejected' ? "Votre profil a été rejeté. Veuillez consulter les commentaires de l'administrateur et mettre à jour votre profil." : "Votre profil de formateur est incomplet. Veuillez le mettre à jour pour accéder à votre tableau de bord."}
+                            </CardDescription>
+                            <div className="pt-4">
+                                 <Button asChild>
+                                    <Link href="/formateur/mise-a-jour">Mettre à jour mon profil</Link>
+                                </Button>
+                            </div>
+                        </>
+                    )}
+                </CardHeader>
+            </Card>
+        </div>
+    );
+}
 
 export default function FormateurLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { user, userProfile, loading } = useUser();
+  const { user } = useUser();
   const auth = useAuth();
   const router = useRouter();
-  const pathname = usePathname();
-  const { toast } = useToast();
-
-  useEffect(() => {
-    if (loading) return;
-
-    if (!user) {
-      router.replace('/login');
-      return;
-    }
-
-    const instructorProfile = userProfile as InstructorProfile;
-
-    if (instructorProfile && instructorProfile.role !== 'formateur') {
-        toast({
-            variant: 'destructive',
-            title: 'Accès refusé',
-            description: "Redirection vers votre tableau de bord.",
-        });
-        if (instructorProfile.role === 'admin') {
-            router.replace('/admin');
-        } else {
-            router.replace('/dashboard');
-        }
-    } else if (!instructorProfile) {
-        // If loading is done, user exists, but no profile, it's an error state.
-        toast({
-            variant: 'destructive',
-            title: 'Profil introuvable',
-            description: "Votre profil n'a pas pu être chargé. Veuillez vous reconnecter.",
-        });
-        if (auth) signOut(auth);
-        router.replace('/login');
-    } else if (instructorProfile.validation_status === 'incomplete' && pathname !== '/formateur/mise-a-jour') {
-        // Redirect to update page if profile is incomplete
-        router.replace('/formateur/mise-a-jour');
-    }
-  }, [user, userProfile, loading, router, toast, auth, pathname]);
-
-  if (loading || !userProfile || userProfile.role !== 'formateur') {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <p className='ml-3'>Vérification des droits d'accès...</p>
-      </div>
-    );
-  }
-  
-  if (userProfile.validation_status === 'incomplete' && pathname !== '/formateur/mise-a-jour') {
-    return (
-       <div className="flex h-screen w-full items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <p className='ml-3'>Redirection vers la mise à jour du profil...</p>
-      </div>
-    );
-  }
 
   const handleSignOut = async () => {
     if (!auth) return;
@@ -154,54 +166,56 @@ export default function FormateurLayout({
 
 
   return (
-    <div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr]">
-      <aside className="hidden border-r bg-[#111827] text-white lg:block">
-        <FormateurSidebar onSignOut={handleSignOut} />
-      </aside>
-      <div className="flex flex-col">
-        <header className="flex h-16 items-center gap-4 border-b bg-card px-6 sticky top-0 z-30">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="lg:hidden">
-                <Menu className="h-6 w-6" />
-                <span className="sr-only">Ouvrir le menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-[280px] bg-[#111827] text-white p-0 border-r-0">
-               <VisuallyHidden>
-                <SheetTitle>Menu Formateur</SheetTitle>
-              </VisuallyHidden>
-              <FormateurSidebar onSignOut={handleSignOut} />
-            </SheetContent>
-          </Sheet>
-          <div className="flex-1">
-            {/* Can be used for a page title later */}
-          </div>
-          <div className="flex items-center gap-2">
-            <NotificationBell />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                    <Avatar>
-                        <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || ''} />
-                        <AvatarFallback>{user?.displayName?.charAt(0) || 'F'}</AvatarFallback>
-                    </Avatar>
+     <FormateurGuard>
+        <div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr]">
+        <aside className="hidden border-r bg-[#111827] text-white lg:block">
+            <FormateurSidebar onSignOut={handleSignOut} />
+        </aside>
+        <div className="flex flex-col">
+            <header className="flex h-16 items-center gap-4 border-b bg-card px-6 sticky top-0 z-30">
+            <Sheet>
+                <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="lg:hidden">
+                    <Menu className="h-6 w-6" />
+                    <span className="sr-only">Ouvrir le menu</span>
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Mon Compte</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild><Link href="/formateur/settings">Paramètres & Profil</Link></DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut} className="text-destructive">Déconnexion</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </header>
-        <main className="flex-1 bg-background p-4 sm:p-6 lg:p-8 animate-fade-in">
-          {children}
-        </main>
-      </div>
-    </div>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[280px] bg-[#111827] text-white p-0 border-r-0">
+                <VisuallyHidden>
+                    <SheetTitle>Menu Formateur</SheetTitle>
+                </VisuallyHidden>
+                <FormateurSidebar onSignOut={handleSignOut} />
+                </SheetContent>
+            </Sheet>
+            <div className="flex-1">
+                {/* Can be used for a page title later */}
+            </div>
+            <div className="flex items-center gap-2">
+                <NotificationBell />
+                <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                        <Avatar>
+                            <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || ''} />
+                            <AvatarFallback>{user?.displayName?.charAt(0) || 'F'}</AvatarFallback>
+                        </Avatar>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Mon Compte</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild><Link href="/formateur/settings">Paramètres & Profil</Link></DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSignOut} className="text-destructive">Déconnexion</DropdownMenuItem>
+                </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+            </header>
+            <main className="flex-1 bg-background p-4 sm:p-6 lg:p-8 animate-fade-in">
+            {children}
+            </main>
+        </div>
+        </div>
+    </FormateurGuard>
   );
 }
