@@ -33,7 +33,7 @@ type ModulePageProps = {
 };
 
 export default function ModulePage({ params }: ModulePageProps) {
-  const { id: courseId, moduleId } = use(params);
+  const { id: courseId, moduleId } = params;
   const router = useRouter();
   const db = useFirestore();
   const { user, loading: userLoading } = useUser();
@@ -54,7 +54,6 @@ export default function ModulePage({ params }: ModulePageProps) {
   const [enrollmentLoading, setEnrollmentLoading] = useState(true);
   
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
-  const [canPlay, setCanPlay] = useState(false);
 
   // Fetch all videos for all modules to calculate total course videos
   useEffect(() => {
@@ -102,6 +101,7 @@ export default function ModulePage({ params }: ModulePageProps) {
             // Auto-enroll user if they visit a course page
             const newEnrollment: Omit<Enrollment, 'id'> = {
                 studentId: user.uid,
+                studentName: user.displayName || 'Étudiant',
                 courseId: courseId,
                 courseTitle: course.title,
                 enrollmentDate: serverTimestamp() as any,
@@ -170,7 +170,7 @@ export default function ModulePage({ params }: ModulePageProps) {
     // Mark as watched
     if (played > 0.9 && !videoProg?.watched) {
       await updateVideoProgress(videoId, { watched: true, watchedAt: serverTimestamp() as any });
-      toast({ title: "Leçon terminée !", description: `"${selectedVideo.titre}" marquée comme terminée.`});
+      toast({ title: "Leçon terminée !", description: `"${selectedVideo.title}" marquée comme terminée.`});
     }
     
     // Save last position periodically
@@ -213,7 +213,7 @@ export default function ModulePage({ params }: ModulePageProps) {
         }
       };
 
-      const watchedCountInModule = Object.values(newModulesData[moduleId].videos || {}).filter(v => v.watched).length;
+      const watchedCountInModule = Object.values(newModulesData[moduleId]?.videos || {}).filter(v => v.watched).length;
       const totalVideosInModule = sortedVideos.length;
       const moduleProgress = totalVideosInModule > 0 ? (watchedCountInModule / totalVideosInModule) * 100 : 0;
       newModulesData[moduleId].progress = moduleProgress;
@@ -265,7 +265,7 @@ export default function ModulePage({ params }: ModulePageProps) {
     <div className="flex flex-col min-h-[calc(100vh-4rem)] bg-background">
        <header className="p-4 border-b flex justify-between items-center bg-card">
         <Button variant="ghost" asChild>
-            <Link href={`/courses/${course.id}`}>
+            <Link href={`/courses/${courseId}`}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Retour à la formation
             </Link>
@@ -287,10 +287,10 @@ export default function ModulePage({ params }: ModulePageProps) {
       <div className="flex-grow flex flex-col md:flex-row">
         <main className="flex-1 p-4 md:p-8">
              <div className="aspect-video bg-black rounded-lg overflow-hidden mb-6 shadow-lg">
-             {selectedVideo?.driveUrl ? (
+             {selectedVideo?.embedUrl ? (
                 <ReactPlayer
                     ref={playerRef}
-                    url={selectedVideo.driveUrl}
+                    url={selectedVideo.embedUrl}
                     controls
                     width="100%"
                     height="100%"
