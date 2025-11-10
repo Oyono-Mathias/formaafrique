@@ -23,8 +23,13 @@ import TrainerStats from "@/components/TrainerStats";
  */
 export default function DashboardFormateur() {
   return (
-    <main className="p-6 bg-gray-50 min-h-screen">
-      <h1 className="text-2xl font-bold mb-6">Tableau de bord Formateur</h1>
+    <main className="space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold font-headline">Tableau de bord</h1>
+        <p className="text-muted-foreground">
+          Un aperçu en temps réel de votre activité de formateur.
+        </p>
+      </div>
       <TrainerStats />
       {/* D'autres composants comme la liste des derniers étudiants, etc. pourront être ajoutés ici */}
     </main>
