@@ -25,3 +25,4 @@ This project is configured to use Firebase. To connect it to your own Firebase p
 You can find these values in your Firebase project settings under "General" -> "Your apps" -> "SDK setup and configuration".
 
 After adding these values, restart your development server for the changes to take effect.
+# formaafrique
