@@ -4,6 +4,9 @@ import { PT_Sans } from 'next/font/google';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
+import { FirebaseProvider } from '@/firebase/client-provider';
+import { UserProvider } from '@/firebase';
+import { LanguageProvider } from '@/contexts/language-context';
 
 const ptSans = PT_Sans({ 
   subsets: ['latin'], 
@@ -25,8 +28,14 @@ export default function RootLayout({
   return (
     <html lang="fr" className={cn("h-full font-sans", ptSans.variable)}>
       <body suppressHydrationWarning={true}>
-        {children}
-        <Toaster />
+        <FirebaseProvider>
+            <UserProvider>
+                <LanguageProvider>
+                    {children}
+                    <Toaster />
+                </LanguageProvider>
+            </UserProvider>
+        </FirebaseProvider>
       </body>
     </html>
   );
