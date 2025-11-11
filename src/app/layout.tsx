@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import { PT_Sans } from 'next/font/google';
 import './globals.css';
@@ -6,8 +7,6 @@ import { Toaster } from '@/components/ui/toaster';
 import { FirebaseProvider } from '@/firebase/client-provider';
 import { UserProvider } from '@/firebase';
 import { LanguageProvider } from '@/contexts/language-context';
-import Header from '@/components/layout/header';
-import Footer from '@/components/layout/footer';
 
 const ptSans = PT_Sans({ 
   subsets: ['latin'], 
@@ -18,11 +17,6 @@ const ptSans = PT_Sans({
 export const metadata: Metadata = {
   title: 'FormaAfrique | Formations pour un avenir meilleur',
   description: 'FormaAfrique - Plateforme de formation africaine gratuite et intelligente.',
-  keywords: 'formation, Afrique, entrepreneuriat, numérique, FormaAfrique, e-learning',
-  authors: [{ name: 'OYONO MATHIAS' }],
-  icons: {
-    icon: '/favicon.ico',
-  },
 };
 
 export default function RootLayout({
