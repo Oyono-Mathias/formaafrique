@@ -1,7 +1,7 @@
 
 "use client";
 import React from "react";
-import TrainerStats from "@/components/TrainerStats";
+import FormateurStats from "@/components/formateur/FormateurStats";
 
 /**
  * @page Dashboard Formateur (Page Principale)
@@ -30,7 +30,7 @@ export default function DashboardFormateur() {
           Un aperçu en temps réel de votre activité de formateur.
         </p>
       </div>
-      <TrainerStats />
+      <FormateurStats />
       {/* D'autres composants comme la liste des derniers étudiants, etc. pourront être ajoutés ici */}
     </main>
   );

@@ -2,7 +2,7 @@
 
 import { ShieldCheck, Lock, Unlock, Timer } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useUser } from "@/firebase"; // Corrected import path
+import { useUser } from "@/firebase";
 import React from "react";
 
 
