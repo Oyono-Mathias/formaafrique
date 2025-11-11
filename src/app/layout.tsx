@@ -5,8 +5,9 @@ import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseProvider } from '@/firebase/client-provider';
 import { UserProvider } from '@/firebase';
-import { NextLayout } from './next-layout';
 import { LanguageProvider } from '@/contexts/language-context';
+import Header from '@/components/layout/header';
+import Footer from '@/components/layout/footer';
 
 const ptSans = PT_Sans({ 
   subsets: ['latin'], 
@@ -36,9 +37,7 @@ export default function RootLayout({
         <FirebaseProvider>
           <UserProvider>
             <LanguageProvider>
-              <NextLayout>
-                {children}
-              </NextLayout>
+              {children}
               <Toaster />
             </LanguageProvider>
           </UserProvider>

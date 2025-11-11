@@ -38,6 +38,8 @@ import {
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { useToast } from '@/hooks/use-toast';
 import NotificationBell from '@/components/notifications/notification-bell';
+import Header from '@/components/layout/header';
+import Footer from '@/components/layout/footer';
 
 const navLinks = [
     { href: '/dashboard', label: 'Accueil', icon: Home },
@@ -151,12 +153,14 @@ export default function DashboardLayout({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
 
+  const isPublicPage = ['/', '/courses', '/about', '/contact', '/login'].includes(pathname);
+
   useEffect(() => {
     if (loading) return;
 
     if (!user) {
-      router.replace('/login');
-      return;
+        if (!isPublicPage) router.replace('/login');
+        return;
     }
 
     if (userProfile && userProfile.role !== 'etudiant') {
@@ -173,7 +177,17 @@ export default function DashboardLayout({
             router.replace('/login');
         }
     }
-  }, [user, userProfile, loading, router, auth, toast]);
+  }, [user, userProfile, loading, router, auth, toast, isPublicPage]);
+
+  if (isPublicPage && !user) {
+      return (
+        <>
+            <Header/>
+            <main className='flex-grow'>{children}</main>
+            <Footer />
+        </>
+      )
+  }
 
   if (loading || !user || !userProfile || userProfile.role !== 'etudiant') {
     return (

@@ -40,6 +40,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import NotificationBell from '@/components/notifications/notification-bell';
+import Header from '@/components/layout/header';
+import Footer from '@/components/layout/footer';
+
 
 const adminNavLinks = [
   { href: '/admin', label: 'Tableau de bord', icon: LayoutDashboard },
@@ -109,12 +112,15 @@ export default function AdminLayout({
   const auth = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  
+  const pathname = usePathname();
+
+  const isPublicPage = ['/', '/courses', '/about', '/contact', '/login'].includes(pathname);
+
   useEffect(() => {
     if (loading) return;
 
     if (!user) {
-      router.replace('/login');
+      if (!isPublicPage) router.replace('/login');
       return;
     }
 
@@ -130,13 +136,23 @@ export default function AdminLayout({
         router.replace('/dashboard');
       }
     }
-  }, [user, userProfile, loading, router, toast]);
+  }, [user, userProfile, loading, router, toast, isPublicPage]);
 
   const handleSignOut = async () => {
     if (!auth) return;
     await signOut(auth);
     router.push('/login');
   };
+
+  if (isPublicPage && !user) {
+      return (
+        <>
+            <Header/>
+            <main className='flex-grow'>{children}</main>
+            <Footer />
+        </>
+      )
+  }
 
   if (loading || !userProfile || userProfile.role !== 'admin') {
     return (

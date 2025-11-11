@@ -17,6 +17,8 @@ import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { useToast } from '@/hooks/use-toast';
 import NotificationBell from '@/components/notifications/notification-bell';
 import type { InstructorProfile } from '@/lib/types';
+import Header from "@/components/layout/header";
+import Footer from "@/components/layout/footer";
 
 
 const navLinks = [
@@ -76,12 +78,14 @@ export default function FormateurLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
+
+  const isPublicPage = ['/', '/courses', '/about', '/contact', '/login'].includes(pathname);
   
   useEffect(() => {
     if (loading) return;
 
     if (!user) {
-      router.replace('/login');
+      if (!isPublicPage) router.replace('/login');
       return;
     }
 
@@ -91,7 +95,11 @@ export default function FormateurLayout({ children }: { children: React.ReactNod
         title: 'Accès refusé',
         description: "Vous n'êtes pas un formateur. Redirection...",
       });
-      router.replace('/dashboard'); // Redirect non-instructors
+      if (userProfile.role === 'admin') {
+          router.replace('/admin');
+      } else {
+          router.replace('/dashboard');
+      }
       return;
     }
 
@@ -106,13 +114,23 @@ export default function FormateurLayout({ children }: { children: React.ReactNod
         router.replace('/formateur/mise-a-jour');
     }
 
-  }, [user, userProfile, loading, router, toast, pathname]);
+  }, [user, userProfile, loading, router, toast, pathname, isPublicPage]);
 
   const handleSignOut = async () => {
     if (!auth) return;
     await signOut(auth);
     router.push('/login');
   };
+  
+  if (isPublicPage && !user) {
+      return (
+        <>
+            <Header/>
+            <main className='flex-grow'>{children}</main>
+            <Footer />
+        </>
+      )
+  }
 
   if (loading || !userProfile || userProfile.role !== 'formateur') {
     return (
@@ -126,7 +144,7 @@ export default function FormateurLayout({ children }: { children: React.ReactNod
   const instructor = userProfile as InstructorProfile;
 
   if (instructor.validation_status === 'incomplete' && pathname === '/formateur/mise-a-jour') {
-      return <>{children}</>;
+      return <div className="bg-muted/40">{children}</div>;
   }
 
   if (instructor.validation_status === 'pending') {
