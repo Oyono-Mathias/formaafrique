@@ -1,4 +1,4 @@
-import { Mail, Phone, MapPin, Facebook, Linkedin, MessageCircle } from 'lucide-react';
+import { Mail, Phone, MapPin, Facebook, Linkedin, MessageCircle, LifeBuoy } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -19,6 +19,37 @@ export default function ContactPage() {
 
       <section className="py-16 sm:py-24">
         <div className="container mx-auto px-4 md:px-6">
+          
+          {/* Support Section */}
+          <Card className="mb-12 bg-destructive/10 border-destructive/30">
+            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="p-4 bg-destructive/20 rounded-full">
+                <LifeBuoy className="w-8 h-8 text-destructive" />
+              </div>
+              <div>
+                <CardTitle className="font-headline text-2xl text-destructive">Besoin d'aide technique ?</CardTitle>
+                <CardDescription className="text-destructive/80">
+                  Si vous rencontrez une erreur persistante (comme une page 404), notre équipe technique est là pour vous aider.
+                </CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="mb-4">
+                Pour nous aider à résoudre le problème rapidement, veuillez inclure dans votre message :
+              </p>
+              <ul className="list-disc list-inside text-sm space-y-1 mb-6">
+                <li>Une description de l'erreur (ex: "Erreur 404 sur la page d'accueil").</li>
+                <li>Les étapes que vous avez suivies.</li>
+                <li>Toute capture d'écran pertinente.</li>
+              </ul>
+              <Button asChild size="lg" className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
+                <a href="mailto:support@formaafrique.org?subject=Problème%20Technique%20sur%20FormaAfrique&body=Bonjour,%0D%0A%0D%0AJe%20rencontre%20un%20problème%20sur%20la%20plateforme.%0D%0A%0D%0A**Description%20de%20l'erreur%20:**%0D%0A%0D%0A**Étapes%20pour%20reproduire%20:**%0D%0A%0D%0AMerci%20pour%20votre%20aide.">
+                    Contacter le Support Technique
+                </a>
+              </Button>
+            </CardContent>
+          </Card>
+
           <div className="grid lg:grid-cols-3 gap-12">
             {/* Contact Form */}
             <div className="lg:col-span-2">
@@ -26,7 +57,7 @@ export default function ContactPage() {
                 <CardHeader>
                   <CardTitle className="font-headline text-2xl">Envoyez-nous un message</CardTitle>
                   <CardDescription>
-                    Notre équipe vous répondra dans les plus brefs délais.
+                    Pour toute question générale, notre équipe vous répondra dans les plus brefs délais.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
