@@ -29,12 +29,12 @@ export default function RootLayout({
     <html lang="fr" className={cn("h-full font-sans", ptSans.variable)}>
       <body suppressHydrationWarning={true}>
         <FirebaseProvider>
-            <UserProvider>
-                <LanguageProvider>
-                    {children}
-                    <Toaster />
-                </LanguageProvider>
-            </UserProvider>
+          <UserProvider>
+            <LanguageProvider>
+              {children}
+              <Toaster />
+            </LanguageProvider>
+          </UserProvider>
         </FirebaseProvider>
       </body>
     </html>
