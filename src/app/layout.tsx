@@ -1,41 +1,19 @@
 
 import type { Metadata } from 'next';
-import { PT_Sans } from 'next/font/google';
 import './globals.css';
-import { cn } from '@/lib/utils';
-import { Toaster } from '@/components/ui/toaster';
-import { FirebaseProvider } from '@/firebase/client-provider';
-import { UserProvider } from '@/firebase';
-import { LanguageProvider } from '@/contexts/language-context';
 
-const ptSans = PT_Sans({ 
-  subsets: ['latin'], 
-  weight: ['400', '700'],
-  variable: '--font-sans' 
-});
 
-export const metadata: Metadata = {
-  title: 'FormaAfrique | Formations pour un avenir meilleur',
-  description: 'FormaAfrique - Plateforme de formation africaine gratuite et intelligente.',
+export const metadata = {
+  title: "FormaAfrique",
+  description: "Plateforme de formation africaine moderne et interactive.",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  console.log("RootLayout chargé");
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  console.log("✅ Layout global chargé");
   return (
-    <html lang="fr" className={cn("h-full font-sans", ptSans.variable)}>
-      <body suppressHydrationWarning={true}>
-        <FirebaseProvider>
-          <UserProvider>
-            <LanguageProvider>
-              {children}
-              <Toaster />
-            </LanguageProvider>
-          </UserProvider>
-        </FirebaseProvider>
+    <html lang="fr">
+      <body className="min-h-screen bg-white text-gray-900 antialiased">
+        {children}
       </body>
     </html>
   );
