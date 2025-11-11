@@ -40,6 +40,9 @@ import { useToast } from '@/hooks/use-toast';
 import NotificationBell from '@/components/notifications/notification-bell';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
+import { FirebaseProvider } from '@/firebase/client-provider';
+import { UserProvider } from '@/firebase';
+import { LanguageProvider } from '@/contexts/language-context';
 
 const navLinks = [
     { href: '/dashboard', label: 'Accueil', icon: Home },
@@ -141,158 +144,154 @@ function SidebarContent() {
   );
 }
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const { user, userProfile, loading } = useUser();
-  const auth = useAuth();
-  const router = useRouter();
-  const { toast } = useToast();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const pathname = usePathname();
+function ProtectedDashboardLayout({ children }: { children: React.ReactNode }) {
+    const { user, userProfile, loading } = useUser();
+    const auth = useAuth();
+    const router = useRouter();
+    const { toast } = useToast();
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const pathname = usePathname();
 
-  const isPublicPage = ['/', '/courses', '/about', '/contact', '/login'].includes(pathname);
+    useEffect(() => {
+        if (loading) return;
 
-  useEffect(() => {
-    if (loading) return;
-
-    if (!user) {
-        if (!isPublicPage) router.replace('/login');
-        return;
-    }
-
-    if (userProfile && userProfile.role !== 'etudiant') {
-        toast({
-            title: 'Redirection en cours...',
-            description: "Vous n'êtes pas un étudiant. Redirection vers votre tableau de bord."
-        });
-        if (userProfile.role === 'admin') {
-            router.replace('/admin');
-        } else if (userProfile.role === 'formateur') {
-            router.replace('/formateur');
-        } else {
-            if (auth) signOut(auth);
+        if (!user) {
             router.replace('/login');
+            return;
         }
+
+        if (userProfile && userProfile.role !== 'etudiant') {
+            toast({
+                title: 'Redirection en cours...',
+                description: "Vous n'êtes pas un étudiant. Redirection vers votre tableau de bord."
+            });
+            if (userProfile.role === 'admin') {
+                router.replace('/admin');
+            } else if (userProfile.role === 'formateur') {
+                router.replace('/formateur');
+            } else {
+                if (auth) signOut(auth);
+                router.replace('/login');
+            }
+        }
+    }, [user, userProfile, loading, router, auth, toast]);
+
+    if (loading || !user || !userProfile || userProfile.role !== 'etudiant') {
+        return (
+            <div className="flex justify-center items-center h-screen bg-background text-foreground">
+                <Loader2 className="h-8 w-8 animate-spin" />
+                <p className="flex items-center gap-2 text-lg ml-4">
+                Vérification de votre accès...
+                </p>
+            </div>
+        );
     }
-  }, [user, userProfile, loading, router, auth, toast, isPublicPage]);
-
-  if (isPublicPage && !user) {
-      return (
-        <>
-            <Header/>
-            <main className='flex-grow'>{children}</main>
-            <Footer />
-        </>
-      )
-  }
-
-  if (loading || !user || !userProfile || userProfile.role !== 'etudiant') {
-    return (
-      <div className="flex justify-center items-center h-screen bg-background text-foreground">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <p className="flex items-center gap-2 text-lg ml-4">
-          Vérification de votre accès...
-        </p>
-      </div>
-    );
-  }
   
-  const handleSignOut = async () => {
-    if (!auth) return;
-    await signOut(auth);
-    router.push('/');
-  };
+    const handleSignOut = async () => {
+        if (!auth) return;
+        await signOut(auth);
+        router.push('/');
+    };
 
-  const isFullPageLayout = pathname.startsWith('/messages') || pathname.startsWith('/courses/');
-  if (isFullPageLayout) {
-      return (
-           <div className="h-screen overflow-hidden">
-                {children}
-            </div>
-      )
-  }
+    const isFullPageLayout = pathname.startsWith('/messages') || pathname.startsWith('/courses/');
+    if (isFullPageLayout) {
+        return (
+            <div className="h-screen overflow-hidden">
+                    {children}
+                </div>
+        )
+    }
 
-  const MobileNavBar = () => (
-    <nav className="fixed bottom-0 left-0 right-0 h-16 bg-card border-t shadow-lg flex justify-around items-center lg:hidden z-20">
-        {navLinks.slice(0, 5).map(link => (
-            <NavLink key={link.href} {...link} isMobile />
-        ))}
-    </nav>
-  );
+    const MobileNavBar = () => (
+        <nav className="fixed bottom-0 left-0 right-0 h-16 bg-card border-t shadow-lg flex justify-around items-center lg:hidden z-20">
+            {navLinks.slice(0, 5).map(link => (
+                <NavLink key={link.href} {...link} isMobile />
+            ))}
+        </nav>
+    );
 
-  return (
-    <div className="min-h-screen w-full bg-background text-foreground flex flex-col lg:flex-row">
-      <aside className="hidden lg:block w-64 flex-shrink-0 border-r border-border bg-card">
-        <SidebarContent />
-      </aside>
-
-      <div className="flex flex-col flex-1 overflow-hidden">
-        <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-border bg-background/80 backdrop-blur-sm px-4 lg:px-8">
-           <div className="lg:hidden">
-            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <Menu className="h-6 w-6" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-64 bg-card border-r p-0">
+    return (
+        <div className="min-h-screen w-full bg-background text-foreground flex flex-col lg:flex-row">
+            <aside className="hidden lg:block w-64 flex-shrink-0 border-r border-border bg-card">
                 <SidebarContent />
-              </SheetContent>
-            </Sheet>
-           </div>
-           <div className="flex-1"></div>
-           <div className="flex items-center gap-4 ml-auto">
-            <Button variant="ghost" size="icon" asChild>
-              <Link href="/search">
-                <SearchIcon className="h-5 w-5" />
-                <span className="sr-only">Rechercher</span>
-              </Link>
-            </Button>
-            <NotificationBell />
+            </aside>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-2 p-1 rounded-full h-auto">
-                  <Avatar className="h-9 w-9">
-                    {user.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || 'Avatar'} />}
-                    <AvatarFallback>{user.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}</AvatarFallback>
-                  </Avatar>
-                   <span className="hidden sm:inline font-medium">{user.displayName}</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Mon Compte</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard/settings">
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Paramètres</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={handleSignOut}
-                  className="text-destructive focus:bg-destructive/10 focus:text-destructive"
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Déconnexion</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </header>
+            <div className="flex flex-col flex-1 overflow-hidden">
+                <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-border bg-background/80 backdrop-blur-sm px-4 lg:px-8">
+                <div className="lg:hidden">
+                    <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+                    <SheetTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                        <Menu className="h-6 w-6" />
+                        </Button>
+                    </SheetTrigger>
+                    <SheetContent side="left" className="w-64 bg-card border-r p-0">
+                        <SidebarContent />
+                    </SheetContent>
+                    </Sheet>
+                </div>
+                <div className="flex-1"></div>
+                <div className="flex items-center gap-4 ml-auto">
+                    <Button variant="ghost" size="icon" asChild>
+                    <Link href="/search">
+                        <SearchIcon className="h-5 w-5" />
+                        <span className="sr-only">Rechercher</span>
+                    </Link>
+                    </Button>
+                    <NotificationBell />
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto animate-fade-in text-foreground">
-            <div className="pb-16 lg:pb-0">
-                {children}
+                    <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="flex items-center gap-2 p-1 rounded-full h-auto">
+                        <Avatar className="h-9 w-9">
+                            {user.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || 'Avatar'} />}
+                            <AvatarFallback>{user.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}</AvatarFallback>
+                        </Avatar>
+                        <span className="hidden sm:inline font-medium">{user.displayName}</span>
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel>Mon Compte</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                        <Link href="/dashboard/settings">
+                            <Settings className="mr-2 h-4 w-4" />
+                            <span>Paramètres</span>
+                        </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                        onClick={handleSignOut}
+                        className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                        >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        <span>Déconnexion</span>
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+                </header>
+
+                <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto animate-fade-in text-foreground">
+                    <div className="pb-16 lg:pb-0">
+                        {children}
+                    </div>
+                </main>
             </div>
-        </main>
-      </div>
 
-       <MobileNavBar />
-    </div>
-  );
+            <MobileNavBar />
+        </div>
+    );
+}
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+    return (
+        <FirebaseProvider>
+            <UserProvider>
+                <LanguageProvider>
+                    <ProtectedDashboardLayout>{children}</ProtectedDashboardLayout>
+                </LanguageProvider>
+            </UserProvider>
+        </FirebaseProvider>
+    );
 }

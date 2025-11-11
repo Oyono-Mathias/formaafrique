@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useUser, useAuth } from "@/firebase";
 import { Loader2, LayoutDashboard, BookCopy, Users, Wallet, Settings, LogOut, Menu, Bell, AlertCircle } from "lucide-react";
@@ -19,7 +19,9 @@ import NotificationBell from '@/components/notifications/notification-bell';
 import type { InstructorProfile } from '@/lib/types';
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
-
+import { FirebaseProvider } from '@/firebase/client-provider';
+import { UserProvider } from '@/firebase';
+import { LanguageProvider } from '@/contexts/language-context';
 
 const navLinks = [
   { href: '/formateur', label: 'Tableau de bord', icon: LayoutDashboard },
@@ -72,96 +74,84 @@ function Sidebar({ onSignOut }: { onSignOut: () => void }) {
   );
 }
 
-export default function FormateurLayout({ children }: { children: React.ReactNode }) {
-  const { user, userProfile, loading } = useUser();
-  const auth = useAuth();
-  const router = useRouter();
-  const pathname = usePathname();
-  const { toast } = useToast();
+function ProtectedFormateurLayout({ children }: { children: React.ReactNode }) {
+    const { user, userProfile, loading } = useUser();
+    const auth = useAuth();
+    const router = useRouter();
+    const pathname = usePathname();
+    const { toast } = useToast();
 
-  const isPublicPage = ['/', '/courses', '/about', '/contact', '/login'].includes(pathname);
+    useEffect(() => {
+        if (loading) return;
+
+        if (!user) {
+            router.replace('/login');
+            return;
+        }
+
+        if (userProfile && userProfile.role !== 'formateur') {
+            toast({
+                variant: 'destructive',
+                title: 'Accès refusé',
+                description: "Vous n'êtes pas un formateur. Redirection...",
+            });
+            if (userProfile.role === 'admin') {
+                router.replace('/admin');
+            } else {
+                router.replace('/dashboard');
+            }
+            return;
+        }
+
+        const instructor = userProfile as InstructorProfile;
+
+        if (instructor?.validation_status === 'incomplete' && pathname !== '/formateur/mise-a-jour') {
+            toast({
+                title: 'Profil incomplet',
+                description: 'Veuillez mettre à jour votre profil pour continuer.',
+                variant: 'destructive'
+            });
+            router.replace('/formateur/mise-a-jour');
+        }
+
+    }, [user, userProfile, loading, router, toast, pathname]);
+
+    const handleSignOut = async () => {
+        if (!auth) return;
+        await signOut(auth);
+        router.push('/login');
+    };
+
+    if (loading || !userProfile || userProfile.role !== 'formateur') {
+        return (
+            <div className="flex h-screen w-full items-center justify-center bg-background">
+                <Loader2 className="h-8 w-8 animate-spin" />
+                <p className='ml-3'>Vérification de votre statut de formateur...</p>
+            </div>
+        );
+    }
   
-  useEffect(() => {
-    if (loading) return;
-
-    if (!user) {
-      if (!isPublicPage) router.replace('/login');
-      return;
-    }
-
-    if (userProfile && userProfile.role !== 'formateur') {
-      toast({
-        variant: 'destructive',
-        title: 'Accès refusé',
-        description: "Vous n'êtes pas un formateur. Redirection...",
-      });
-      if (userProfile.role === 'admin') {
-          router.replace('/admin');
-      } else {
-          router.replace('/dashboard');
-      }
-      return;
-    }
-
     const instructor = userProfile as InstructorProfile;
 
-    if (instructor?.validation_status === 'incomplete' && pathname !== '/formateur/mise-a-jour') {
-        toast({
-            title: 'Profil incomplet',
-            description: 'Veuillez mettre à jour votre profil pour continuer.',
-            variant: 'destructive'
-        });
-        router.replace('/formateur/mise-a-jour');
+    if (instructor.validation_status === 'incomplete' && pathname === '/formateur/mise-a-jour') {
+        return <div className="bg-muted/40">{children}</div>;
     }
 
-  }, [user, userProfile, loading, router, toast, pathname, isPublicPage]);
-
-  const handleSignOut = async () => {
-    if (!auth) return;
-    await signOut(auth);
-    router.push('/login');
-  };
-  
-  if (isPublicPage && !user) {
-      return (
-        <>
-            <Header/>
-            <main className='flex-grow'>{children}</main>
-            <Footer />
-        </>
-      )
-  }
-
-  if (loading || !userProfile || userProfile.role !== 'formateur') {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <p className='ml-3'>Vérification de votre statut de formateur...</p>
-      </div>
-    );
-  }
-
-  const instructor = userProfile as InstructorProfile;
-
-  if (instructor.validation_status === 'incomplete' && pathname === '/formateur/mise-a-jour') {
-      return <div className="bg-muted/40">{children}</div>;
-  }
-
-  if (instructor.validation_status === 'pending') {
-      return (
-           <div className="flex h-screen w-full items-center justify-center bg-background p-4">
-                <div className='text-center'>
-                    <AlertCircle className='mx-auto h-12 w-12 text-amber-500 mb-4' />
-                    <h1 className='text-2xl font-bold'>Validation en attente</h1>
-                    <p className='text-muted-foreground mt-2'>Votre profil est en cours de validation par notre équipe. <br/>Vous recevrez une notification dès que ce sera terminé.</p>
-                     <Button variant="ghost" className="mt-6 text-destructive" onClick={handleSignOut}>
-                        <LogOut className="mr-2 h-4 w-4" />
-                        Se déconnecter
-                    </Button>
+    if (instructor.validation_status === 'pending') {
+        return (
+            <div className="flex h-screen w-full items-center justify-center bg-background p-4">
+                    <div className='text-center'>
+                        <AlertCircle className='mx-auto h-12 w-12 text-amber-500 mb-4' />
+                        <h1 className='text-2xl font-bold'>Validation en attente</h1>
+                        <p className='text-muted-foreground mt-2'>Votre profil est en cours de validation par notre équipe. <br/>Vous recevrez une notification dès que ce sera terminé.</p>
+                        <Button variant="ghost" className="mt-6 text-destructive" onClick={handleSignOut}>
+                            <LogOut className="mr-2 h-4 w-4" />
+                            Se déconnecter
+                        </Button>
+                    </div>
                 </div>
-            </div>
-      );
-  }
+        );
+    }
   
   // If user is a validated instructor, show the layout and children.
   return (
@@ -211,4 +201,16 @@ export default function FormateurLayout({ children }: { children: React.ReactNod
       </div>
     </div>
   );
+}
+
+export default function FormateurLayout({ children }: { children: React.ReactNode }) {
+    return (
+        <FirebaseProvider>
+            <UserProvider>
+                <LanguageProvider>
+                    <ProtectedFormateurLayout>{children}</ProtectedFormateurLayout>
+                </LanguageProvider>
+            </UserProvider>
+        </FirebaseProvider>
+    );
 }

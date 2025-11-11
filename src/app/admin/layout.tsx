@@ -42,6 +42,9 @@ import {
 import NotificationBell from '@/components/notifications/notification-bell';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
+import { FirebaseProvider } from '@/firebase/client-provider';
+import { UserProvider } from '@/firebase';
+import { LanguageProvider } from '@/contexts/language-context';
 
 
 const adminNavLinks = [
@@ -102,67 +105,52 @@ function AdminSidebar({ onSignOut }: { onSignOut: () => void }) {
   );
 }
 
+function ProtectedAdminLayout({ children }: { children: React.ReactNode }) {
+    const { user, userProfile, loading } = useUser();
+    const auth = useAuth();
+    const router = useRouter();
+    const { toast } = useToast();
+    const pathname = usePathname();
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const { user, userProfile, loading } = useUser();
-  const auth = useAuth();
-  const router = useRouter();
-  const { toast } = useToast();
-  const pathname = usePathname();
+    const isPublicPage = ['/', '/courses', '/about', '/contact', '/login'].includes(pathname);
 
-  const isPublicPage = ['/', '/courses', '/about', '/contact', '/login'].includes(pathname);
+    useEffect(() => {
+        if (loading) return;
 
-  useEffect(() => {
-    if (loading) return;
+        if (!user) {
+            if (!isPublicPage) router.replace('/login');
+            return;
+        }
 
-    if (!user) {
-      if (!isPublicPage) router.replace('/login');
-      return;
+        if (userProfile && userProfile.role !== 'admin') {
+            toast({
+                variant: 'destructive',
+                title: 'Accès refusé',
+                description: "Redirection vers votre tableau de bord.",
+            });
+            if (userProfile.role === 'formateur') {
+                router.replace('/formateur');
+            } else {
+                router.replace('/dashboard');
+            }
+        }
+    }, [user, userProfile, loading, router, toast, isPublicPage, pathname]);
+
+    const handleSignOut = async () => {
+        if (!auth) return;
+        await signOut(auth);
+        router.push('/login');
+    };
+
+    if (loading || !userProfile || userProfile.role !== 'admin') {
+        return (
+        <div className="flex h-screen w-full items-center justify-center bg-background">
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <p className='ml-3'>Vérification des droits d'accès...</p>
+        </div>
+        );
     }
-
-    if (userProfile && userProfile.role !== 'admin') {
-      toast({
-        variant: 'destructive',
-        title: 'Accès refusé',
-        description: "Redirection vers votre tableau de bord.",
-      });
-      if (userProfile.role === 'formateur') {
-        router.replace('/formateur');
-      } else {
-        router.replace('/dashboard');
-      }
-    }
-  }, [user, userProfile, loading, router, toast, isPublicPage]);
-
-  const handleSignOut = async () => {
-    if (!auth) return;
-    await signOut(auth);
-    router.push('/login');
-  };
-
-  if (isPublicPage && !user) {
-      return (
-        <>
-            <Header/>
-            <main className='flex-grow'>{children}</main>
-            <Footer />
-        </>
-      )
-  }
-
-  if (loading || !userProfile || userProfile.role !== 'admin') {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <p className='ml-3'>Vérification des droits d'accès...</p>
-      </div>
-    );
-  }
-
+  
   return (
     <div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr]">
       <aside className="hidden border-r bg-[#111827] text-white lg:block">
@@ -212,4 +200,17 @@ export default function AdminLayout({
       </div>
     </div>
   );
+}
+
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+    return (
+        <FirebaseProvider>
+            <UserProvider>
+                <LanguageProvider>
+                    <ProtectedAdminLayout>{children}</ProtectedAdminLayout>
+                </LanguageProvider>
+            </UserProvider>
+        </FirebaseProvider>
+    )
 }
