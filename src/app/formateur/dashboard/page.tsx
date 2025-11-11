@@ -30,7 +30,7 @@ export default function DashboardFormateur() {
           Un aperçu en temps réel de votre activité de formateur.
         </p>
       </div>
-      <FormateurStats />
+      <FormateurStats courses={[]} loading={false} />
       {/* D'autres composants comme la liste des derniers étudiants, etc. pourront être ajoutés ici */}
     </main>
   );
