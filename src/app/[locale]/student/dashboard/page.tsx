@@ -22,7 +22,8 @@ import {
   Bot, 
   Sparkles, 
   Search,
-  Bell
+  Bell,
+  ChevronRight
 } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { ContinueLearning } from '@/components/dashboards/ContinueLearning';
@@ -32,6 +33,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
+import { cn } from '@/lib/utils';
 
 export default function StudentDashboardAndroid() {
   const { currentUser, isUserLoading } = useRole();
