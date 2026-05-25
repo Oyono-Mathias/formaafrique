@@ -31,30 +31,25 @@ Bienvenue sur la version **Elite** de **Ndara Afrique**, l'infrastructure du sav
 
 ## 🚀 Déploiement & CI/CD (GitHub)
 
-Ce projet est configuré pour un déploiement continu.
+### 🔓 Configuration Production (Secrets requis)
+Pour activer le stockage massif Cloudflare R2 et les paiements réels, configurez les variables suivantes dans Vercel ou GitHub Secrets :
 
-### 1. Liaison GitHub
-Pour envoyer votre code sur GitHub :
+- `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`
+- `R2_ENDPOINT` (ex: https://accountid.r2.cloudflarestorage.com)
+- `R2_BUCKET_NAME`
+- `MESOMB_APPLICATION_KEY`, `MESOMB_ACCESS_KEY`, `MESOMB_SECRET_KEY`
+- `GEMINI_API_KEY`
+- `BUNNY_API_KEY`
+
+### 📦 Liaison GitHub
 ```bash
 git init
 git add .
 git commit -m "Initial commit Ndara Afrique v2.5"
 git branch -M main
-git remote add origin https://github.com/VOTRE_NOM/Ndaraafrique.git
+git remote add origin https://github.com/Oyono-Mathias/Ndaraafrique.git
 git push -u origin main
 ```
-
-### 2. Déploiement Automatique
-Le fichier `.github/workflows/firebase-hosting-pull-request.yml` gère automatiquement la prévisualisation de vos changements. Pour la production :
-- **Vercel** : Liez votre dépôt à Vercel. Il détectera automatiquement la configuration Next.js.
-- **Firebase** : Utilisez `firebase deploy` pour mettre à jour les règles de sécurité (`firestore.rules`) et les fonctions.
-
-### 🔐 Variables d'Environnement Requises
-Assurez-vous de configurer les secrets suivants dans GitHub ou votre plateforme d'hébergement :
-- `FIREBASE_SERVICE_ACCOUNT_KEY` : Clé JSON du compte de service.
-- `MESOMB_APPLICATION_KEY`, `MESOMB_ACCESS_KEY`, `MESOMB_SECRET_KEY`.
-- `GEMINI_API_KEY` : Pour le moteur Mathias.
-- `BUNNY_API_KEY` : Pour le streaming vidéo.
 
 ---
 **"Bara ala, Tonga na ndara."**
