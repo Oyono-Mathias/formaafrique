@@ -3,7 +3,7 @@
 /**
  * @fileOverview Barre latérale Étudiant Ndara Afrique.
  * ✅ I18N : Labels et groupes traduits intégralement.
- * ✅ FIX : Support de la locale 'sg' (Sango).
+ * ✅ DESIGN : Design épuré, navigation fluide.
  */
 
 import React, { useEffect, useState, useMemo } from "react";
@@ -61,7 +61,7 @@ const SidebarItem = ({ href, icon: Icon, label, count, badge, onClick, highlight
       className={cn(
         "flex items-center justify-between px-4 py-3.5 my-0.5 cursor-pointer transition-all duration-200 rounded-2xl mx-2 group relative",
         isActive
-          ? 'bg-primary/10 border-l-0'
+          ? 'bg-primary/10 text-primary'
           : 'text-slate-400 hover:bg-white/5 hover:text-white',
         highlight && !isActive && "text-primary"
       )}
@@ -109,20 +109,14 @@ export function StudentSidebar({ onLinkClick, siteName, logoUrl }: { onLinkClick
   
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [unreadNotifs, setUnreadNotifs] = useState(0);
-  const [globalProgress, setGlobalProgress] = useState(0);
 
   useEffect(() => {
     if (!user?.uid) return;
 
     const unsubChats = onSnapshot(query(collection(db, 'chats'), where('unreadBy', 'array-contains', user.uid)), (snap) => setUnreadMessages(snap.size));
     const unsubNotifs = onSnapshot(query(collection(db, `users/${user.uid}/notifications`), where('read', '==', false)), (snap) => setUnreadNotifs(snap.size));
-    const unsubProgress = onSnapshot(query(collection(db, 'course_progress'), where('userId', '==', user.uid)), (snap) => {
-        const docs = snap.docs.map(d => d.data() as CourseProgress);
-        const total = docs.reduce((acc, curr) => acc + (curr.progressPercent || 0), 0);
-        setGlobalProgress(docs.length > 0 ? Math.round(total / docs.length) : 0);
-    });
 
-    return () => { unsubChats(); unsubNotifs(); unsubProgress(); };
+    return () => { unsubChats(); unsubNotifs(); };
   }, [user?.uid, db]);
 
   const groups = [
@@ -148,7 +142,7 @@ export function StudentSidebar({ onLinkClick, siteName, logoUrl }: { onLinkClick
       label: t('tracking'),
       items: [
         { href: `/${locale}/student/results`, icon: Award, label: t('results') },
-        { href: `/${locale}/student/mes-certificats`, icon: Award, label: nav('devoirs') }, // Correction label mapping
+        { href: `/${locale}/student/mes-certificats`, icon: Award, label: "Diplômes" },
         { href: `/${locale}/student/wishlist`, icon: Heart, label: t('wishlist') },
       ],
     },
@@ -163,18 +157,17 @@ export function StudentSidebar({ onLinkClick, siteName, logoUrl }: { onLinkClick
   ];
 
   return (
-    <aside className="w-full h-full bg-[#0f172a] border-r border-white/5 flex flex-col shadow-2xl relative overflow-hidden font-sans">
+    <aside className="w-full h-full bg-[#0f172a] flex flex-col relative overflow-hidden font-sans border-r border-white/5 shadow-2xl">
         <div className="grain-overlay opacity-[0.03]" />
 
-        <header className="px-6 py-8 border-b border-white/5">
+        <header className="px-6 py-8 border-b border-white/5 flex-shrink-0">
             <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-primary to-teal-600 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-primary/20">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-teal-600 flex items-center justify-center text-slate-950 font-black text-base shadow-lg shadow-primary/20">
                         N
                     </div>
                     <div>
                         <h2 className="font-black text-lg text-white tracking-tighter uppercase leading-none">{siteName || 'NDARA'}</h2>
-                        <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mt-1">Afrique</p>
                     </div>
                 </div>
                 <button onClick={onLinkClick} className="md:hidden w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-500">
@@ -182,49 +175,46 @@ export function StudentSidebar({ onLinkClick, siteName, logoUrl }: { onLinkClick
                 </button>
             </div>
 
-            <div className="bg-[#1e293b] rounded-[2rem] p-4 border border-white/5 shadow-xl">
-                <div className="flex items-center gap-4 mb-4">
+            <div className="bg-[#1e293b] rounded-[1.5rem] p-4 border border-white/5 shadow-xl">
+                <div className="flex items-center gap-4">
                     <div className="relative flex-shrink-0">
-                        <Avatar className="h-14 w-14 border-2 border-primary/30 shadow-2xl">
+                        <Avatar className="h-12 w-12 border-2 border-primary/30 shadow-2xl">
                             <AvatarImage src={currentUser?.profilePictureURL} className="object-cover" />
                             <AvatarFallback className="bg-slate-800 text-slate-500 font-black uppercase">
                                 {currentUser?.fullName?.charAt(0)}
                             </AvatarFallback>
                         </Avatar>
                         {currentUser?.isOnline && (
-                            <div className="absolute bottom-0 right-0 w-4 h-4 bg-primary rounded-full border-2 border-[#1e293b] shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                            <div className="absolute bottom-0 right-0 w-3 h-3 bg-primary rounded-full border-2 border-[#1e293b] shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
                         )}
                     </div>
                     <div className="flex-1 min-w-0">
                         <h3 className="font-black text-white text-sm truncate uppercase tracking-tight">{currentUser?.fullName}</h3>
-                        <div className="flex items-center gap-1.5 mt-1">
-                            <span className="text-xs">{currentUser?.countryCode === 'CF' ? '🇨🇫' : '🌍'}</span>
-                            <span className="text-primary text-[9px] font-black uppercase tracking-widest">{t('Universe')}</span>
-                        </div>
+                        <p className="text-primary text-[9px] font-black uppercase tracking-widest mt-1">Étudiant Ndara</p>
                     </div>
                 </div>
             </div>
         </header>
 
-        <div className="px-6 py-4 border-b border-white/5 space-y-3">
-            <p className="text-slate-600 text-[9px] font-black uppercase tracking-[0.2em] ml-1">{t('switch_student')}</p>
+        <div className="px-6 py-4 border-b border-white/5 space-y-3 bg-black/10">
+            <p className="text-slate-600 text-[9px] font-black uppercase tracking-[0.2em] ml-1">Changer de mode</p>
             <div className="grid grid-cols-2 gap-2">
                 {isInstructor && (
                     <button 
                         onClick={() => { switchRole('instructor'); onLinkClick(); }}
-                        className="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#1e293b] border border-white/5 text-slate-400 text-[9px] font-black uppercase tracking-widest hover:bg-primary hover:text-slate-950 transition-all active:scale-95 shadow-lg"
+                        className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#1e293b] border border-white/5 text-slate-400 text-[9px] font-black uppercase tracking-widest hover:bg-primary hover:text-slate-950 transition-all active:scale-95 shadow-lg"
                     >
                         <ArrowLeftRight size={12} />
-                        <span>{t('switch_instructor')}</span>
+                        <span>Expert</span>
                     </button>
                 )}
                 {isAdmin && (
                     <button 
                         onClick={() => { switchRole('admin'); onLinkClick(); }}
-                        className="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#1e293b] border border-white/5 text-slate-400 text-[9px] font-black uppercase tracking-widest hover:bg-amber-500 hover:text-slate-950 transition-all active:scale-95 shadow-lg"
+                        className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#1e293b] border border-white/5 text-slate-400 text-[9px] font-black uppercase tracking-widest hover:bg-amber-500 hover:text-slate-950 transition-all active:scale-95 shadow-lg"
                     >
                         <Shield size={12} />
-                        <span>{t('switch_admin')}</span>
+                        <span>Admin</span>
                     </button>
                 )}
             </div>
@@ -252,13 +242,13 @@ export function StudentSidebar({ onLinkClick, siteName, logoUrl }: { onLinkClick
             ))}
         </nav>
 
-        <footer className="px-6 py-6 border-t border-white/5 bg-black/20">
+        <footer className="px-6 py-6 border-t border-white/5 bg-black/20 flex-shrink-0">
             <button 
                 onClick={() => secureSignOut()}
-                className="w-full h-14 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center gap-3 text-red-500 font-black uppercase text-[10px] tracking-widest hover:bg-red-500 hover:text-white transition-all active:scale-95 shadow-xl"
+                className="w-full h-12 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center gap-3 text-red-500 font-black uppercase text-[10px] tracking-widest hover:bg-red-500 hover:text-white transition-all active:scale-95 shadow-xl"
             >
                 <LogOut size={16} />
-                <span>{t('logout')}</span>
+                <span>Déconnexion</span>
             </button>
         </footer>
     </aside>
