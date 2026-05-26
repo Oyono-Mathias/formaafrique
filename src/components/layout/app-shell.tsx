@@ -3,6 +3,7 @@
 /**
  * @fileOverview AppShell Ndara Afrique - Cerveau de navigation global.
  * ✅ SÉCURITÉ : Connecté aux modules 'security' et 'marketing' des réglages Admin.
+ * ✅ VISIBILITÉ : Correction de la logique d'affichage des menus de navigation.
  */
 
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
@@ -74,7 +75,6 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         if (snap.exists()) {
             const data = snap.data() as Settings;
             setSiteSettings({ 
-                // 🛡️ Connexion aux nouveaux modules
                 maintenanceMode: data.security?.maintenanceMode || false,
                 announcementMessage: data.marketing?.globalAnnouncement || '',
             });
@@ -87,41 +87,34 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
     return pathname.replace(/^\/(en|fr|sg)/, '') || '/';
   }, [pathname]);
 
-  const showStudentBottomNav = useMemo(() => {
-      const allowedPaths = ['/student/dashboard', '/courses', '/student/courses', '/bourse', '/student/profile', '/search', '/student/annuaire', '/student/wishlist', '/student/results', '/student/mes-certificats', '/student/devoirs'];
-      const isExcluded = ['/', '/login', '/register', '/student/messages'].includes(cleanPath) 
-        || cleanPath.includes('/checkout/') 
-        || (cleanPath.startsWith('/courses/') && cleanPath.split('/').length > 2); 
-        
-      return role === 'student' && allowedPaths.some(path => cleanPath === path || cleanPath.startsWith(path)) && !isExcluded;
-  }, [cleanPath, role]);
+  // Déterminer quelle barre de navigation afficher
+  const navToDisplay = useMemo(() => {
+      if (!user || !mounted) return null;
 
-  const showAdminBottomNav = useMemo(() => {
-      return role === 'admin' && cleanPath.startsWith('/admin');
-  }, [cleanPath, role]);
+      // Priorité au chemin d'accès actuel pour choisir la barre
+      if (cleanPath.startsWith('/admin')) return 'admin';
+      if (cleanPath.startsWith('/instructor')) return 'instructor';
+      if (cleanPath.startsWith('/student') || cleanPath.startsWith('/search') || cleanPath.startsWith('/bourse') || cleanPath === '/account') return 'student';
+      
+      // Fallback sur le rôle actif si on est sur une page neutre mais connecté
+      return role;
+  }, [cleanPath, role, user, mounted]);
 
-  const showInstructorBottomNav = useMemo(() => {
-      return role === 'instructor' && cleanPath.startsWith('/instructor');
-  }, [cleanPath, role]);
-
-  const isDashboardArea = useMemo(() => {
-      const areas = ['/student', '/instructor', '/admin', '/account', '/search'];
-      return areas.some(area => cleanPath.startsWith(area));
+  const isFullScreen = useMemo(() => {
+      // Le lecteur de cours est toujours plein écran
+      return cleanPath.startsWith('/courses/') || (cleanPath.startsWith('/student/courses/') && cleanPath.split('/').length > 3);
   }, [cleanPath]);
 
   const isPublicPage = useMemo(() => {
-    const publicPaths = ['/', '/about', '/abonnements', '/investir', '/cgu', '/mentions-legales', '/leaderboard', '/bourse'];
+    const publicPaths = ['/', '/about', '/abonnements', '/investir', '/cgu', '/mentions-legales', '/leaderboard'];
     if (publicPaths.includes(cleanPath)) return true;
     if (cleanPath.startsWith('/course/')) return true; 
     return false;
   }, [cleanPath]);
 
-  const isFullScreen = useMemo(() => {
-      return cleanPath.startsWith('/courses/');
-  }, [cleanPath]);
-
   const isAuthPage = useMemo(() => ['/login', '/register', '/forgot-password'].includes(cleanPath), [cleanPath]);
 
+  // Redirection de sécurité
   useEffect(() => {
     if (loading) return;
     if (!user && !isPublicPage && !isAuthPage && !isFullScreen) {
@@ -129,7 +122,6 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
     }
   }, [user, loading, isPublicPage, isAuthPage, isFullScreen, router, locale]);
 
-  // 🛡️ SÉCURITÉ : Mode Maintenance connecté
   if (siteSettings.maintenanceMode && currentUser?.role !== 'admin') {
       return (
         <div className="h-screen flex flex-col items-center justify-center bg-[#0f172a] text-center p-6">
@@ -143,34 +135,39 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   const handleSidebarLinkClick = () => {};
   const sidebarProps = { onLinkClick: handleSidebarLinkClick };
 
-  return (
-    <div className={cn("min-h-screen w-full bg-[#0f172a] text-white", !!user && isDashboardArea && !isFullScreen && !isPublicPage && "md:grid md:grid-cols-[280px_1fr]")}>
-        <div className="grain-overlay" />
+  // Déterminer si on doit afficher le layout avec sidebar
+  const showSidebar = !!user && !isFullScreen && !isPublicPage && !isAuthPage;
 
-        {!!user && isDashboardArea && !isFullScreen && !isPublicPage && mounted && (
+  return (
+    <div className={cn("min-h-screen w-full bg-[#0f172a] text-white", showSidebar && "md:grid md:grid-cols-[280px_1fr]")}>
+        <div className="grain-overlay opacity-[0.04]" />
+
+        {showSidebar && (
           <aside className="hidden md:block h-screen sticky top-0 border-r border-white/5">
-             {role === 'admin' ? <AdminSidebar {...sidebarProps} /> : role === 'instructor' ? <InstructorSidebar {...sidebarProps} /> : <StudentSidebar {...sidebarProps} />}
+             {navToDisplay === 'admin' ? <AdminSidebar {...sidebarProps} /> : 
+              navToDisplay === 'instructor' ? <InstructorSidebar {...sidebarProps} /> : 
+              <StudentSidebar {...sidebarProps} />}
           </aside>
         )}
 
         <div className="flex flex-col flex-1 relative z-10">
           {siteSettings.announcementMessage && <AnnouncementBanner message={siteSettings.announcementMessage} />}
           
-          {!!user && isDashboardArea && !isFullScreen && !isPublicPage && mounted && (
+          {showSidebar && (
             <header className="h-16 flex items-center border-b border-white/5 sticky top-0 z-50 bg-[#0f172a]/95 backdrop-blur-md">
                 <Header />
             </header>
           )}
 
-          <main className={cn("flex-1", (!!user && isDashboardArea && !isFullScreen && !isPublicPage) ? "pb-24 md:pb-6 md:p-6" : "p-0")}>
+          <main className={cn("flex-1", showSidebar ? "pb-24 md:pb-6 md:p-6" : "p-0")}>
             {children}
           </main>
 
-          {!!user && !isFullScreen && mounted && (
+          {showSidebar && (
               <div className="md:hidden">
-                  {showAdminBottomNav && <AdminBottomNav />}
-                  {showInstructorBottomNav && <InstructorBottomNav />}
-                  {showStudentBottomNav && <BottomNav />}
+                  {navToDisplay === 'admin' && <AdminBottomNav />}
+                  {navToDisplay === 'instructor' && <InstructorBottomNav />}
+                  {navToDisplay === 'student' && <BottomNav />}
               </div>
           )}
         </div>

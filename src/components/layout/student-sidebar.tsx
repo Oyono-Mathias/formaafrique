@@ -3,6 +3,7 @@
 /**
  * @fileOverview Barre latérale Étudiant Ndara Afrique.
  * ✅ I18N : Labels et groupes traduits intégralement.
+ * ✅ FIX : Support de la locale 'sg' (Sango).
  */
 
 import React, { useEffect, useState, useMemo } from "react";
@@ -48,8 +49,8 @@ interface SidebarItemProps {
 
 const SidebarItem = ({ href, icon: Icon, label, count, badge, onClick, highlight }: SidebarItemProps) => {
   const pathname = usePathname() || '';
-  const cleanPath = pathname.replace(/^\/(en|fr)/, '') || '/';
-  const cleanHref = href.replace(/^\/(en|fr)/, '') || '/';
+  const cleanPath = pathname.replace(/^\/(en|fr|sg)/, '') || '/';
+  const cleanHref = href.replace(/^\/(en|fr|sg)/, '') || '/';
   
   const isActive = cleanPath === cleanHref || (cleanHref !== '/student/dashboard' && cleanPath.startsWith(cleanHref));
 

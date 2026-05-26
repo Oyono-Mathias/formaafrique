@@ -4,6 +4,7 @@
  * @fileOverview Barre latérale Expert Ndara Afrique v2.5.
  * ✅ DESIGN : Immersion Fintech Vintage avec grain de texture.
  * ✅ I18N : Groupements stratégiques traduits.
+ * ✅ FIX : Support de la locale 'sg' (Sango).
  */
 
 import React from 'react';
@@ -222,4 +223,3 @@ export function InstructorSidebar({ onLinkClick, siteName, logoUrl }: SidebarPro
     </aside>
   );
 }
-

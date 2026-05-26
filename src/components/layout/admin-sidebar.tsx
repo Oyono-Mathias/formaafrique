@@ -1,9 +1,9 @@
-
 'use client';
 
 /**
  * @fileOverview Barre latérale Administrateur Elite - Design Qwen.
  * ✅ I18N : Intégration complète des traductions Admin (FR/EN/SG).
+ * ✅ FIX : Support de la locale 'sg' (Sango).
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
