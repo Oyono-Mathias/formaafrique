@@ -4,12 +4,45 @@
 
 @layer base {
   :root {
+    /* Mode Clair (Default) */
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 161 72% 40%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222 47% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222 47% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 161 72% 40%;
+
+    --radius: 1.5rem;
+  }
+
+  .dark {
+    /* Mode Sombre (Ndara Elite) */
     --background: 222 47% 11%;
     --foreground: 210 40% 98%;
 
     --card: 222 47% 11%;
     --card-foreground: 210 40% 98%;
-    --popover: 222 47% 16%;
+    --popover: 222 47% 11%;
     --popover-foreground: 210 40% 98%;
 
     --primary: 161 72% 40%;
@@ -30,8 +63,6 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 161 72% 40%;
-
-    --radius: 1.5rem;
   }
 }
 
@@ -48,16 +79,17 @@
 
 @layer utilities {
   .glass {
+    @apply backdrop-blur-xl border border-white/5;
+    background: rgba(26, 26, 26, 0.4);
+  }
+
+  .dark .glass {
     background: rgba(26, 26, 26, 0.6);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   .glass-light {
+    @apply backdrop-blur-md border border-white/5;
     background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.05);
   }
 
   .gradient-text {
@@ -77,7 +109,7 @@
   }
 
   .glow-green {
-    box-shadow: 0 0 40px rgba(16, 185, 129, 0.2);
+    box-shadow: 0 0 40px rgba(16, 185, 129, 0.1);
   }
 
   .gradient-bg {
@@ -115,7 +147,6 @@
     text-shadow: 0 0 15px rgba(16, 185, 129, 0.45);
   }
 
-  /* Specific Qwen Components */
   .virtual-card {
     background: linear-gradient(135deg, #10b981 0%, #047857 60%, #064e3b 100%);
     border-radius: var(--radius);

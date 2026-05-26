@@ -3,8 +3,7 @@
 /**
  * @fileOverview Mon Profil - Espace Personnel Étudiant Ndara Afrique.
  * ✅ I18N : Support du Français, Anglais et Sango avec drapeaux visuels.
- * ✅ PERSISTANCE : Mémorisation de la langue via cookie et Firestore.
- * ✅ DESIGN : Sélecteur de langue enrichi avec 🇨🇲, 🇿🇦, 🇨🇫.
+ * ✅ THEME : Sélecteur de thème amélioré avec retour visuel clair.
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -25,6 +24,8 @@ import {
     LifeBuoy, 
     Languages, 
     Moon, 
+    Sun,
+    Monitor,
     LogOut,
     Check,
     Loader2,
@@ -35,7 +36,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -93,24 +93,15 @@ export default function StudentProfilePage() {
 
   const handleLanguageChange = async (newLocale: string) => {
       if (newLocale === locale) return;
-
-      // 1. Persister dans un cookie pour next-intl
       document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=31536000; SameSite=Lax`;
-
-      // 2. Persister dans Firestore pour le profil utilisateur
       if (user?.uid) {
           const userRef = doc(db, 'users', user.uid);
           await updateDoc(userRef, { preferredLanguage: newLocale }).catch(console.error);
       }
-
-      // 3. Redirection vers la nouvelle route locale
       const segments = pathname.split('/');
       const localeIndex = segments[0] === '' ? 1 : 0;
       segments[localeIndex] = newLocale; 
-      const newPath = segments.join('/');
-      
-      // On utilise window.location pour forcer un rafraîchissement propre du middleware
-      window.location.href = newPath;
+      window.location.href = segments.join('/');
   };
 
   const countryEmoji = useMemo(() => {
@@ -127,7 +118,7 @@ export default function StudentProfilePage() {
 
   if (isUserLoading) {
     return (
-        <div className="h-screen flex items-center justify-center bg-[#0f172a]">
+        <div className="h-screen flex items-center justify-center bg-background">
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
         </div>
     );
@@ -136,13 +127,13 @@ export default function StudentProfilePage() {
   if (!currentUser) return null;
 
   return (
-    <div className="flex flex-col gap-0 pb-32 bg-[#0f172a] min-h-screen relative">
+    <div className="flex flex-col gap-0 pb-32 bg-background min-h-screen relative">
       <div className="grain-overlay" />
       
-      <header className="fixed top-0 w-full max-w-md z-50 bg-[#0f172a]/95 backdrop-blur-md border-b border-white/5 safe-area-pt">
+      <header className="fixed top-0 w-full max-w-md z-50 bg-background/95 backdrop-blur-md border-b border-border safe-area-pt">
         <div className="flex items-center justify-between px-6 py-4">
-            <h1 className="font-black text-xl text-white uppercase tracking-tight">{t('title')}</h1>
-            <Button variant="ghost" size="icon" className="rounded-full bg-slate-900 text-slate-400" onClick={() => router.push('/account')}>
+            <h1 className="font-black text-xl text-foreground uppercase tracking-tight">{t('title')}</h1>
+            <Button variant="ghost" size="icon" className="rounded-full bg-secondary text-muted-foreground" onClick={() => router.push('/account')}>
                 <Settings className="h-5 w-5" />
             </Button>
         </div>
@@ -151,31 +142,33 @@ export default function StudentProfilePage() {
       <main className="flex-1 px-6 pt-24 space-y-8 animate-in fade-in duration-700">
         
         {/* --- USER HEADER --- */}
-        <Card className="bg-slate-900 rounded-[2.5rem] border-white/5 overflow-hidden shadow-2xl relative">
+        <Card className="bg-card rounded-[2.5rem] border-border overflow-hidden shadow-2xl relative">
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-10 -mt-10" />
             <CardContent className="p-8 text-center flex flex-col items-center relative z-10">
                 <div className="relative mb-4">
                     <div className="p-[3px] rounded-full bg-gradient-to-tr from-primary via-blue-500 to-purple-500">
-                        <Avatar className="h-24 w-24 border-4 border-slate-900 shadow-2xl">
+                        <Avatar className="h-24 w-24 border-4 border-card shadow-2xl">
                             <AvatarImage src={currentUser.profilePictureURL} className="object-cover" />
-                            <AvatarFallback className="bg-slate-800 text-3xl font-black text-slate-500 uppercase">
+                            <AvatarFallback className="bg-muted text-3xl font-black text-muted-foreground uppercase">
                                 {currentUser.fullName?.charAt(0)}
                             </AvatarFallback>
                         </Avatar>
                     </div>
-                    <div className="absolute bottom-1 right-1 w-6 h-6 bg-primary rounded-full border-4 border-slate-900 flex items-center justify-center shadow-lg">
-                        <Check className="text-slate-950 h-3 w-3 stroke-[4px]" />
-                    </div>
+                    {currentUser.isOnline && (
+                        <div className="absolute bottom-1 right-1 w-6 h-6 bg-primary rounded-full border-4 border-card flex items-center justify-center shadow-lg">
+                            <Check className="text-primary-foreground h-3 w-3 stroke-[4px]" />
+                        </div>
+                    )}
                 </div>
 
-                <h2 className="font-black text-2xl text-white uppercase tracking-tight leading-none mb-1">
+                <h2 className="font-black text-2xl text-foreground uppercase tracking-tight leading-none mb-1">
                     {currentUser.fullName}
                 </h2>
                 <p className="text-primary font-bold text-sm tracking-widest mb-4">@{currentUser.username}</p>
                 
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-6 shadow-inner">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted border border-border mb-6 shadow-inner">
                     <span className="text-lg">{countryEmoji}</span>
-                    <span className="text-slate-300 text-[10px] font-black uppercase tracking-widest">
+                    <span className="text-foreground text-[10px] font-black uppercase tracking-widest">
                         {currentUser.countryName || common('ndara_term')}
                     </span>
                 </div>
@@ -193,18 +186,18 @@ export default function StudentProfilePage() {
 
         {/* --- WALLET SHORTCUT --- */}
         <Link href="/student/wallet" className="block active:scale-[0.98] transition-all">
-            <div className="bg-slate-900 border border-white/5 rounded-[2rem] p-6 shadow-xl flex items-center justify-between relative overflow-hidden group">
+            <div className="bg-card border border-border rounded-[2rem] p-6 shadow-xl flex items-center justify-between relative overflow-hidden group">
                 <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-primary" />
                 <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-inner">
                         <Wallet size={24} />
                     </div>
                     <div>
-                        <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-0.5">Solde {common('ndara_term')}</p>
-                        <p className="text-2xl font-black text-white">{(currentUser?.balance || 0).toLocaleString()} <span className="text-xs">XOF</span></p>
+                        <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest mb-0.5">Solde {common('ndara_term')}</p>
+                        <p className="text-2xl font-black text-foreground">{(currentUser?.balance || 0).toLocaleString()} <span className="text-xs">XOF</span></p>
                     </div>
                 </div>
-                <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-600 group-hover:text-primary transition-colors">
+                <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground group-hover:text-primary transition-colors">
                     <ArrowUpRight size={20} />
                 </div>
             </div>
@@ -217,12 +210,13 @@ export default function StudentProfilePage() {
             <StatBox label={t('stats.reviews')} value={counters.reviews.toString()} color="text-blue-400" />
         </section>
 
-        <div className="bg-slate-900 rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl">
-            <div className="px-6 py-4 border-b border-white/5 bg-white/5">
-                <h3 className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">{t('preferences')}</h3>
+        {/* --- MENU LINKS --- */}
+        <div className="bg-card rounded-[2.5rem] border border-border overflow-hidden shadow-2xl">
+            <div className="px-6 py-4 border-b border-border bg-muted/50">
+                <h3 className="text-muted-foreground text-[10px] font-black uppercase tracking-[0.3em]">{t('preferences')}</h3>
             </div>
             
-            <div className="divide-y divide-white/5">
+            <div className="divide-y divide-border">
                 <MenuLink 
                     icon={UserCircle} 
                     label={t('identity_card')} 
@@ -238,13 +232,6 @@ export default function StudentProfilePage() {
                     href="/student/wallet"
                 />
                 <MenuLink 
-                    icon={Lock} 
-                    label={t('security')} 
-                    desc={t('security_desc')} 
-                    color="bg-red-500/10 text-red-400"
-                    href="/forgot-password"
-                />
-                <MenuLink 
                     icon={LifeBuoy} 
                     label={t('support')} 
                     desc={t('support_desc')} 
@@ -254,23 +241,24 @@ export default function StudentProfilePage() {
             </div>
         </div>
 
-        <div className="bg-slate-900 rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl">
-            <div className="p-6 space-y-6">
+        {/* --- APPEARANCE & LANGUAGE --- */}
+        <div className="bg-card rounded-[2.5rem] border border-border overflow-hidden shadow-2xl">
+            <div className="p-6 space-y-8">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-2xl bg-slate-800 flex items-center justify-center text-slate-400">
+                        <div className="w-10 h-10 rounded-2xl bg-secondary flex items-center justify-center text-muted-foreground">
                             <Languages className="h-5 w-5" />
                         </div>
-                        <span className="font-bold text-white text-sm uppercase tracking-tight">{t('language')}</span>
+                        <span className="font-bold text-foreground text-sm uppercase tracking-tight">{t('language')}</span>
                     </div>
                     <Select value={locale} onValueChange={handleLanguageChange}>
-                        <SelectTrigger className="w-40 h-12 bg-slate-950 border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest text-primary shadow-2xl">
+                        <SelectTrigger className="w-40 h-12 bg-background border-border rounded-full text-[10px] font-black uppercase tracking-widest text-primary shadow-lg">
                             <div className="flex items-center gap-2">
                                 <span className="text-base">{currentFlag}</span>
                                 <SelectValue />
                             </div>
                         </SelectTrigger>
-                        <SelectContent className="bg-slate-900 border-white/10 text-white min-w-[160px]">
+                        <SelectContent className="bg-card border-border text-foreground min-w-[160px]">
                             <SelectItem value="fr" className="font-bold py-4 uppercase text-[10px] focus:bg-primary/10">
                                 <div className="flex items-center gap-3">
                                     <span className="text-base">🇨🇲</span>
@@ -293,41 +281,57 @@ export default function StudentProfilePage() {
                     </Select>
                 </div>
 
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-2xl bg-slate-800 flex items-center justify-center text-slate-400">
+                <div className="space-y-4">
+                    <div className="flex items-center gap-4 ml-1">
+                        <div className="w-10 h-10 rounded-2xl bg-secondary flex items-center justify-center text-muted-foreground">
                             <Moon className="h-5 w-5" />
                         </div>
-                        <span className="font-bold text-white text-sm uppercase tracking-tight">{t('dark_mode')}</span>
+                        <span className="font-bold text-foreground text-sm uppercase tracking-tight">{t('dark_mode')}</span>
                     </div>
-                    <Switch 
-                        checked={theme === 'dark'} 
-                        onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')} 
-                        className="data-[state=checked]:bg-primary"
-                    />
+                    
+                    <div className="grid grid-cols-3 gap-2">
+                        <ThemeBtn 
+                            active={theme === 'light'} 
+                            onClick={() => setTheme('light')} 
+                            icon={Sun} 
+                            label="Clair" 
+                        />
+                        <ThemeBtn 
+                            active={theme === 'dark'} 
+                            onClick={() => setTheme('dark')} 
+                            icon={Moon} 
+                            label="Sombre" 
+                        />
+                        <ThemeBtn 
+                            active={theme === 'system'} 
+                            onClick={() => setTheme('system')} 
+                            icon={Monitor} 
+                            label="Auto" 
+                        />
+                    </div>
                 </div>
             </div>
         </div>
 
         <AlertDialog>
             <AlertDialogTrigger asChild>
-                <Button className="w-full h-16 rounded-[2rem] bg-gradient-to-br from-red-500 to-red-700 hover:from-red-600 hover:to-red-800 text-white font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-red-500/20 active:scale-[0.98] transition-all gap-2 mb-12">
+                <Button className="w-full h-16 rounded-[2rem] bg-gradient-to-br from-red-500 to-red-700 hover:from-red-600 hover:to-red-800 text-white font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-red-500/20 active:scale-[0.98] transition-all gap-2 mb-12 border-none">
                     <LogOut className="h-5 w-5" />
                     {t('logout')}
                 </Button>
             </AlertDialogTrigger>
-            <AlertDialogContent className="bg-slate-900 border-white/10 rounded-[2.5rem] p-8 max-w-[90%] sm:max-w-md mx-auto">
+            <AlertDialogContent className="bg-card border-border rounded-[2.5rem] p-8 max-w-[90%] sm:max-w-md mx-auto">
                 <AlertDialogHeader className="items-center text-center space-y-4">
                     <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center text-red-500">
                         <LogOut size={40} />
                     </div>
-                    <AlertDialogTitle className="text-2xl font-black text-white uppercase tracking-tight leading-none">{t('logout_confirm')}</AlertDialogTitle>
-                    <AlertDialogDescription className="text-slate-400 text-sm font-medium leading-relaxed italic">
+                    <AlertDialogTitle className="text-2xl font-black text-foreground uppercase tracking-tight leading-none">{t('logout_confirm')}</AlertDialogTitle>
+                    <AlertDialogDescription className="text-muted-foreground text-sm font-medium leading-relaxed italic">
                         {t('logout_desc')}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter className="mt-8 flex-col sm:flex-row gap-3">
-                    <AlertDialogCancel className="bg-slate-950 border-white/10 text-white rounded-2xl h-14 font-black uppercase text-[10px] tracking-widest flex-1">{t('cancel')}</AlertDialogCancel>
+                    <AlertDialogCancel className="bg-background border-border text-foreground rounded-2xl h-14 font-black uppercase text-[10px] tracking-widest flex-1">{t('cancel')}</AlertDialogCancel>
                     <AlertDialogAction onClick={handleLogout} className="bg-red-600 hover:bg-red-700 text-white rounded-2xl h-14 font-black uppercase text-[10px] tracking-widest flex-1 shadow-lg shadow-red-600/20">
                         {isLoggingOut ? <Loader2 className="animate-spin" /> : t('confirm')}
                     </AlertDialogAction>
@@ -336,7 +340,7 @@ export default function StudentProfilePage() {
         </AlertDialog>
 
         <div className="pb-12 text-center">
-            <p className="text-[9px] font-black text-slate-700 uppercase tracking-[0.4em]">Ndara Afrique v2.5 • Fintech Education</p>
+            <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.4em]">Ndara Afrique v2.5 • Fintech Education</p>
         </div>
       </main>
     </div>
@@ -345,26 +349,43 @@ export default function StudentProfilePage() {
 
 function StatBox({ label, value, color }: { label: string, value: string, color: string }) {
     return (
-        <div className="bg-slate-900 border border-white/5 rounded-[2rem] p-4 text-center shadow-xl active:scale-95 transition-transform">
+        <div className="bg-card border border-border rounded-[2rem] p-4 text-center shadow-xl active:scale-95 transition-transform">
             <p className={cn("text-2xl font-black leading-none mb-2", color)}>{value}</p>
-            <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest">{label}</p>
+            <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">{label}</p>
         </div>
     );
 }
 
 function MenuLink({ icon: Icon, label, desc, color, href }: { icon: any, label: string, desc: string, color: string, href: string }) {
     return (
-        <Link href={href} className="flex items-center justify-between p-5 hover:bg-white/5 active:scale-[0.98] transition-all group">
+        <Link href={href} className="flex items-center justify-between p-5 hover:bg-muted/50 active:scale-[0.98] transition-all group">
             <div className="flex items-center gap-4">
                 <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110" , color)}>
                     <Icon className="h-6 w-6" />
                 </div>
                 <div>
-                    <p className="font-black text-white text-sm uppercase tracking-tight leading-none mb-1 group-hover:text-primary transition-colors">{label}</p>
-                    <p className="text-slate-500 text-[10px] font-medium">{desc}</p>
+                    <p className="font-black text-foreground text-sm uppercase tracking-tight leading-none mb-1 group-hover:text-primary transition-colors">{label}</p>
+                    <p className="text-muted-foreground text-[10px] font-medium">{desc}</p>
                 </div>
             </div>
-            <ChevronRight className="h-4 w-4 text-slate-700 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+            <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
         </Link>
+    );
+}
+
+function ThemeBtn({ active, onClick, icon: Icon, label }: { active: boolean, onClick: () => void, icon: any, label: string }) {
+    return (
+        <button 
+            onClick={onClick}
+            className={cn(
+                "flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border-2 transition-all active:scale-95",
+                active 
+                    ? "bg-primary/10 border-primary text-primary shadow-lg shadow-primary/10" 
+                    : "bg-muted border-border text-muted-foreground hover:text-foreground"
+            )}
+        >
+            <Icon size={16} />
+            <span className="text-[9px] font-black uppercase tracking-widest">{label}</span>
+        </button>
     );
 }
