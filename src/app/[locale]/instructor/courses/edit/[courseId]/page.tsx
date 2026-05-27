@@ -10,7 +10,7 @@ import { doc, getFirestore } from 'firebase/firestore';
 import type { Course } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, ArrowLeft, Send, CheckCircle2, ShoppingCart, ShieldAlert, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Loader2, ArrowLeft, Send, CheckCircle2, ShoppingCart, ShieldAlert, AlertTriangle, ShieldCheck, X } from 'lucide-react';
 import { useRole } from '@/context/RoleContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -202,12 +202,4 @@ export default function EditCoursePage({ params }: { params: { courseId: string 
         </Tabs>
     </div>
   );
-}
-
-function X({ className, size }: { className?: string, size?: number }) {
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" width={size || 24} height={size || 24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}>
-            <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
-        </svg>
-    );
 }

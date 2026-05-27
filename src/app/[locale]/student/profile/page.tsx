@@ -3,7 +3,7 @@
 /**
  * @fileOverview Mon Profil - Espace Personnel Étudiant Ndara Afrique.
  * ✅ I18N : Support du Français, Anglais et Sango avec drapeaux visuels.
- * ✅ THEME : Sélecteur de thème amélioré avec retour visuel clair.
+ * ✅ THEME : Sélecteur de thème avec retour visuel émeraude.
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -69,6 +69,11 @@ export default function StudentProfilePage() {
   
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [counters, setCounters] = useState({ enrollments: 0, certificates: 0, reviews: 0 });
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -116,7 +121,7 @@ export default function StudentProfilePage() {
       return "🇨🇫";
   }, [locale]);
 
-  if (isUserLoading) {
+  if (isUserLoading || !mounted) {
     return (
         <div className="h-screen flex items-center justify-center bg-background">
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
